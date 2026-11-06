@@ -6,7 +6,7 @@ import {
   BookOpen, User, Lock, Mail, Building, Phone, ArrowRight, 
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
   Download, MessageSquare, Send, CheckCircle2, HelpCircle, 
-  FileCheck, AlertTriangle, RefreshCw, Plus, Trash2, ExternalLink
+  FileCheck, AlertTriangle, RefreshCw, Plus, Trash2
 } from 'lucide-react'
 
 export default function Home() {
@@ -138,6 +138,7 @@ export default function Home() {
     }
   }
 
+  // Funções Auxiliares de Busca
   const getAuthorName = (authorId: string) => {
     const p = allProfiles.find((x) => x.id === authorId)
     return p ? p.full_name : 'Autor da Revista'
@@ -146,6 +147,11 @@ export default function Home() {
   const getAuthorEmail = (authorId: string) => {
     const p = allProfiles.find((x) => x.id === authorId)
     return p ? p.email : ''
+  }
+
+  const getAuthorInst = (authorId: string) => {
+    const p = allProfiles.find((x) => x.id === authorId)
+    return p ? p.institution || '-' : '-'
   }
 
   const getArticleReviews = (articleId: string) => {
@@ -1569,7 +1575,7 @@ export default function Home() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Parecer Descritivo e Orientações para o Autor *
+                  Parecer Detalhado e Orientações para o Autor *
                 </label>
                 <textarea
                   required
