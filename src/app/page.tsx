@@ -7,7 +7,7 @@ import {
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
   Download, MessageSquare, Send, CheckCircle2, HelpCircle, 
   FileCheck, AlertTriangle, RefreshCw, Plus, Trash2, ShieldAlert,
-  Award, Printer, Copy, Check, Edit3, Link as LinkIcon, Search
+  Award, Printer, Copy, Check, Edit3, Link as LinkIcon, Search, X
 } from 'lucide-react'
 
 export default function Home() {
@@ -35,8 +35,9 @@ export default function Home() {
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [verifyCodeInput, setVerifyCodeInput] = useState('')
   const [verifyResult, setVerifyResult] = useState<any>(null)
+  const [checkingCode, setCheckingCode] = useState(false)
 
-  // Modal Meu Perfil (Lattes / ORCID / Filiação)
+  // Modal Meu Perfil
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [profileInst, setProfileInst] = useState('')
@@ -242,49 +243,60 @@ export default function Home() {
     }
   }
 
-  // Verificador de Autenticidade do Código
+  // Verificador Público Seguro
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
     if (!code) return
 
-    setVerifyResult({ loading: true })
+    setCheckingCode(true)
+    setVerifyResult(null)
 
     try {
-      // 1. Checa se é código de Aceite (ASP-ACE-...)
+      // 1. Tenta consultar a função RPC pública do banco
+      const { data, error } = await supabase.rpc('verify_document', { code })
+
+      if (!error && data && data.valid) {
+        setVerifyResult(data)
+        setCheckingCode(false)
+        return
+      }
+
+      // 2. Fallback caso a lista já esteja em memória
       if (code.includes('ASP-ACE-')) {
         const parts = code.split('-')
-        const prefix = parts[2] // Pedaço do ID
-        const found = allArticles.find((a) => a.id.toUpperCase().startsWith(prefix))
+        const prefix = parts[2] || ''
+        const found = allArticles.find((a) => a.id.toUpperCase().startsWith(prefix) && a.status === 'aceito')
 
-        if (found && found.status === 'aceito') {
+        if (found) {
           setVerifyResult({
             valid: true,
             type: 'Carta de Aceite para Publicação',
             title: found.title,
             person: getAuthorName(found.author_id),
             date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR'),
-            role: 'Autor(a) Principal',
+            role: 'Autor(a) do Manuscrito',
           })
+          setCheckingCode(false)
           return
         }
       }
 
-      // 2. Checa se é código de Parecerista (ASP-PAR-...)
       if (code.includes('ASP-PAR-')) {
         const parts = code.split('-')
-        const prefix = parts[2]
-        const foundRev = allReviews.find((r) => r.id.toUpperCase().startsWith(prefix))
+        const prefix = parts[2] || ''
+        const foundRev = allReviews.find((r) => r.id.toUpperCase().startsWith(prefix) && r.status === 'concluido')
 
-        if (foundRev && foundRev.status === 'concluido') {
+        if (foundRev) {
           const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
           setVerifyResult({
             valid: true,
             type: 'Declaração de Atuação como Parecerista Ad-hoc',
-            title: 'Manuscrito Técnico-Científico Submetido à Revista',
+            title: 'Manuscrito Técnico-Científico Avaliado',
             person: revPerson?.full_name || 'Parecerista Registrado',
             date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR'),
             role: 'Parecerista Ad-hoc',
           })
+          setCheckingCode(false)
           return
         }
       }
@@ -292,6 +304,8 @@ export default function Home() {
       setVerifyResult({ valid: false })
     } catch (e) {
       setVerifyResult({ valid: false })
+    } finally {
+      setCheckingCode(false)
     }
   }
 
@@ -519,6 +533,94 @@ export default function Home() {
     setTimeout(() => setCopiedThanks(false), 2500)
   }
 
+  // COMPONENTE DO MODAL DE VERIFICAÇÃO PÚBLICA (RENDERIZADO TANTO FORA QUANTO DENTRO DO LOGIN)
+  const renderVerificationModal = () => {
+    if (!showVerifyModal) return null
+    return (
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+            <div>
+              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Validação Pública de Documentos</span>
+              <h3 className="text-base font-bold text-slate-900 mt-0.5">Verificar Autenticidade</h3>
+            </div>
+            <button
+              onClick={() => setShowVerifyModal(false)}
+              className="text-slate-400 hover:text-slate-600 p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-500">
+            Digite o código verificador constante no rodapé da Carta de Aceite ou Declaração de Parecerista (ex: <span className="font-mono text-slate-700">ASP-ACE-...</span> ou <span className="font-mono text-slate-700">ASP-PAR-...</span>).
+          </p>
+
+          <div className="space-y-3">
+            <div>
+              <input
+                type="text"
+                value={verifyCodeInput}
+                onChange={(e) => setVerifyCodeInput(e.target.value)}
+                placeholder="Cole o código aqui..."
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <button
+              type="button"
+              disabled={checkingCode || !verifyCodeInput.trim()}
+              onClick={handleVerifyCode}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+            >
+              <Search className="w-3.5 h-3.5" />
+              {checkingCode ? 'Consultando banco oficial...' : 'Consultar Autenticidade'}
+            </button>
+
+            {verifyResult && (
+              <div className={`p-4 rounded-xl text-xs space-y-2 border ${
+                verifyResult.valid ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-200 text-rose-900'
+              }`}>
+                {verifyResult.valid ? (
+                  <>
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-800 border-b border-emerald-200 pb-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      DOCUMENTO AUTÊNTICO E HOMOLOGADO
+                    </div>
+                    <p><strong>Tipo:</strong> {verifyResult.type}</p>
+                    <p><strong>Titular:</strong> {verifyResult.person} ({verifyResult.role})</p>
+                    <p><strong>Referência:</strong> {verifyResult.title}</p>
+                    <p><strong>Data de Emissão:</strong> {verifyResult.date}</p>
+                    <p className="text-[10px] text-emerald-700 italic pt-1">
+                      Homologado eletronicamente pela Revista Saber Psicanalítico (ISSN 3086-8416).
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-center py-2 space-y-1">
+                    <p className="font-bold text-rose-800">Código Verificador Não Encontrado</p>
+                    <p className="text-[11px] text-rose-600">
+                      Verifique se digitou o código exatamente como consta no rodapé do documento.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setShowVerifyModal(false)}
+              className="px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">
@@ -686,6 +788,9 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Modal de verificação acessível diretamente na tela de login */}
+        {renderVerificationModal()}
       </main>
     )
   }
@@ -1352,83 +1457,8 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* ========================================================= */}
-      {/* MODAL: VERIFICADOR PÚBLICO DE AUTENTICIDADE */}
-      {/* ========================================================= */}
-      {showVerifyModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="border-b border-slate-100 pb-3 text-center">
-              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Verificação de Autenticidade</span>
-              <h3 className="text-base font-bold text-slate-900 mt-0.5">Validar Documento da Revista</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Insira o código verificador impresso no rodapé da Carta de Aceite ou Certificado para confirmar a autenticidade perante comitês e bancas.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Código Verificador</label>
-                <input
-                  type="text"
-                  value={verifyCodeInput}
-                  onChange={(e) => setVerifyCodeInput(e.target.value)}
-                  placeholder="Ex: ASP-ACE-12345678-999999 ou ASP-PAR-..."
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg font-mono uppercase focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleVerifyCode}
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                <Search className="w-3.5 h-3.5" />
-                Consultar Autenticidade
-              </button>
-
-              {verifyResult && (
-                <div className={`p-4 rounded-xl text-xs space-y-2 border ${
-                  verifyResult.valid ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-200 text-rose-900'
-                }`}>
-                  {verifyResult.valid ? (
-                    <>
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-800 border-b border-emerald-200 pb-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        DOCUMENTO AUTÊNTICO E HOMOLOGADO
-                      </div>
-                      <p><strong>Tipo:</strong> {verifyResult.type}</p>
-                      <p><strong>Emitido para:</strong> {verifyResult.person} ({verifyResult.role})</p>
-                      <p><strong>Referência:</strong> {verifyResult.title}</p>
-                      <p><strong>Data de Emissão:</strong> {verifyResult.date}</p>
-                      <p className="text-[10px] text-emerald-700 italic pt-1">
-                        Autenticado eletronicamente pela Revista Saber Psicanalítico (ISSN 3086-8416).
-                      </p>
-                    </>
-                  ) : (
-                    <div className="text-center py-2 space-y-1">
-                      <p className="font-bold text-rose-800">Código Verificador Não Encontrado</p>
-                      <p className="text-[11px] text-rose-600">
-                        Verifique se digitou o código exatamente como consta no documento, incluindo os traços (hífens).
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowVerifyModal(false)}
-                className="px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de verificação disponível também dentro da área logada */}
+      {renderVerificationModal()}
 
       {/* MODAL: MEU PERFIL */}
       {showProfileModal && (
@@ -1518,9 +1548,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* MODAL: CARTA OFICIAL DE ACEITE (FORMATO A4 TIMBRADO) */}
-      {/* ========================================================= */}
+      {/* MODAL: CARTA OFICIAL DE ACEITE (A4) */}
       {selectedAcceptanceArticle && (() => {
         const authorName = getAuthorName(selectedAcceptanceArticle.author_id)
         const authorInst = selectedAcceptanceArticle.author_institution || getAuthorInst(selectedAcceptanceArticle.author_id)
@@ -1540,7 +1568,6 @@ export default function Home() {
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
             <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
               
-              {/* Cabeçalho Timbrado com Logo da Revista em Grande Destaque */}
               <div>
                 <div className="flex justify-between items-center border-b-2 border-indigo-950 pb-6 gap-6">
                   <img
@@ -1563,7 +1590,6 @@ export default function Home() {
                   </h3>
                 </div>
 
-                {/* Corpo da Carta */}
                 <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
                   <p>
                     Declaramos, para os devidos fins de comprovação acadêmica e científica, que o trabalho intitulado{' '}
@@ -1586,7 +1612,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Bloco de Assinatura Sem Linha Manual */}
               <div className="pt-8">
                 <div className="text-center space-y-4">
                   <p className="text-xs text-slate-600">
@@ -1599,7 +1624,6 @@ export default function Home() {
                     <p className="text-xs text-slate-500">Revista Saber Psicanalítico • ASP</p>
                   </div>
 
-                  {/* Chancela de Validação Eletrônica */}
                   <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 max-w-lg mx-auto text-left flex items-center justify-between text-[10px] text-slate-600">
                     <div className="space-y-0.5">
                       <p className="font-bold text-indigo-950 flex items-center gap-1">
@@ -1616,7 +1640,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Rodapé Timbrado com Logo da ASP */}
                 <div className="border-t border-slate-200 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] text-slate-500">
                   <div className="flex items-center gap-2.5">
                     <img
@@ -1638,7 +1661,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Botões */}
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
                 <button
                   type="button"
@@ -1661,9 +1683,7 @@ export default function Home() {
         )
       })()}
 
-      {/* ========================================================= */}
-      {/* MODAL: DECLARAÇÃO PARA O CURRÍCULO LATTES (FORMATO A4) */}
-      {/* ========================================================= */}
+      {/* MODAL: DECLARAÇÃO PARA O CURRÍCULO LATTES (A4) */}
       {selectedReviewCert && (() => {
         const revName = selectedReviewCert.reviewer?.full_name || 'Parecerista'
         const revInst = selectedReviewCert.reviewer?.institution ? ` (${selectedReviewCert.reviewer.institution})` : ''
@@ -1673,7 +1693,6 @@ export default function Home() {
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
             <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
               
-              {/* Cabeçalho Timbrado com Logo da Revista em Grande Destaque */}
               <div>
                 <div className="flex justify-between items-center border-b-2 border-indigo-950 pb-6 gap-6">
                   <img
@@ -1696,7 +1715,6 @@ export default function Home() {
                   </h3>
                 </div>
 
-                {/* Corpo da Declaração sem asteriscos */}
                 <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
                   <p>
                     Declaramos, para os devidos fins de comprovação acadêmica e especialmente para fins de pontuação de produção técnica junto ao{' '}
@@ -1721,7 +1739,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Bloco de Assinatura Sem Linha Manual */}
               <div className="pt-8">
                 <div className="text-center space-y-4">
                   <p className="text-xs text-slate-600">
@@ -1734,7 +1751,6 @@ export default function Home() {
                     <p className="text-xs text-slate-500">Revista Saber Psicanalítico • ASP</p>
                   </div>
 
-                  {/* Chancela de Validação Eletrônica */}
                   <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 max-w-lg mx-auto text-left flex items-center justify-between text-[10px] text-slate-600">
                     <div className="space-y-0.5">
                       <p className="font-bold text-indigo-950 flex items-center gap-1">
@@ -1751,7 +1767,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Rodapé Timbrado com Logo da ASP */}
                 <div className="border-t border-slate-200 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] text-slate-500">
                   <div className="flex items-center gap-2.5">
                     <img
@@ -1773,7 +1788,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Botões */}
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
                 <button
                   type="button"
@@ -1796,9 +1810,7 @@ export default function Home() {
         )
       })()}
 
-      {/* ========================================================= */}
       {/* MODAL: QUADRO DE AGRADECIMENTO AOS PARECERISTAS */}
-      {/* ========================================================= */}
       {showReviewerThankModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1878,7 +1890,6 @@ export default function Home() {
             </div>
 
             <form onSubmit={handleSubmitArticle} className="space-y-5">
-              {/* BLOCO 1: SEÇÃO E AUTOR PRINCIPAL */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <User className="w-4 h-4 text-indigo-600" />
