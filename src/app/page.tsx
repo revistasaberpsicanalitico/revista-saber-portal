@@ -417,17 +417,11 @@ export default function Home() {
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
           
           <div className="flex flex-col items-center mb-6 space-y-3">
-            <div className="flex items-center justify-center gap-4 w-full">
+            <div className="flex items-center justify-center w-full">
               <img
                 src="/logo-revista.png"
                 alt="Revista Saber Psicanalítico"
-                className="h-16 object-contain"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-              <img
-                src="/logo-asp.png"
-                alt="Associação Saber Psicanalítico"
-                className="h-10 object-contain"
+                className="h-20 object-contain"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
@@ -436,7 +430,7 @@ export default function Home() {
                 Revista Saber Psicanalítico
               </h1>
               <p className="text-xs text-indigo-700 font-semibold tracking-wider uppercase mt-0.5">
-                ISSN 3086-8416 • ASP
+                ISSN 3086-8416
               </p>
               <p className="text-[11px] text-slate-500 mt-1">
                 Portal de Submissão e Avaliação Editorial por Pares
@@ -554,10 +548,11 @@ export default function Home() {
             </button>
           </form>
 
+          {/* Rodapé institucional da ASP */}
           <div className="mt-8 pt-4 border-t border-slate-100 text-center text-[10px] text-slate-400 space-y-1">
-            <p>Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85</p>
-            <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-            <p>Contato: revistasaberpsicanalitico@gmail.com</p>
+            <p className="font-semibold text-slate-600">Associação Saber Psicanalítico (ASP) — Entidade Mantenedora</p>
+            <p>CNPJ: 44.966.907/0001-85 • Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
+            <p>www.asppsicanalise.com.br</p>
           </div>
         </div>
       </main>
@@ -570,27 +565,24 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <div>
+        {/* ========================================================= */}
+        {/* CABEÇALHO COM A LOGO DA REVISTA EM TAMANHO EVIDENTE */}
+        {/* ========================================================= */}
         <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-4">
               <img
                 src="/logo-revista.png"
                 alt="Revista Saber Psicanalítico"
-                className="h-12 object-contain"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-              <img
-                src="/logo-asp.png"
-                alt="ASP"
-                className="h-8 object-contain hidden sm:inline"
+                className="h-16 md:h-20 object-contain drop-shadow-sm"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
               <div>
-                <h1 className="text-base font-bold text-slate-800 leading-tight">
+                <h1 className="text-lg md:text-xl font-bold text-slate-900 leading-tight">
                   Revista Saber Psicanalítico
                 </h1>
-                <p className="text-[11px] text-slate-500">
-                  <span className="font-semibold text-indigo-700">ISSN 3086-8416</span> • Associação Saber Psicanalítico (ASP)
+                <p className="text-xs text-indigo-700 font-semibold tracking-wider">
+                  ISSN 3086-8416 • Portal Editorial
                 </p>
               </div>
             </div>
@@ -1189,27 +1181,29 @@ export default function Home() {
         </main>
       </div>
 
-      {/* RODAPÉ INSTITUCIONAL */}
+      {/* ========================================================= */}
+      {/* RODAPÉ INSTITUCIONAL DEDICADO À ASSOCIAÇÃO (ASP) */}
+      {/* ========================================================= */}
       <footer className="bg-white border-t border-slate-200 py-6 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5">
             <img
               src="/logo-asp.png"
-              alt="ASP"
-              className="h-7 object-contain"
+              alt="Associação Saber Psicanalítico"
+              className="h-10 object-contain"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
             <div>
-              <p className="font-semibold text-slate-700">Revista Saber Psicanalítico • ISSN 3086-8416</p>
-              <p>Publicação semestral da Associação Saber Psicanalítico (ASP) • Fascículos em junho e dezembro</p>
+              <p className="font-bold text-slate-800 text-sm">Associação Saber Psicanalítico (ASP)</p>
+              <p className="text-[11px] text-slate-500">Entidade Responsável e Mantenedora</p>
             </div>
           </div>
 
-          <div className="text-center md:text-right space-y-0.5 text-[11px]">
+          <div className="text-center md:text-right space-y-1 text-[11px]">
             <p>Rua Visconde de Inhaúma, 1361, sala 408 — Maurício de Nassau — Caruaru/PE — CEP 55012-010</p>
             <p>
               CNPJ: 44.966.907/0001-85 •{' '}
-              <a href="https://www.asppsicanalise.com.br" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">
+              <a href="https://www.asppsicanalise.com.br" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline font-medium">
                 www.asppsicanalise.com.br
               </a>{' '}
               • Contato: revistasaberpsicanalitico@gmail.com
@@ -1219,7 +1213,7 @@ export default function Home() {
       </footer>
 
       {/* ========================================================= */}
-      {/* MODAL: CARTA OFICIAL DE ACEITE */}
+      {/* MODAL: CARTA OFICIAL DE ACEITE (TIMBRADO PARA IMPRESSÃO) */}
       {/* ========================================================= */}
       {selectedAcceptanceArticle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -1440,7 +1434,7 @@ export default function Home() {
       )}
 
       {/* ========================================================= */}
-      {/* MODAL DE SUBMISSÃO COMPLETO: AUTOR, COAUTORES E ORCID */}
+      {/* MODAL DE SUBMISSÃO COMPLETO: COM AS 4 SEÇÕES OFICIAIS */}
       {/* ========================================================= */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
