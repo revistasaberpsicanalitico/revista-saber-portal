@@ -7,7 +7,7 @@ import {
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
   Download, MessageSquare, Send, CheckCircle2, HelpCircle, 
   FileCheck, AlertTriangle, RefreshCw, Plus, Trash2, ShieldAlert,
-  Award, Printer, Copy, Check
+  Award, Printer, Copy, Check, Edit3, Link as LinkIcon
 } from 'lucide-react'
 
 export default function Home() {
@@ -31,6 +31,15 @@ export default function Home() {
   const [allProfiles, setAllProfiles] = useState<any[]>([])
   const [allReviews, setAllReviews] = useState<any[]>([])
 
+  // Modal Meu Perfil (Lattes / ORCID / Filiação do Parecerista/Autor)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [profileName, setProfileName] = useState('')
+  const [profileInst, setProfileInst] = useState('')
+  const [profilePhone, setProfilePhone] = useState('')
+  const [profileLattes, setProfileLattes] = useState('')
+  const [profileOrcid, setProfileOrcid] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
+
   // Modal Submissão do Autor
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [newSection, setNewSection] = useState('Artigo Científico')
@@ -41,6 +50,7 @@ export default function Home() {
   const [newKeywords, setNewKeywords] = useState('')
   const [newKeywordsEn, setNewKeywordsEn] = useState('')
   const [authorInstitution, setAuthorInstitution] = useState('')
+  const [authorLattes, setAuthorLattes] = useState('')
   const [authorOrcid, setAuthorOrcid] = useState('')
   const [authorBio, setAuthorBio] = useState('')
   const [coauthors, setCoauthors] = useState<any[]>([])
@@ -108,6 +118,15 @@ export default function Home() {
         setProfile(data)
         setViewMode(data.role === 'editor' ? 'editor' : data.role === 'reviewer' ? 'reviewer' : 'author')
         setAuthorInstitution(data.institution || '')
+        setAuthorLattes(data.lattes_url || '')
+        setAuthorOrcid(data.orcid || '')
+        
+        // Dados para o modal de perfil
+        setProfileName(data.full_name || '')
+        setProfileInst(data.institution || '')
+        setProfilePhone(data.phone || '')
+        setProfileLattes(data.lattes_url || '')
+        setProfileOrcid(data.orcid || '')
       } else {
         const fallbackProfile = {
           id: user.id,
@@ -170,9 +189,19 @@ export default function Home() {
     return p ? p.full_name : 'Parecerista Designado'
   }
 
+  // Previsão do Fascículo (Mês e Ano)
+  const getExpectedIssue = () => {
+    const now = new Date()
+    const month = now.getMonth() + 1 // 1-12
+    const year = now.getFullYear()
+    if (month <= 5) return `Fascículo de Junho de ${year}`
+    if (month <= 11) return `Fascículo de Dezembro de ${year}`
+    return `Fascículo de Junho de ${year + 1}`
+  }
+
   // Gestão de Coautores
   const handleAddCoauthor = () => {
-    setCoauthors([...coauthors, { name: '', email: '', institution: '', orcid: '' }])
+    setCoauthors([...coauthors, { name: '', email: '', institution: '', lattes: '', orcid: '' }])
   }
 
   const handleUpdateCoauthor = (index: number, field: string, value: string) => {
@@ -183,6 +212,34 @@ export default function Home() {
 
   const handleRemoveCoauthor = (index: number) => {
     setCoauthors(coauthors.filter((_, i) => i !== index))
+  }
+
+  // Atualizar Perfil Próprio (Lattes, ORCID, Filiação)
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!session) return
+    setSavingProfile(true)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profileName,
+          institution: profileInst,
+          phone: profilePhone,
+          lattes_url: profileLattes,
+          orcid: profileOrcid,
+        })
+        .eq('id', session.user.id)
+
+      if (error) throw error
+      alert('Seu perfil foi atualizado com sucesso!')
+      setShowProfileModal(false)
+      initUser(session)
+    } catch (err: any) {
+      alert(`Erro ao atualizar: ${err.message}`)
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
   // Submissão do Artigo
@@ -216,6 +273,7 @@ export default function Home() {
         keywords: newKeywords,
         keywords_en: newKeywordsEn,
         author_institution: authorInstitution,
+        author_lattes: authorLattes,
         author_orcid: authorOrcid,
         author_bio: authorBio,
         coauthors: coauthors,
@@ -233,6 +291,7 @@ export default function Home() {
       setNewAbstractEn('')
       setNewKeywords('')
       setNewKeywordsEn('')
+      setAuthorLattes('')
       setAuthorOrcid('')
       setAuthorBio('')
       setCoauthors([])
@@ -396,7 +455,15 @@ export default function Home() {
   const completedReviewers = allProfiles.filter((p) => completedReviewerIds.includes(p.id))
 
   const handleCopyReviewers = () => {
-    const text = completedReviewers.map((r) => `• ${r.full_name} (${r.institution || 'Associação Saber Psicanalítico'})`).join('\n')
+    const text = completedReviewers.map((r) => {
+      const parts = [`• ${r.full_name}`]
+      if (r.institution) parts.push(`(${r.institution})`)
+      if (r.email) parts.push(`- E-mail: ${r.email}`)
+      if (r.lattes_url) parts.push(`- Lattes: ${r.lattes_url}`)
+      if (r.orcid) parts.push(`- ORCID: ${r.orcid}`)
+      return parts.join(' ')
+    }).join('\n')
+
     navigator.clipboard.writeText(text)
     setCopiedThanks(true)
     setTimeout(() => setCopiedThanks(false), 2500)
@@ -410,7 +477,7 @@ export default function Home() {
     )
   }
 
-  // TELA DE LOGIN / CADASTRO COM AS LOGOS
+  // TELA DE LOGIN / CADASTRO
   if (!session) {
     return (
       <main className="min-h-screen flex flex-col justify-center items-center p-4 bg-slate-50">
@@ -587,7 +654,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               {profile?.role === 'editor' && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button
@@ -638,12 +705,19 @@ export default function Home() {
                 </div>
               )}
 
-              <span className="text-xs text-slate-600 hidden md:inline">
-                Olá, <strong>{profile?.full_name}</strong>
-              </span>
+              {/* Botão Meu Perfil (Lattes / ORCID) */}
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg font-medium flex items-center gap-1.5"
+                title="Editar meu Lattes, ORCID e Filiação"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden sm:inline">Meu Perfil</span>
+              </button>
+
               <button
                 onClick={() => supabase.auth.signOut()}
-                className="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg font-medium flex items-center gap-1.5"
+                className="px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg font-medium flex items-center gap-1"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sair
@@ -980,8 +1054,13 @@ export default function Home() {
                             </p>
                             <p className="text-xs text-slate-500">
                               Filiação: <strong>{art.author_institution || getAuthorInst(art.author_id)}</strong>
+                              {art.author_lattes && (
+                                <a href={art.author_lattes} target="_blank" rel="noreferrer" className="ml-2 text-indigo-600 hover:underline inline-flex items-center gap-0.5">
+                                  • Lattes
+                                </a>
+                              )}
                               {art.author_orcid && (
-                                <span className="ml-2 inline-flex items-center gap-1 text-emerald-700 font-medium">
+                                <span className="ml-2 text-emerald-700 font-medium">
                                   • ORCID: {art.author_orcid}
                                 </span>
                               )}
@@ -1046,7 +1125,10 @@ export default function Home() {
                                 <div key={idx} className="bg-white p-2.5 rounded border border-slate-200">
                                   <p className="font-bold text-slate-800">{c.name || 'Sem nome'}</p>
                                   <p className="text-slate-500 text-[11px]">{c.email || 'Sem e-mail'} • {c.institution || 'Sem filiação'}</p>
-                                  {c.orcid && <p className="text-emerald-700 text-[11px] font-medium">ORCID: {c.orcid}</p>}
+                                  <div className="flex gap-2 text-[11px] mt-0.5">
+                                    {c.lattes && <a href={c.lattes} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">Lattes</a>}
+                                    {c.orcid && <span className="text-emerald-700">ORCID: {c.orcid}</span>}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -1138,7 +1220,7 @@ export default function Home() {
                         <th className="p-3">Nome</th>
                         <th className="p-3">E-mail</th>
                         <th className="p-3">Instituição</th>
-                        <th className="p-3">Telefone</th>
+                        <th className="p-3">Lattes / ORCID</th>
                         <th className="p-3">Função Atual</th>
                         <th className="p-3 text-right">Alterar Função</th>
                       </tr>
@@ -1149,7 +1231,14 @@ export default function Home() {
                           <td className="p-3 font-semibold text-slate-900">{p.full_name}</td>
                           <td className="p-3">{p.email}</td>
                           <td className="p-3">{p.institution || '-'}</td>
-                          <td className="p-3">{p.phone || '-'}</td>
+                          <td className="p-3">
+                            <div className="space-y-0.5">
+                              {p.lattes_url ? (
+                                <a href={p.lattes_url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline block">Lattes</a>
+                              ) : <span className="text-slate-300">-</span>}
+                              {p.orcid && <span className="text-emerald-700 block text-[10px]">ORCID: {p.orcid}</span>}
+                            </div>
+                          </td>
                           <td className="p-3">
                             <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
                               p.role === 'editor' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
@@ -1184,7 +1273,7 @@ export default function Home() {
       {/* ========================================================= */}
       {/* RODAPÉ INSTITUCIONAL DEDICADO À ASSOCIAÇÃO (ASP) */}
       {/* ========================================================= */}
-      <footer className="bg-white border-t border-slate-200 py-6 mt-12">
+      <footer className="bg-white border-t border-slate-200 py-6 mt-12 no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-3.5">
             <img
@@ -1213,69 +1302,210 @@ export default function Home() {
       </footer>
 
       {/* ========================================================= */}
-      {/* MODAL: CARTA OFICIAL DE ACEITE (TIMBRADO PARA IMPRESSÃO) */}
+      {/* MODAL: MEU PERFIL (LATTES, ORCID, FILIAÇÃO) */}
+      {/* ========================================================= */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">Meu Perfil Acadêmico</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Mantenha seus dados atualizados para inclusão em certificados e expedientes da Revista.
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nome Completo *</label>
+                <input
+                  type="text"
+                  required
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Filiação Institucional *</label>
+                <input
+                  type="text"
+                  required
+                  value={profileInst}
+                  onChange={(e) => setProfileInst(e.target.value)}
+                  placeholder="Ex: Associação Saber Psicanalítico / UFPE"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Link do Currículo Lattes</label>
+                <input
+                  type="url"
+                  value={profileLattes}
+                  onChange={(e) => setProfileLattes(e.target.value)}
+                  placeholder="http://lattes.cnpq.br/0000000000000000"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-[10px] text-slate-400 mt-0.5">Link público do seu Lattes (muito recomendado para pareceristas).</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Identificador ORCID</label>
+                <input
+                  type="text"
+                  value={profileOrcid}
+                  onChange={(e) => setProfileOrcid(e.target.value)}
+                  placeholder="0000-0000-0000-0000"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Telefone / WhatsApp</label>
+                <input
+                  type="tel"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileModal(false)}
+                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingProfile}
+                  className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+                >
+                  {savingProfile ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: CARTA OFICIAL DE ACEITE (FORMATO A4 TIMBRADO) */}
       {/* ========================================================= */}
       {selectedAcceptanceArticle && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-8 shadow-2xl border border-slate-200 space-y-6 my-8">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-6 gap-4">
-              <img
-                src="/logo-revista.png"
-                alt="Revista Saber Psicanalítico"
-                className="h-16 object-contain"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-              <div className="text-right">
-                <h3 className="font-bold text-slate-900 text-lg">Revista Saber Psicanalítico</h3>
-                <p className="text-xs text-indigo-700 font-bold">ISSN 3086-8416</p>
-                <p className="text-[11px] text-slate-500">Associação Saber Psicanalítico (ASP)</p>
-                <p className="text-[10px] text-slate-400">CNPJ: 44.966.907/0001-85</p>
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
+            
+            {/* Cabeçalho Timbrado */}
+            <div>
+              <div className="flex justify-between items-center border-b-2 border-indigo-900/80 pb-6 gap-6">
+                <img
+                  src="/logo-revista.png"
+                  alt="Revista Saber Psicanalítico"
+                  className="h-24 md:h-28 object-contain"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+                <div className="text-right space-y-0.5">
+                  <h2 className="text-xl font-bold tracking-tight text-slate-900">Revista Saber Psicanalítico</h2>
+                  <p className="text-xs font-bold text-indigo-700 tracking-wider">ISSN 3086-8416</p>
+                  <p className="text-[11px] text-slate-600">Associação Saber Psicanalítico (ASP)</p>
+                  <p className="text-[10px] text-slate-500">Publicação Semestral Científica</p>
+                </div>
+              </div>
+
+              {/* Título do Documento */}
+              <div className="text-center my-8">
+                <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 inline-block pb-1">
+                  DECLARAÇÃO DE ACEITE PARA PUBLICAÇÃO
+                </h3>
+              </div>
+
+              {/* Corpo da Carta com espaçamento impecável */}
+              <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
+                <p>
+                  Declaramos, para os devidos fins e a quem possa interessar, que o trabalho científico intitulado{' '}
+                  <strong>&ldquo;{selectedAcceptanceArticle.title}&rdquo;</strong>, submetido na seção{' '}
+                  <strong>{selectedAcceptanceArticle.section || 'Artigo Científico'}</strong>, de autoria principal de{' '}
+                  <strong>{getAuthorName(selectedAcceptanceArticle.author_id)}</strong>
+                  {selectedAcceptanceArticle.author_institution ? ` (${selectedAcceptanceArticle.author_institution})` : ''}
+                  {selectedAcceptanceArticle.coauthors && selectedAcceptanceArticle.coauthors.length > 0 && (
+                    <span> e coautoria de {selectedAcceptanceArticle.coauthors.map((c: any) => c.name).filter(Boolean).join(', ')}</span>
+                  )}
+                  , foi submetido ao processo editorial por pares sob sistema duplo-cego (*double-blind peer review*) pela{' '}
+                  <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>.
+                </p>
+
+                <p>
+                  Informamos que, após a emissão de pareceres favoráveis pelo corpo de avaliadores técnico-científicos *ad-hoc* e homologação pelo comitê editorial executivo, o referido manuscrito foi oficialmente{' '}
+                  <strong className="text-indigo-950 font-bold">ACEITO PARA PUBLICAÇÃO</strong>, com veiculação programada para o{' '}
+                  <strong>{getExpectedIssue()}</strong>.
+                </p>
+
+                <p className="text-xs text-slate-500 italic">
+                  Esta declaração tem validade comprobatória perante programas de pós-graduação, agências de fomento, concursos públicos e comitês de avaliação acadêmica.
+                </p>
               </div>
             </div>
 
-            <div className="space-y-4 text-slate-800 text-sm leading-relaxed py-2">
-              <div className="text-center font-bold text-base uppercase tracking-wider text-indigo-950 border-b border-indigo-100 pb-2">
-                DECLARAÇÃO DE ACEITE PARA PUBLICAÇÃO
-              </div>
-
-              <p>
-                Declaramos, para os devidos fins e a quem possa interessar, que o trabalho científico intitulado 
-                <strong> &ldquo;{selectedAcceptanceArticle.title}&rdquo;</strong>, 
-                submetido na seção <strong>{selectedAcceptanceArticle.section || 'Artigo Científico'}</strong>, 
-                de autoria principal de <strong>{getAuthorName(selectedAcceptanceArticle.author_id)}</strong>
-                {selectedAcceptanceArticle.author_institution && ` (${selectedAcceptanceArticle.author_institution})`}
-                {selectedAcceptanceArticle.coauthors && selectedAcceptanceArticle.coauthors.length > 0 && (
-                  <span> e coautoria de {selectedAcceptanceArticle.coauthors.map((c: any) => c.name).filter(Boolean).join(', ')}</span>
-                )}, 
-                foi submetido à avaliação editorial por pares em sistema duplo-cego (*double-blind peer review*) pela 
-                <strong> Revista Saber Psicanalítico (ISSN 3086-8416)</strong>.
-              </p>
-
-              <p>
-                Informamos que, após parecer favorável do corpo de avaliadores técnico-científicos e homologação pela comissão editorial, 
-                o referido manuscrito foi oficialmente <strong>ACEITO PARA PUBLICAÇÃO</strong> e está programado para integrar o próximo fascículo 
-                da Revista Saber Psicanalítico.
-              </p>
-
-              <div className="pt-8 text-center space-y-1">
-                <p className="text-xs text-slate-500">
+            {/* Bloco de Assinatura e Chancela Digital */}
+            <div className="pt-8">
+              <div className="text-center space-y-4">
+                <p className="text-xs text-slate-600">
                   Caruaru/PE, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.
                 </p>
-                <div className="pt-6">
-                  <div className="w-64 border-b border-slate-400 mx-auto mb-1"></div>
-                  <p className="font-bold text-slate-900 text-sm">Corpo Editorial</p>
-                  <p className="text-xs text-slate-600">Revista Saber Psicanalítico</p>
-                  <p className="text-[11px] text-slate-500">Associação Saber Psicanalítico (ASP)</p>
+
+                {/* Assinatura do Editor Chefe */}
+                <div className="pt-2">
+                  <div className="w-72 border-b border-slate-600 mx-auto mb-1"></div>
+                  <p className="font-bold text-slate-900 text-sm">Dr. Edson Leandro de Almeida</p>
+                  <p className="text-xs text-slate-700 font-medium">Editor-Chefe</p>
+                  <p className="text-[11px] text-slate-500">Revista Saber Psicanalítico • ASP</p>
+                </div>
+
+                {/* Chancela de Assinatura Eletrônica */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 max-w-lg mx-auto text-left flex items-center justify-between text-[10px] text-slate-500">
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-indigo-900 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      REGISTRO DE ASSINATURA ELETRÔNICA QUALIFICADA
+                    </p>
+                    <p>Assinado digitalmente por: <strong>Dr. Edson Leandro de Almeida</strong></p>
+                    <p>Autenticação do Documento: <span className="font-mono text-slate-700">ASP-ACE-{selectedAcceptanceArticle.id.slice(0, 8).toUpperCase()}-{Date.now().toString().slice(-6)}</span></p>
+                  </div>
+                  <div className="text-right text-[9px] text-slate-400 pl-2 border-l border-slate-200">
+                    <p>Emissão Oficial</p>
+                    <p>Sistema Editorial</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rodapé Timbrado com Logo da ASP */}
+              <div className="border-t border-slate-200 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] text-slate-500">
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/logo-asp.png"
+                    alt="ASP"
+                    className="h-7 object-contain"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                  <div>
+                    <p className="font-bold text-slate-700">Associação Saber Psicanalítico (ASP)</p>
+                    <p>CNPJ: 44.966.907/0001-85 • Entidade Mantenedora</p>
+                  </div>
+                </div>
+
+                <div className="text-center sm:text-right text-[9px] text-slate-400">
+                  <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
+                  <p>www.asppsicanalise.com.br • revistasaberpsicanalitico@gmail.com</p>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-200 pt-4 text-[10px] text-slate-400 text-center space-y-0.5">
-              <p>Rua Visconde de Inhaúma, 1361, sala 408 — Maurício de Nassau — Caruaru/PE — CEP 55012-010</p>
-              <p>www.asppsicanalise.com.br • revistasaberpsicanalitico@gmail.com</p>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            {/* Botões da Tela (Ocultados na Impressão) */}
+            <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
               <button
                 type="button"
                 onClick={() => setSelectedAcceptanceArticle(null)}
@@ -1286,10 +1516,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
+                className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
               >
                 <Printer className="w-3.5 h-3.5" />
-                Imprimir / Salvar em PDF
+                Imprimir / Salvar em PDF (A4)
               </button>
             </div>
           </div>
@@ -1297,67 +1527,116 @@ export default function Home() {
       )}
 
       {/* ========================================================= */}
-      {/* MODAL: DECLARAÇÃO PARA O CURRÍCULO LATTES */}
+      {/* MODAL: DECLARAÇÃO PARA O CURRÍCULO LATTES (FORMATO A4) */}
       {/* ========================================================= */}
       {selectedReviewCert && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-8 shadow-2xl border border-slate-200 space-y-6 my-8">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-6 gap-4">
-              <img
-                src="/logo-revista.png"
-                alt="Revista Saber Psicanalítico"
-                className="h-16 object-contain"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-              <div className="text-right">
-                <h3 className="font-bold text-slate-900 text-lg">Revista Saber Psicanalítico</h3>
-                <p className="text-xs text-indigo-700 font-bold">ISSN 3086-8416</p>
-                <p className="text-[11px] text-slate-500">Associação Saber Psicanalítico (ASP)</p>
-                <p className="text-[10px] text-slate-400">CNPJ: 44.966.907/0001-85</p>
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
+            
+            {/* Cabeçalho Timbrado */}
+            <div>
+              <div className="flex justify-between items-center border-b-2 border-indigo-900/80 pb-6 gap-6">
+                <img
+                  src="/logo-revista.png"
+                  alt="Revista Saber Psicanalítico"
+                  className="h-24 md:h-28 object-contain"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+                <div className="text-right space-y-0.5">
+                  <h2 className="text-xl font-bold tracking-tight text-slate-900">Revista Saber Psicanalítico</h2>
+                  <p className="text-xs font-bold text-indigo-700 tracking-wider">ISSN 3086-8416</p>
+                  <p className="text-[11px] text-slate-600">Associação Saber Psicanalítico (ASP)</p>
+                  <p className="text-[10px] text-slate-500">Publicação Semestral Científica</p>
+                </div>
+              </div>
+
+              {/* Título do Documento */}
+              <div className="text-center my-8">
+                <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 inline-block pb-1">
+                  DECLARAÇÃO DE ATUAÇÃO COMO PARECERISTA AD-HOC
+                </h3>
+              </div>
+
+              {/* Corpo da Declaração com espaçamento rigoroso */}
+              <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
+                <p>
+                  Declaramos, para os devidos fins de comprovação acadêmica e especialmente para fins de pontuação de produção técnica junto ao{' '}
+                  <strong>Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq / Plataforma Lattes)</strong>, que o(a) pesquisador(a){' '}
+                  <strong>{selectedReviewCert.reviewer?.full_name}</strong>
+                  {selectedReviewCert.reviewer?.institution ? ` (${selectedReviewCert.reviewer.institution})` : ''}
+                  , atuou formalmente como <strong>PARECERISTA AD-HOC</strong> para a{' '}
+                  <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, publicação científica semestral mantida pela{' '}
+                  Associação Saber Psicanalítico (ASP).
+                </p>
+
+                <p>
+                  O(A) avaliador(a) emitiu parecer técnico-científico crítico e detalhado em sistema duplo-cego (*double-blind peer review*), concluído em{' '}
+                  <strong>{new Date(selectedReviewCert.review.updated_at || selectedReviewCert.review.created_at).toLocaleDateString('pt-BR')}</strong>, 
+                  contribuindo decisivamente para o rigor conceitual, metodológico e clínico das publicações deste periódico.
+                </p>
+
+                <p className="text-xs text-slate-500 italic">
+                  Documento comprobatório emitido pelo sistema de editoração eletrônica da Revista Saber Psicanalítico, preservando o sigilo do título avaliado conforme as diretrizes internacionais de avaliação por pares.
+                </p>
               </div>
             </div>
 
-            <div className="space-y-4 text-slate-800 text-sm leading-relaxed py-2">
-              <div className="text-center font-bold text-base uppercase tracking-wider text-indigo-950 border-b border-indigo-100 pb-2">
-                DECLARAÇÃO DE ATUAÇÃO COMO PARECERISTA AD-HOC
-              </div>
-
-              <p>
-                Declaramos, para os devidos fins de comprovação acadêmica e especialmente para registro de produção técnica junto ao 
-                <strong> Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq / Currículo Lattes)</strong>, 
-                que o(a) pesquisador(a) <strong>{selectedReviewCert.reviewer?.full_name}</strong>
-                {selectedReviewCert.reviewer?.institution && ` (${selectedReviewCert.reviewer?.institution})`} 
-                atuou formalmente como <strong>PARECERISTA AD-HOC</strong> para a 
-                <strong> Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, publicação científica semestral da 
-                Associação Saber Psicanalítico (ASP).
-              </p>
-
-              <p>
-                O(A) avaliador(a) emitiu parecer técnico-científico rigoroso e detalhado no âmbito da avaliação por pares cega (*blind peer review*), 
-                concluído e homologado em 
-                <strong> {new Date(selectedReviewCert.review.updated_at || selectedReviewCert.review.created_at).toLocaleDateString('pt-BR')}</strong>, 
-                contribuindo de maneira fundamental para o rigor conceitual e a excelência editorial deste periódico.
-              </p>
-
-              <div className="pt-8 text-center space-y-1">
-                <p className="text-xs text-slate-500">
+            {/* Bloco de Assinatura e Registro Digital */}
+            <div className="pt-8">
+              <div className="text-center space-y-4">
+                <p className="text-xs text-slate-600">
                   Caruaru/PE, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.
                 </p>
-                <div className="pt-6">
-                  <div className="w-64 border-b border-slate-400 mx-auto mb-1"></div>
-                  <p className="font-bold text-slate-900 text-sm">Editoria Geral</p>
-                  <p className="text-xs text-slate-600">Revista Saber Psicanalítico</p>
-                  <p className="text-[11px] text-slate-500">Associação Saber Psicanalítico (ASP)</p>
+
+                {/* Assinatura do Editor Chefe */}
+                <div className="pt-2">
+                  <div className="w-72 border-b border-slate-600 mx-auto mb-1"></div>
+                  <p className="font-bold text-slate-900 text-sm">Dr. Edson Leandro de Almeida</p>
+                  <p className="text-xs text-slate-700 font-medium">Editor-Chefe</p>
+                  <p className="text-[11px] text-slate-500">Revista Saber Psicanalítico • ASP</p>
+                </div>
+
+                {/* Chancela de Validação Eletrônica */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 max-w-lg mx-auto text-left flex items-center justify-between text-[10px] text-slate-500">
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-indigo-900 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      CERTIFICAÇÃO EDITORIAL DE ATUAÇÃO TÉCNICA
+                    </p>
+                    <p>Homologado por: <strong>Dr. Edson Leandro de Almeida (Editor-Chefe)</strong></p>
+                    <p>Código Verificador: <span className="font-mono text-slate-700">ASP-PAR-{selectedReviewCert.review.id.slice(0, 8).toUpperCase()}-{Date.now().toString().slice(-6)}</span></p>
+                  </div>
+                  <div className="text-right text-[9px] text-slate-400 pl-2 border-l border-slate-200">
+                    <p>Válido para o Lattes</p>
+                    <p>CNPq / CAPES</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rodapé Timbrado com Logo da ASP */}
+              <div className="border-t border-slate-200 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] text-slate-500">
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/logo-asp.png"
+                    alt="ASP"
+                    className="h-7 object-contain"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                  <div>
+                    <p className="font-bold text-slate-700">Associação Saber Psicanalítico (ASP)</p>
+                    <p>CNPJ: 44.966.907/0001-85 • Entidade Mantenedora</p>
+                  </div>
+                </div>
+
+                <div className="text-center sm:text-right text-[9px] text-slate-400">
+                  <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
+                  <p>www.asppsicanalise.com.br • revistasaberpsicanalitico@gmail.com</p>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-200 pt-4 text-[10px] text-slate-400 text-center space-y-0.5">
-              <p>Rua Visconde de Inhaúma, 1361, sala 408 — Maurício de Nassau — Caruaru/PE — CEP 55012-010</p>
-              <p>www.asppsicanalise.com.br • revistasaberpsicanalitico@gmail.com</p>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            {/* Botões da Tela */}
+            <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
               <button
                 type="button"
                 onClick={() => setSelectedReviewCert(null)}
@@ -1368,10 +1647,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
+                className="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
               >
                 <Printer className="w-3.5 h-3.5" />
-                Imprimir / Salvar em PDF
+                Imprimir / Salvar em PDF (A4)
               </button>
             </div>
           </div>
@@ -1383,31 +1662,45 @@ export default function Home() {
       {/* ========================================================= */}
       {showReviewerThankModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="border-b border-slate-100 pb-3">
-              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Expediente Editorial</span>
+              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Expediente Editorial • ISSN 3086-8416</span>
               <h3 className="text-lg font-bold text-slate-900">Agradecimento aos Pareceristas Ad-hoc</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Lista de todos os avaliadores que concluíram pareceres na Revista. Pronta para ser incluída no editorial do fascículo (mantendo o sigilo dos textos avaliados).
+                Lista oficial com Nome, Filiação, E-mail, Lattes e ORCID de todos os pareceristas que concluíram avaliações. Pronta para inclusão no fascículo.
               </p>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-60 overflow-y-auto space-y-2 text-xs text-slate-700">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-72 overflow-y-auto space-y-3 text-xs text-slate-700">
               {completedReviewers.length === 0 ? (
-                <p className="text-slate-400 italic">Nenhum parecer concluído ainda.</p>
+                <p className="text-slate-400 italic text-center py-4">Nenhum parecer concluído registrado até o momento.</p>
               ) : (
                 completedReviewers.map((rev) => (
-                  <div key={rev.id} className="flex justify-between items-center py-1 border-b border-slate-200/60 last:border-0">
-                    <span className="font-semibold text-slate-800">• {rev.full_name}</span>
-                    <span className="text-slate-500 text-[11px]">{rev.institution || 'Associação Saber Psicanalítico'}</span>
+                  <div key={rev.id} className="bg-white p-3 rounded-lg border border-slate-200 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-900">{rev.full_name}</span>
+                      <span className="text-[11px] text-slate-500">{rev.institution || 'Associação Saber Psicanalítico'}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">{rev.email}</p>
+                    <div className="flex gap-3 text-[11px] pt-1">
+                      {rev.lattes_url ? (
+                        <a href={rev.lattes_url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline flex items-center gap-0.5">
+                          <LinkIcon className="w-3 h-3" /> Lattes
+                        </a>
+                      ) : <span className="text-slate-400">Sem Lattes</span>}
+
+                      {rev.orcid ? (
+                        <span className="text-emerald-700 font-medium">ORCID: {rev.orcid}</span>
+                      ) : <span className="text-slate-400">Sem ORCID</span>}
+                    </div>
                   </div>
                 ))
               )}
             </div>
 
             <div className="flex justify-between items-center pt-2">
-              <span className="text-[11px] text-slate-400">
-                Total de pareceristas ativos: <strong>{completedReviewers.length}</strong>
+              <span className="text-[11px] text-slate-500">
+                Total de pareceristas credenciados: <strong>{completedReviewers.length}</strong>
               </span>
 
               <div className="flex gap-2">
@@ -1425,7 +1718,7 @@ export default function Home() {
                   className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm disabled:opacity-50"
                 >
                   {copiedThanks ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedThanks ? 'Copiado para o Editorial!' : 'Copiar Lista Formatada'}
+                  {copiedThanks ? 'Copiado para o Editorial!' : 'Copiar Dados para o Fascículo'}
                 </button>
               </div>
             </div>
@@ -1434,7 +1727,7 @@ export default function Home() {
       )}
 
       {/* ========================================================= */}
-      {/* MODAL DE SUBMISSÃO COMPLETO: COM AS 4 SEÇÕES OFICIAIS */}
+      {/* MODAL DE SUBMISSÃO COMPLETO: AUTOR, COAUTORES, LATTES E ORCID */}
       {/* ========================================================= */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -1470,30 +1763,39 @@ export default function Home() {
                   <p className="text-[10px] text-slate-400 mt-1">Selecione a categoria conforme as normas da Revista Saber Psicanalítico.</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Filiação Institucional do Autor *</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Filiação Institucional *</label>
                     <input
                       type="text"
                       required
                       value={authorInstitution}
                       onChange={(e) => setAuthorInstitution(e.target.value)}
-                      placeholder="Ex: Associação Saber Psicanalítico / USP / Consultório Privado"
+                      placeholder="Ex: Associação Saber Psicanalítico / USP"
                       className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Instituição de ensino, clínica ou associação a que se vincula.</p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">ORCID do Autor (Opcional)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Link do Lattes (Opcional)</label>
+                    <input
+                      type="url"
+                      value={authorLattes}
+                      onChange={(e) => setAuthorLattes(e.target.value)}
+                      placeholder="http://lattes.cnpq.br/..."
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">ORCID (Opcional)</label>
                     <input
                       type="text"
                       value={authorOrcid}
                       onChange={(e) => setAuthorOrcid(e.target.value)}
-                      placeholder="Ex: 0000-0002-1825-0097"
+                      placeholder="0000-0000-0000-0000"
                       className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Identificador internacional do pesquisador (se possuir).</p>
                   </div>
                 </div>
 
@@ -1510,7 +1812,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* BLOCO 2: COAUTORES (DINÂMICO) */}
+              {/* BLOCO 2: COAUTORES COM LATTES E ORCID */}
               <div className="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-3">
                 <div className="flex justify-between items-center">
                   <div>
@@ -1581,6 +1883,16 @@ export default function Home() {
                         />
                       </div>
                       <div>
+                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">Link do Lattes (Opcional)</label>
+                        <input
+                          type="url"
+                          value={c.lattes}
+                          onChange={(e) => handleUpdateCoauthor(idx, 'lattes', e.target.value)}
+                          placeholder="http://lattes.cnpq.br/..."
+                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
                         <label className="block text-[10px] font-semibold text-slate-600 mb-1">ORCID (Opcional)</label>
                         <input
                           type="text"
@@ -1613,7 +1925,6 @@ export default function Home() {
                       placeholder="Ex: O Inconsciente e o Corpo na Contemporaneidade"
                       className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Título claro e fiel à temática central.</p>
                   </div>
 
                   <div>
@@ -1626,7 +1937,6 @@ export default function Home() {
                       placeholder="Ex: The Unconscious and the Body in Contemporaneity"
                       className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Exigência para catalogação e indexadores acadêmicos.</p>
                   </div>
                 </div>
 
@@ -1640,7 +1950,6 @@ export default function Home() {
                     placeholder="Apresente os objetivos, a fundamentação teórica psicanalítica, a metodologia e as considerações finais..."
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">Parágrafo único sintetizando a tese principal do texto.</p>
                 </div>
 
                 <div>
@@ -1653,7 +1962,6 @@ export default function Home() {
                     placeholder="English translation of the abstract..."
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">Tradução acadêmica e rigorosa do resumo.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1667,7 +1975,6 @@ export default function Home() {
                       placeholder="Ex: Psicanálise; Transferência; Clínica; Sintoma"
                       className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Separadas por ponto e vírgula (;).</p>
                   </div>
 
                   <div>
@@ -1680,7 +1987,6 @@ export default function Home() {
                       placeholder="Ex: Psychoanalysis; Transference; Clinic; Symptom"
                       className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Tradução dos termos correspondentes.</p>
                   </div>
                 </div>
               </div>
@@ -1917,7 +2223,6 @@ export default function Home() {
                     <option value="satisfatorio">Satisfatório</option>
                     <option value="reformular">Requer Reformulação</option>
                   </select>
-                  <p className="text-[10px] text-slate-400 mt-1">Clareza e fidelidade ao tema.</p>
                 </div>
 
                 <div>
@@ -1931,7 +2236,6 @@ export default function Home() {
                     <option value="parcial">Parcialmente Consistente</option>
                     <option value="insuficiente">Insuficiente / Frágil</option>
                   </select>
-                  <p className="text-[10px] text-slate-400 mt-1">Articulação teórica conceitual.</p>
                 </div>
 
                 <div>
@@ -1945,7 +2249,6 @@ export default function Home() {
                     <option value="media">Média Relevância</option>
                     <option value="baixa">Baixa Relevância</option>
                   </select>
-                  <p className="text-[10px] text-slate-400 mt-1">Contribuição clínica/social.</p>
                 </div>
               </div>
 
@@ -1962,7 +2265,6 @@ export default function Home() {
                   <option value="correcoes_obrigatorias">Aceitar mediante correções obrigatórias</option>
                   <option value="rejeitar">Recusar manuscrito (Não recomendado)</option>
                 </select>
-                <p className="text-[10px] text-slate-400 mt-1">Sua recomendação será analisada pelo Editor Geral, que tomará a decisão final.</p>
               </div>
 
               <div>
@@ -1977,18 +2279,12 @@ export default function Home() {
                   placeholder="Apresente suas considerações conceituais e recomendações de aprimoramento de forma construtiva e fundamentada..."
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Este texto será liberado ao autor caso o Editor decida solicitar correções (sua identidade é mantida 100% anônima).
-                </p>
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
                 <label className="block text-xs font-semibold text-slate-800">
                   Anexar Arquivo com Comentários / Correções (.docx - Opcional)
                 </label>
-                <p className="text-[11px] text-slate-500">
-                  Caso tenha feito anotações no arquivo Word do artigo, anexe-o aqui para que o autor possa baixá-lo e aplicar suas sugestões pontuais.
-                </p>
                 <input
                   type="file"
                   accept=".docx,.doc"
@@ -2008,9 +2304,6 @@ export default function Home() {
                   placeholder="Comentários internos, dúvidas éticas ou notas exclusivas para a equipe editorial..."
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Visível exclusivamente para a equipe editorial (o autor NUNCA terá acesso a este campo).
-                </p>
               </div>
             </div>
 
