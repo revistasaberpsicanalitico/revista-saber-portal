@@ -5,13 +5,13 @@ import { supabase } from '@/lib/supabase'
 import { 
   BookOpen, User, Lock, Mail, Building, Phone, ArrowRight, 
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
-  Download, MessageSquare, Send
+  Download, MessageSquare, Send, CheckCircle2
 } from 'lucide-react'
 
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
-  const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor'>('editor')
+  const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor'>('author')
   const [loading, setLoading] = useState(true)
 
   // Auth States
@@ -29,7 +29,7 @@ export default function Home() {
   const [allProfiles, setAllProfiles] = useState<any[]>([])
   const [allReviews, setAllReviews] = useState<any[]>([])
 
-  // Modal States
+  // Modal Submissão
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newAbstract, setNewAbstract] = useState('')
@@ -37,12 +37,15 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Editor Assign Modal
+  // Modal Atribuir Parecerista (Editor)
   const [assignModalArticle, setAssignModalArticle] = useState<any>(null)
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
 
-  // Reviewer Modal
+  // Modal Parecer Psicanalítico (Parecerista)
   const [reviewModalData, setReviewModalData] = useState<any>(null)
+  const [critTitle, setCritTitle] = useState('satisfatorio')
+  const [critTheory, setCritTheory] = useState('consistente')
+  const [critClinical, setCritClinical] = useState('alta')
   const [recommendation, setRecommendation] = useState('aceitar')
   const [commentsAuthor, setCommentsAuthor] = useState('')
   const [commentsEditor, setCommentsEditor] = useState('')
@@ -78,7 +81,7 @@ export default function Home() {
 
       if (data) {
         setProfile(data)
-        setViewMode(data.role)
+        setViewMode(data.role === 'editor' ? 'editor' : data.role === 'reviewer' ? 'reviewer' : 'author')
       } else {
         const fallbackProfile = {
           id: user.id,
@@ -100,7 +103,6 @@ export default function Home() {
     }
   }
 
-  // Busca limpa de todas as tabelas (sem falhas de cruzamento)
   const fetchAllData = async () => {
     try {
       const { data: profiles } = await supabase.from('profiles').select('*').order('full_name')
@@ -140,7 +142,6 @@ export default function Home() {
     return p ? p.full_name : 'Parecerista Designado'
   }
 
-  // Submissão do Manuscrito
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -248,18 +249,20 @@ export default function Home() {
     if (!reviewModalData) return
     setSubmittingReview(true)
     try {
+      const fullComments = `--- AVALIAÇÃO DOS CRITÉRIOS EDITORIAIS ---\n• Título e Resumo: ${critTitle.toUpperCase()}\n• Consistência Teórico-Psicanalítica: ${critTheory.toUpperCase()}\n• Relevância para a Clínica: ${critClinical.toUpperCase()}\n\n--- PARECER DESCRITIVO E ORIENTAÇÕES AO AUTOR ---\n${commentsAuthor}`
+
       const { error } = await supabase
         .from('reviews')
         .update({
           recommendation,
-          comments_for_author: commentsAuthor,
+          comments_for_author: fullComments,
           confidential_comments_editor: commentsEditor,
           status: 'concluido',
         })
         .eq('id', reviewModalData.id)
 
       if (error) throw error
-      alert('Parecer enviado com sucesso! Muito obrigado pela avaliação.')
+      alert('Parecer emitido com sucesso! Muito obrigado pela sua contribuição com a Revista Saber Psicanalítico.')
       setReviewModalData(null)
       fetchAllData()
     } catch (err: any) {
@@ -407,7 +410,6 @@ export default function Home() {
     )
   }
 
-  // Filtros dos dados por visão
   const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
   const myReviewAssignments = allReviews.filter((r) => r.reviewer_id === session?.user?.id)
 
@@ -433,7 +435,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Alternador de Modos para o Editor */}
+            {/* SE FOR EDITOR -> Tem as 3 visões */}
             {profile?.role === 'editor' && (
               <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                 <button
@@ -463,6 +465,28 @@ export default function Home() {
               </div>
             )}
 
+            {/* SE FOR PARECERISTA (Ex: Maria José) -> Tem abas duplas: Parecerista e Autor */}
+            {profile?.role === 'reviewer' && (
+              <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
+                <button
+                  onClick={() => setViewMode('reviewer')}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    viewMode === 'reviewer' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
+                  }`}
+                >
+                  Avaliações (Parecerista)
+                </button>
+                <button
+                  onClick={() => setViewMode('author')}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
+                  }`}
+                >
+                  Meus Trabalhos (Autor)
+                </button>
+              </div>
+            )}
+
             <span className="text-sm text-slate-600 hidden md:inline">
               Olá, <strong>{profile?.full_name}</strong>
             </span>
@@ -488,7 +512,7 @@ export default function Home() {
               <div>
                 <h2 className="text-xl font-bold text-slate-800">Meus Trabalhos Submetidos</h2>
                 <p className="text-sm text-slate-500">
-                  Acompanhe o status e as devolutivas de avaliação dos seus artigos.
+                  Acompanhe em tempo real as decisões e orientações de correção do conselho editorial.
                 </p>
               </div>
               <button
@@ -505,7 +529,7 @@ export default function Home() {
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <h3 className="text-base font-semibold text-slate-700">Nenhum trabalho submetido ainda</h3>
                 <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                  Clique no botão azul acima para enviar seu texto (.doc, .docx ou .pdf).
+                  Clique no botão azul acima para submeter seu artigo à Revista.
                 </p>
               </div>
             ) : (
@@ -574,7 +598,7 @@ export default function Home() {
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos para Avaliação</h2>
               <p className="text-sm text-slate-500">
-                Avaliação Duplo-Cega (*Blind Peer Review*): os dados do autor permanecem anônimos.
+                Avaliação Duplo-Cega (*Double-Blind Review*): a autoria permanece em sigilo.
               </p>
             </div>
 
@@ -583,7 +607,7 @@ export default function Home() {
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <h3 className="text-base font-semibold text-slate-700">Nenhum manuscrito aguardando seu parecer</h3>
                 <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                  Quando o Editor designar um artigo para você avaliar, ele aparecerá nesta tela.
+                  Quando a comissão editorial atribuir um artigo a você, ele aparecerá nesta tela para avaliação.
                 </p>
               </div>
             ) : (
@@ -629,7 +653,7 @@ export default function Home() {
                             setCommentsAuthor(rev.comments_for_author || '')
                             setCommentsEditor(rev.confidential_comments_editor || '')
                           }}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2"
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                           {rev.status === 'concluido' ? 'Visualizar / Editar Meu Parecer' : 'Preencher Parecer Editorial'}
@@ -644,7 +668,7 @@ export default function Home() {
         )}
 
         {/* ========================================================= */}
-        {/* PAINEL DO EDITOR GERAL (SALA EDITORIAL) */}
+        {/* PAINEL DO EDITOR GERAL */}
         {/* ========================================================= */}
         {viewMode === 'editor' && (
           <div className="space-y-8">
@@ -718,7 +742,7 @@ export default function Home() {
                           </button>
 
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-slate-500">Decisão:</span>
+                            <span className="text-xs text-slate-500 font-medium">Decisão:</span>
                             <select
                               value={art.status}
                               onChange={(e) => handleUpdateStatus(art.id, e.target.value)}
@@ -758,7 +782,7 @@ export default function Home() {
 
                                 {r.status === 'concluido' && (
                                   <button
-                                    onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\nRecomendação: ${r.recommendation}\n\nPara o Autor:\n${r.comments_for_author}\n\nNotas Confidenciais ao Editor:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
+                                    onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\n${r.comments_for_author}\n\nNotas Confidenciais ao Editor:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
                                     className="text-xs text-indigo-600 hover:underline font-semibold"
                                   >
                                     Ler Parecer Completo
@@ -959,21 +983,69 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DE AVALIAÇÃO DO PARECERISTA */}
+      {/* MODAL DE AVALIAÇÃO PSICANALÍTICA DO PARECERISTA */}
       {reviewModalData && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-slate-900">Formulário de Avaliação Editorial</h3>
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-slate-100 pb-3">
+              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Formulário de Parecer Técnico-Científico</span>
+              <h3 className="text-lg font-bold text-slate-900">Avaliação do Manuscrito</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Artigo: <strong>{allArticles.find((a) => a.id === reviewModalData.article_id)?.title}</strong>
+              </p>
+            </div>
 
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4">
+              {/* Critérios do Formulário */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Título e Resumo</label>
+                  <select
+                    value={critTitle}
+                    onChange={(e) => setCritTitle(e.target.value)}
+                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg bg-white"
+                  >
+                    <option value="excelente">Excelente / Claro</option>
+                    <option value="satisfatorio">Satisfatório</option>
+                    <option value="reformular">Requer Reformulação</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Rigor Conceitual (Psicanálise)</label>
+                  <select
+                    value={critTheory}
+                    onChange={(e) => setCritTheory(e.target.value)}
+                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg bg-white"
+                  >
+                    <option value="consistente">Consistente e Fundamentado</option>
+                    <option value="parcial">Parcialmente Consistente</option>
+                    <option value="insuficiente">Insuficiente / Frágil</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Relevância para a Clínica</label>
+                  <select
+                    value={critClinical}
+                    onChange={(e) => setCritClinical(e.target.value)}
+                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg bg-white"
+                  >
+                    <option value="alta">Alta Relevância</option>
+                    <option value="media">Média Relevância</option>
+                    <option value="baixa">Baixa Relevância</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  1. Recomendação Editorial Final *
+                  Recomendação Editorial Final *
                 </label>
                 <select
                   value={recommendation}
                   onChange={(e) => setRecommendation(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white font-medium"
                 >
                   <option value="aceitar">Aceitar sem restrições (Aprovado)</option>
                   <option value="correcoes_obrigatorias">Aceitar mediante correções obrigatórias</option>
@@ -983,33 +1055,33 @@ export default function Home() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  2. Parecer Detalhado e Orientações para o Autor *
+                  Parecer Detalhado e Orientações para o Autor *
                 </label>
                 <p className="text-[11px] text-slate-400 mb-1">
-                  Este parecer será exibido ao autor (sua identidade é mantida anônima).
+                  Este texto será encaminhado ao autor para orientar suas correções (sua identidade é mantida 100% anônima).
                 </p>
                 <textarea
                   required
                   rows={6}
                   value={commentsAuthor}
                   onChange={(e) => setCommentsAuthor(e.target.value)}
-                  placeholder="Considerações conceituais, relevância clínica e recomendações de correção..."
+                  placeholder="Escreva suas considerações teóricas, articulação dos conceitos de Freud/Lacan/outros, relevância clínica e pontos específicos de correção..."
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  3. Observações Confidenciais para o Editor Geral (Opcional)
+                  Observações Confidenciais para a Equipe Editorial (Opcional)
                 </label>
                 <p className="text-[11px] text-slate-400 mb-1">
-                  Visível apenas para o Editor Geral (o autor NÃO tem acesso).
+                  Texto visível apenas para o Editor Geral (o autor NÃO tem acesso).
                 </p>
                 <textarea
                   rows={3}
                   value={commentsEditor}
                   onChange={(e) => setCommentsEditor(e.target.value)}
-                  placeholder="Observações internas..."
+                  placeholder="Observações internas, dúvidas éticas ou notas exclusivas para a comissão..."
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1027,7 +1099,7 @@ export default function Home() {
                 type="button"
                 disabled={submittingReview || !commentsAuthor}
                 onClick={handleSubmitReview}
-                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
               >
                 <Send className="w-3.5 h-3.5" />
                 {submittingReview ? 'Enviando...' : 'Concluir e Enviar Parecer'}
