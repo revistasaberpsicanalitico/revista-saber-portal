@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { 
   BookOpen, User, Lock, Mail, Building, Phone, ArrowRight, 
-  Upload, FileText, CheckCircle, Clock, AlertCircle, LogOut, 
-  ShieldCheck, Users, UserCheck, Download, MessageSquare, Send
+  Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
+  Download, MessageSquare, Send, Eye
 } from 'lucide-react'
 
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor'>('author')
   const [loading, setLoading] = useState(true)
 
   // Auth States
@@ -76,7 +77,8 @@ export default function Home() {
 
       if (data) {
         setProfile(data)
-        loadRoleData(data.role, user.id)
+        setViewMode(data.role)
+        loadAllData(user.id)
       } else {
         const fallbackProfile = {
           id: user.id,
@@ -88,24 +90,20 @@ export default function Home() {
         }
         await supabase.from('profiles').upsert(fallbackProfile)
         setProfile(fallbackProfile)
-        loadRoleData('author', user.id)
+        setViewMode('author')
+        loadAllData(user.id)
       }
     } catch (err) {
       console.error(err)
-      setProfile({ full_name: user.email?.split('@')[0], role: 'author' })
     } finally {
       setLoading(false)
     }
   }
 
-  const loadRoleData = (role: string, userId: string) => {
-    if (role === 'editor') {
-      fetchEditorData()
-    } else if (role === 'reviewer') {
-      fetchReviewerData(userId)
-    } else {
-      fetchAuthorArticles(userId)
-    }
+  const loadAllData = async (userId: string) => {
+    fetchAuthorArticles(userId)
+    fetchReviewerData(userId)
+    fetchEditorData()
   }
 
   const fetchAuthorArticles = async (authorId: string) => {
@@ -120,7 +118,7 @@ export default function Home() {
   const fetchEditorData = async () => {
     const { data: articles } = await supabase
       .from('articles')
-      .select('*, profiles(full_name, email, institution), reviews(*, reviewer:profiles!reviews_reviewer_id_fkey(full_name))')
+      .select('*, profiles(full_name, email, institution), reviews(*)')
       .order('created_at', { ascending: false })
     if (articles) setAllArticles(articles)
 
@@ -137,6 +135,11 @@ export default function Home() {
       .select('*, articles(id, title, abstract, keywords, file_url, status)')
       .eq('reviewer_id', reviewerId)
     if (data) setReviewerAssignments(data)
+  }
+
+  const getReviewerName = (reviewerId: string) => {
+    const found = allProfiles.find((p) => p.id === reviewerId)
+    return found ? found.full_name : 'Parecerista Designado'
   }
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -208,7 +211,7 @@ export default function Home() {
       setNewAbstract('')
       setNewKeywords('')
       setSelectedFile(null)
-      fetchAuthorArticles(session.user.id)
+      loadAllData(session.user.id)
     } catch (err: any) {
       alert(`Erro na submissão: ${err.message}`)
     } finally {
@@ -229,7 +232,6 @@ export default function Home() {
     }
   }
 
-  // Ações do Editor
   const handleUpdateStatus = async (articleId: string, status: string) => {
     try {
       const { error } = await supabase
@@ -238,7 +240,7 @@ export default function Home() {
         .eq('id', articleId)
       if (error) throw error
       alert(`Status atualizado para: ${status.replace('_', ' ').toUpperCase()}`)
-      fetchEditorData()
+      loadAllData(session.user.id)
     } catch (err: any) {
       alert(err.message)
     }
@@ -251,8 +253,8 @@ export default function Home() {
         .update({ role: newRole })
         .eq('id', userId)
       if (error) throw error
-      alert('Função atualizada com sucesso!')
-      fetchEditorData()
+      alert('Função do usuário atualizada com sucesso!')
+      loadAllData(session.user.id)
     } catch (err: any) {
       alert(err.message)
     }
@@ -268,19 +270,17 @@ export default function Home() {
       })
       if (error) throw error
 
-      // Atualiza o artigo para 'em_avaliacao' se ainda estava como submetido
       await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
 
       alert('Parecerista atribuído com sucesso!')
       setAssignModalArticle(null)
       setSelectedReviewerId('')
-      fetchEditorData()
+      loadAllData(session.user.id)
     } catch (err: any) {
       alert(err.message)
     }
   }
 
-  // Ação do Parecerista
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -296,9 +296,9 @@ export default function Home() {
         .eq('id', reviewModalData.id)
 
       if (error) throw error
-      alert('Seu parecer foi enviado com sucesso à Revista! Muito obrigado pela colaboração.')
+      alert('Parecer enviado com sucesso! Muito obrigado pela avaliação.')
       setReviewModalData(null)
-      fetchReviewerData(session.user.id)
+      loadAllData(session.user.id)
     } catch (err: any) {
       alert(err.message)
     } finally {
@@ -314,7 +314,6 @@ export default function Home() {
     )
   }
 
-  // LOGIN SCREEN
   if (!session) {
     return (
       <main className="min-h-screen flex flex-col justify-center items-center p-4 bg-slate-50">
@@ -463,14 +462,10 @@ export default function Home() {
     )
   }
 
-  // ROLES
-  const isEditor = profile?.role === 'editor'
-  const isReviewer = profile?.role === 'reviewer'
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-50 text-indigo-700 rounded-lg">
               <BookOpen className="w-6 h-6" />
@@ -480,16 +475,46 @@ export default function Home() {
                 Revista Saber Psicanalítico
               </h1>
               <p className="text-xs text-slate-500">
-                Portal Editorial • Conectado como{' '}
+                Portal Editorial • Visualizando como{' '}
                 <span className="font-semibold text-indigo-600 uppercase">
-                  {isEditor ? 'Editor Geral' : isReviewer ? 'Parecerista Convidado' : 'Autor'}
+                  {viewMode === 'editor' ? 'Editor Geral' : viewMode === 'reviewer' ? 'Parecerista' : 'Autor'}
                 </span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-600 hidden sm:inline">
+          <div className="flex items-center gap-3">
+            {/* Alternador de Visão exclusivo para o Editor */}
+            {profile?.role === 'editor' && (
+              <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
+                <button
+                  onClick={() => setViewMode('editor')}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
+                  }`}
+                >
+                  Painel Editor
+                </button>
+                <button
+                  onClick={() => setViewMode('reviewer')}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    viewMode === 'reviewer' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
+                  }`}
+                >
+                  Visão Parecerista
+                </button>
+                <button
+                  onClick={() => setViewMode('author')}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
+                  }`}
+                >
+                  Visão Autor
+                </button>
+              </div>
+            )}
+
+            <span className="text-sm text-slate-600 hidden md:inline">
               Olá, <strong>{profile?.full_name}</strong>
             </span>
             <button
@@ -508,7 +533,7 @@ export default function Home() {
         {/* ========================================================= */}
         {/* PAINEL DO AUTOR */}
         {/* ========================================================= */}
-        {!isEditor && !isReviewer && (
+        {viewMode === 'author' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <div>
@@ -553,9 +578,8 @@ export default function Home() {
                         </span>
                       </div>
                       <h3 className="text-lg font-bold text-slate-800">{art.title}</h3>
-                      <p className="text-sm text-slate-600 line-clamp-2">{art.abstract}</p>
+                      <p className="text-sm text-slate-600">{art.abstract}</p>
 
-                      {/* Devolutivas dos Pareceristas (Anonimizadas) */}
                       {art.reviews && art.reviews.filter((r: any) => r.status === 'concluido').length > 0 && (
                         <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
                           <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -565,7 +589,9 @@ export default function Home() {
                             .filter((r: any) => r.status === 'concluido')
                             .map((rev: any, idx: number) => (
                               <div key={rev.id} className="text-xs text-slate-700 bg-white p-3 rounded border border-slate-200">
-                                <span className="font-semibold text-indigo-700">Avaliação {idx + 1} ({rev.recommendation.replace('_', ' ').toUpperCase()}):</span>
+                                <span className="font-semibold text-indigo-700">
+                                  Parecer {idx + 1} ({rev.recommendation?.replace('_', ' ').toUpperCase()}):
+                                </span>
                                 <p className="mt-1 whitespace-pre-line text-slate-600">{rev.comments_for_author}</p>
                               </div>
                             ))}
@@ -592,28 +618,28 @@ export default function Home() {
         {/* ========================================================= */}
         {/* PAINEL DO PARECERISTA (AVALIAÇÃO CEGA) */}
         {/* ========================================================= */}
-        {isReviewer && (
+        {viewMode === 'reviewer' && (
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos para Avaliação</h2>
               <p className="text-sm text-slate-500">
-                Avaliação Duplo-Cega (*Blind Peer Review*): os dados do autor permanecem anônimos.
+                Avaliação Duplo-Cega (*Blind Peer Review*): os dados de autoria são mantidos em sigilo.
               </p>
             </div>
 
             {reviewerAssignments.length === 0 ? (
               <div className="bg-white p-12 text-center rounded-xl border border-slate-200">
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-slate-700">Nenhum manuscrito aguardando seu parecer</h3>
+                <h3 className="text-base font-semibold text-slate-700">Nenhum manuscrito atribuído a você no momento</h3>
                 <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                  Quando o corpo editorial atribuir um artigo a você, ele aparecerá aqui para leitura e emissão de parecer.
+                  Quando o Editor Geral designar um artigo para seu parecer, ele aparecerá nesta tela.
                 </p>
               </div>
             ) : (
               <div className="grid gap-4">
                 {reviewerAssignments.map((rev) => (
                   <div key={rev.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                       <div>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                           rev.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -629,7 +655,7 @@ export default function Home() {
                         className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5"
                       >
                         <Download className="w-3.5 h-3.5 text-indigo-600" />
-                        Baixar Artigo (Word/PDF)
+                        Baixar Artigo (Sem Identificação)
                       </button>
                     </div>
 
@@ -660,19 +686,28 @@ export default function Home() {
         )}
 
         {/* ========================================================= */}
-        {/* PAINEL DO EDITOR GERAL (VOCÊ) */}
+        {/* PAINEL DO EDITOR GERAL */}
         {/* ========================================================= */}
-        {isEditor && (
+        {viewMode === 'editor' && (
           <div className="space-y-8">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <div className="flex items-center gap-2 text-indigo-700 mb-1">
-                <ShieldCheck className="w-5 h-5" />
-                <span className="text-xs font-bold uppercase tracking-wider">Sala Editorial</span>
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-indigo-700 mb-1">
+                  <ShieldCheck className="w-5 h-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Sala Editorial</span>
+                </div>
+                <h2 className="text-xl font-bold text-slate-800">Gestão de Artigos e Pareceristas</h2>
+                <p className="text-sm text-slate-500">
+                  Coordene o fluxo duplo-cego, atribua pareceristas e tome as decisões editoriais finais.
+                </p>
               </div>
-              <h2 className="text-xl font-bold text-slate-800">Gestão de Artigos e Pareceristas</h2>
-              <p className="text-sm text-slate-500">
-                Coordene o fluxo duplo-cego, atribua pareceristas e tome as decisões editoriais finais.
-              </p>
+              <button
+                onClick={() => setShowSubmitModal(true)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm flex items-center gap-2 text-xs"
+              >
+                <Upload className="w-4 h-4" />
+                + Submeter Artigo
+              </button>
             </div>
 
             {/* ARTIGOS RECEBIDOS */}
@@ -697,11 +732,11 @@ export default function Home() {
                         </div>
                         <h4 className="text-lg font-bold text-slate-900">{art.title}</h4>
                         <p className="text-xs text-slate-500 mt-1">
-                          Autor: <strong>{art.profiles?.full_name}</strong> ({art.profiles?.email}) • Instituição: {art.profiles?.institution}
+                          Autor: <strong>{art.profiles?.full_name}</strong> ({art.profiles?.email}) • Instituição: {art.profiles?.institution || '-'}
                         </p>
                       </div>
 
-                      {/* Botões de Ação do Artigo */}
+                      {/* Botões de Ação do Editor */}
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           onClick={() => handleDownloadFile(art.file_url)}
@@ -723,7 +758,7 @@ export default function Home() {
                         </button>
 
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-slate-500">Status:</span>
+                          <span className="text-xs text-slate-500">Decisão:</span>
                           <select
                             value={art.status}
                             onChange={(e) => handleUpdateStatus(art.id, e.target.value)}
@@ -731,35 +766,39 @@ export default function Home() {
                           >
                             <option value="submetido">Submetido</option>
                             <option value="em_avaliacao">Em Avaliação</option>
-                            <option value="correcoes_pendentes">Correções Pendentes</option>
-                            <option value="aceito">Aceito para Publicação</option>
+                            <option value="correcoes_pendentes">Solicitar Correções</option>
+                            <option value="aceito">Aceito</option>
                             <option value="recusado">Recusado</option>
                           </select>
                         </div>
                       </div>
                     </div>
 
+                    <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                      <strong>Resumo:</strong> {art.abstract}
+                    </p>
+
                     {/* Lista de Pareceres deste Artigo */}
                     {art.reviews && art.reviews.length > 0 && (
-                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-2">
+                      <div className="bg-indigo-50/40 p-4 rounded-lg border border-indigo-100 space-y-2">
                         <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                          Pareceristas Designados para este Trabalho:
+                          Pareceristas Designados ({art.reviews.length}):
                         </h5>
                         <div className="grid gap-2">
                           {art.reviews.map((r: any) => (
                             <div key={r.id} className="bg-white p-3 rounded-lg border border-slate-200 text-xs flex justify-between items-center">
                               <div>
-                                <span className="font-semibold text-slate-800">{r.reviewer?.full_name || 'Parecerista'}</span>
+                                <span className="font-semibold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
                                 <span className={`ml-2 px-2 py-0.5 rounded text-[10px] font-semibold ${
                                   r.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                                 }`}>
-                                  {r.status === 'concluido' ? `CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO RESPOSTA'}
+                                  {r.status === 'concluido' ? `PARECER CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO PARECER'}
                                 </span>
                               </div>
 
                               {r.status === 'concluido' && (
                                 <button
-                                  onClick={() => alert(`PARECER DE ${r.reviewer?.full_name}:\n\nRecomendação: ${r.recommendation}\n\nPara o Autor:\n${r.comments_for_author}\n\nNotas Confidenciais ao Editor:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
+                                  onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\nRecomendação: ${r.recommendation}\n\nPara o Autor:\n${r.comments_for_author}\n\nNotas Confidenciais ao Editor:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
                                   className="text-xs text-indigo-600 hover:underline font-semibold"
                                 >
                                   Ler Parecer Completo
@@ -777,16 +816,14 @@ export default function Home() {
 
             {/* TABELA DE GESTÃO DE USUÁRIOS */}
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-indigo-600" />
-                    Quadro de Usuários Cadastrados ({allProfiles.length})
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Defina aqui quem são os Pareceristas da Revista. Basta alterar na coluna à direita.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-600" />
+                  Quadro de Usuários Cadastrados ({allProfiles.length})
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Defina aqui quem são os Pareceristas da Revista alterando a função na coluna da direita.
+                </p>
               </div>
 
               <div className="overflow-x-auto">
@@ -923,7 +960,7 @@ export default function Home() {
             </p>
 
             <div className="space-y-3">
-              <label className="block text-xs font-semibold text-slate-700">Selecione o Parecerista:</label>
+              <label className="block text-xs font-semibold text-slate-700">Selecione o Avaliador:</label>
               <select
                 value={selectedReviewerId}
                 onChange={(e) => setSelectedReviewerId(e.target.value)}
@@ -934,16 +971,10 @@ export default function Home() {
                   .filter((p) => p.role === 'reviewer' || p.role === 'editor')
                   .map((rev) => (
                     <option key={rev.id} value={rev.id}>
-                      {rev.full_name} ({rev.institution || rev.email})
+                      {rev.full_name} ({rev.role === 'editor' ? 'Editor/Parecerista' : 'Parecerista'})
                     </option>
                   ))}
               </select>
-
-              {allProfiles.filter((p) => p.role === 'reviewer').length === 0 && (
-                <p className="text-[11px] text-amber-600">
-                  Dica: Nenhum usuário com perfil "Parecerista" cadastrado ainda. Você pode promover algum usuário na tabela abaixo para ele aparecer nesta lista.
-                </p>
-              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-3">
@@ -997,7 +1028,7 @@ export default function Home() {
                   2. Parecer Detalhado e Orientações para o Autor *
                 </label>
                 <p className="text-[11px] text-slate-400 mb-1">
-                  Este texto será disponibilizado ao autor para que ele realize as correções (sua identidade permanecerá anônima).
+                  Este texto será exibido ao autor para que ele realize as correções (sua identidade permanece anônima).
                 </p>
                 <textarea
                   required
@@ -1014,7 +1045,7 @@ export default function Home() {
                   3. Observações Confidenciais para o Editor Geral (Opcional)
                 </label>
                 <p className="text-[11px] text-slate-400 mb-1">
-                  Texto visível apenas para o Editor-adjunto e equipe editorial (o autor NÃO terá acesso).
+                  Visível apenas para o Editor-adjunto e equipe editorial (o autor NÃO terá acesso).
                 </p>
                 <textarea
                   rows={3}
