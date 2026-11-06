@@ -7,7 +7,7 @@ import {
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
   Download, MessageSquare, Send, CheckCircle2, HelpCircle, 
   FileCheck, AlertTriangle, RefreshCw, Plus, Trash2, ShieldAlert,
-  Award, Printer, Copy, Check, Edit3, Link as LinkIcon
+  Award, Printer, Copy, Check, Edit3, Link as LinkIcon, Search
 } from 'lucide-react'
 
 export default function Home() {
@@ -31,7 +31,12 @@ export default function Home() {
   const [allProfiles, setAllProfiles] = useState<any[]>([])
   const [allReviews, setAllReviews] = useState<any[]>([])
 
-  // Modal Meu Perfil (Lattes / ORCID / Filiação do Parecerista/Autor)
+  // Modal Verificador Público de Autenticidade
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const [verifyCodeInput, setVerifyCodeInput] = useState('')
+  const [verifyResult, setVerifyResult] = useState<any>(null)
+
+  // Modal Meu Perfil (Lattes / ORCID / Filiação)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [profileInst, setProfileInst] = useState('')
@@ -121,7 +126,6 @@ export default function Home() {
         setAuthorLattes(data.lattes_url || '')
         setAuthorOrcid(data.orcid || '')
         
-        // Dados para o modal de perfil
         setProfileName(data.full_name || '')
         setProfileInst(data.institution || '')
         setProfilePhone(data.phone || '')
@@ -164,7 +168,6 @@ export default function Home() {
     }
   }
 
-  // Funções Auxiliares de Busca
   const getAuthorName = (authorId: string) => {
     const p = allProfiles.find((x) => x.id === authorId)
     return p ? p.full_name : 'Autor da Revista'
@@ -189,17 +192,15 @@ export default function Home() {
     return p ? p.full_name : 'Parecerista Designado'
   }
 
-  // Previsão do Fascículo (Mês e Ano)
   const getExpectedIssue = () => {
     const now = new Date()
-    const month = now.getMonth() + 1 // 1-12
+    const month = now.getMonth() + 1
     const year = now.getFullYear()
     if (month <= 5) return `Fascículo de Junho de ${year}`
     if (month <= 11) return `Fascículo de Dezembro de ${year}`
     return `Fascículo de Junho de ${year + 1}`
   }
 
-  // Gestão de Coautores
   const handleAddCoauthor = () => {
     setCoauthors([...coauthors, { name: '', email: '', institution: '', lattes: '', orcid: '' }])
   }
@@ -214,7 +215,6 @@ export default function Home() {
     setCoauthors(coauthors.filter((_, i) => i !== index))
   }
 
-  // Atualizar Perfil Próprio (Lattes, ORCID, Filiação)
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!session) return
@@ -242,7 +242,59 @@ export default function Home() {
     }
   }
 
-  // Submissão do Artigo
+  // Verificador de Autenticidade do Código
+  const handleVerifyCode = async () => {
+    const code = verifyCodeInput.trim().toUpperCase()
+    if (!code) return
+
+    setVerifyResult({ loading: true })
+
+    try {
+      // 1. Checa se é código de Aceite (ASP-ACE-...)
+      if (code.includes('ASP-ACE-')) {
+        const parts = code.split('-')
+        const prefix = parts[2] // Pedaço do ID
+        const found = allArticles.find((a) => a.id.toUpperCase().startsWith(prefix))
+
+        if (found && found.status === 'aceito') {
+          setVerifyResult({
+            valid: true,
+            type: 'Carta de Aceite para Publicação',
+            title: found.title,
+            person: getAuthorName(found.author_id),
+            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR'),
+            role: 'Autor(a) Principal',
+          })
+          return
+        }
+      }
+
+      // 2. Checa se é código de Parecerista (ASP-PAR-...)
+      if (code.includes('ASP-PAR-')) {
+        const parts = code.split('-')
+        const prefix = parts[2]
+        const foundRev = allReviews.find((r) => r.id.toUpperCase().startsWith(prefix))
+
+        if (foundRev && foundRev.status === 'concluido') {
+          const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
+          setVerifyResult({
+            valid: true,
+            type: 'Declaração de Atuação como Parecerista Ad-hoc',
+            title: 'Manuscrito Técnico-Científico Submetido à Revista',
+            person: revPerson?.full_name || 'Parecerista Registrado',
+            date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR'),
+            role: 'Parecerista Ad-hoc',
+          })
+          return
+        }
+      }
+
+      setVerifyResult({ valid: false })
+    } catch (e) {
+      setVerifyResult({ valid: false })
+    }
+  }
+
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -307,7 +359,6 @@ export default function Home() {
     }
   }
 
-  // Reenvio de Versão Corrigida
   const handleResubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!revisedFile || !reSubmitArticle) return
@@ -450,7 +501,6 @@ export default function Home() {
     }
   }
 
-  // Lista única de Pareceristas que concluíram avaliações (Para o Editorial de Agradecimento)
   const completedReviewerIds = Array.from(new Set(allReviews.filter((r) => r.status === 'concluido').map((r) => r.reviewer_id)))
   const completedReviewers = allProfiles.filter((p) => completedReviewerIds.includes(p.id))
 
@@ -488,7 +538,7 @@ export default function Home() {
               <img
                 src="/logo-revista.png"
                 alt="Revista Saber Psicanalítico"
-                className="h-20 object-contain"
+                className="h-24 object-contain drop-shadow-sm"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
@@ -615,11 +665,25 @@ export default function Home() {
             </button>
           </form>
 
-          {/* Rodapé institucional da ASP */}
-          <div className="mt-8 pt-4 border-t border-slate-100 text-center text-[10px] text-slate-400 space-y-1">
-            <p className="font-semibold text-slate-600">Associação Saber Psicanalítico (ASP) — Entidade Mantenedora</p>
-            <p>CNPJ: 44.966.907/0001-85 • Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-            <p>www.asppsicanalise.com.br</p>
+          {/* Botão de Verificação Pública */}
+          <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col items-center space-y-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowVerifyModal(true)
+                setVerifyResult(null)
+                setVerifyCodeInput('')
+              }}
+              className="text-xs text-indigo-700 hover:text-indigo-900 font-semibold flex items-center gap-1.5 hover:underline"
+            >
+              <Search className="w-3.5 h-3.5" />
+              Verificar Autenticidade de Documento / Certificado
+            </button>
+
+            <div className="text-center text-[10px] text-slate-400 space-y-0.5">
+              <p className="font-semibold text-slate-600">Associação Saber Psicanalítico (ASP) — Entidade Mantenedora</p>
+              <p>CNPJ: 44.966.907/0001-85 • Caruaru/PE • www.asppsicanalise.com.br</p>
+            </div>
           </div>
         </div>
       </main>
@@ -632,9 +696,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <div>
-        {/* ========================================================= */}
-        {/* CABEÇALHO COM A LOGO DA REVISTA EM TAMANHO EVIDENTE */}
-        {/* ========================================================= */}
+        {/* CABEÇALHO */}
         <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-4">
@@ -705,7 +767,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Botão Meu Perfil (Lattes / ORCID) */}
               <button
                 onClick={() => setShowProfileModal(true)}
                 className="px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg font-medium flex items-center gap-1.5"
@@ -728,9 +789,7 @@ export default function Home() {
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
           
-          {/* ========================================================= */}
           {/* VISÃO DO AUTOR */}
-          {/* ========================================================= */}
           {viewMode === 'author' && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -882,9 +941,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* ========================================================= */}
-          {/* VISÃO DO PARECERISTA (DUPLO-CEGO) */}
-          {/* ========================================================= */}
+          {/* VISÃO DO PARECERISTA */}
           {viewMode === 'reviewer' && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -979,9 +1036,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* ========================================================= */}
-          {/* PAINEL DO EDITOR GERAL (SALA EDITORIAL) */}
-          {/* ========================================================= */}
+          {/* PAINEL DO EDITOR GERAL */}
           {viewMode === 'editor' && (
             <div className="space-y-8">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1067,7 +1122,6 @@ export default function Home() {
                             </p>
                           </div>
 
-                          {/* Botões do Editor */}
                           <div className="flex flex-wrap items-center gap-2">
                             {isAccepted && (
                               <button
@@ -1116,7 +1170,6 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* Quadro de Coautores */}
                         {art.coauthors && art.coauthors.length > 0 && (
                           <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
                             <p className="font-semibold text-slate-700 mb-1">Coautores Cadastrados ({art.coauthors.length}):</p>
@@ -1270,9 +1323,7 @@ export default function Home() {
         </main>
       </div>
 
-      {/* ========================================================= */}
-      {/* RODAPÉ INSTITUCIONAL DEDICADO À ASSOCIAÇÃO (ASP) */}
-      {/* ========================================================= */}
+      {/* RODAPÉ INSTITUCIONAL */}
       <footer className="bg-white border-t border-slate-200 py-6 mt-12 no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-3.5">
@@ -1302,8 +1353,84 @@ export default function Home() {
       </footer>
 
       {/* ========================================================= */}
-      {/* MODAL: MEU PERFIL (LATTES, ORCID, FILIAÇÃO) */}
+      {/* MODAL: VERIFICADOR PÚBLICO DE AUTENTICIDADE */}
       {/* ========================================================= */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="border-b border-slate-100 pb-3 text-center">
+              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Verificação de Autenticidade</span>
+              <h3 className="text-base font-bold text-slate-900 mt-0.5">Validar Documento da Revista</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Insira o código verificador impresso no rodapé da Carta de Aceite ou Certificado para confirmar a autenticidade perante comitês e bancas.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Código Verificador</label>
+                <input
+                  type="text"
+                  value={verifyCodeInput}
+                  onChange={(e) => setVerifyCodeInput(e.target.value)}
+                  placeholder="Ex: ASP-ACE-12345678-999999 ou ASP-PAR-..."
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg font-mono uppercase focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleVerifyCode}
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Search className="w-3.5 h-3.5" />
+                Consultar Autenticidade
+              </button>
+
+              {verifyResult && (
+                <div className={`p-4 rounded-xl text-xs space-y-2 border ${
+                  verifyResult.valid ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-200 text-rose-900'
+                }`}>
+                  {verifyResult.valid ? (
+                    <>
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-800 border-b border-emerald-200 pb-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        DOCUMENTO AUTÊNTICO E HOMOLOGADO
+                      </div>
+                      <p><strong>Tipo:</strong> {verifyResult.type}</p>
+                      <p><strong>Emitido para:</strong> {verifyResult.person} ({verifyResult.role})</p>
+                      <p><strong>Referência:</strong> {verifyResult.title}</p>
+                      <p><strong>Data de Emissão:</strong> {verifyResult.date}</p>
+                      <p className="text-[10px] text-emerald-700 italic pt-1">
+                        Autenticado eletronicamente pela Revista Saber Psicanalítico (ISSN 3086-8416).
+                      </p>
+                    </>
+                  ) : (
+                    <div className="text-center py-2 space-y-1">
+                      <p className="font-bold text-rose-800">Código Verificador Não Encontrado</p>
+                      <p className="text-[11px] text-rose-600">
+                        Verifique se digitou o código exatamente como consta no documento, incluindo os traços (hífens).
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowVerifyModal(false)}
+                className="px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MEU PERFIL */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -1347,7 +1474,6 @@ export default function Home() {
                   placeholder="http://lattes.cnpq.br/0000000000000000"
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 />
-                <p className="text-[10px] text-slate-400 mt-0.5">Link público do seu Lattes (muito recomendado para pareceristas).</p>
               </div>
 
               <div>
@@ -1395,267 +1521,280 @@ export default function Home() {
       {/* ========================================================= */}
       {/* MODAL: CARTA OFICIAL DE ACEITE (FORMATO A4 TIMBRADO) */}
       {/* ========================================================= */}
-      {selectedAcceptanceArticle && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-          <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
-            
-            {/* Cabeçalho Timbrado */}
-            <div>
-              <div className="flex justify-between items-center border-b-2 border-indigo-900/80 pb-6 gap-6">
-                <img
-                  src="/logo-revista.png"
-                  alt="Revista Saber Psicanalítico"
-                  className="h-24 md:h-28 object-contain"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-                <div className="text-right space-y-0.5">
-                  <h2 className="text-xl font-bold tracking-tight text-slate-900">Revista Saber Psicanalítico</h2>
-                  <p className="text-xs font-bold text-indigo-700 tracking-wider">ISSN 3086-8416</p>
-                  <p className="text-[11px] text-slate-600">Associação Saber Psicanalítico (ASP)</p>
-                  <p className="text-[10px] text-slate-500">Publicação Semestral Científica</p>
-                </div>
-              </div>
+      {selectedAcceptanceArticle && (() => {
+        const authorName = getAuthorName(selectedAcceptanceArticle.author_id)
+        const authorInst = selectedAcceptanceArticle.author_institution || getAuthorInst(selectedAcceptanceArticle.author_id)
+        const coauthorsList = (selectedAcceptanceArticle.coauthors || [])
+          .filter((c: any) => c.name && c.name.trim() !== '')
 
-              {/* Título do Documento */}
-              <div className="text-center my-8">
-                <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 inline-block pb-1">
-                  DECLARAÇÃO DE ACEITE PARA PUBLICAÇÃO
-                </h3>
-              </div>
+        let autoriaTexto = authorName
+        if (authorInst && authorInst !== '-') autoriaTexto += ` (${authorInst})`
+        if (coauthorsList.length > 0) {
+          const coauthorsFormatted = coauthorsList.map((c: any) => `${c.name}${c.institution ? ` (${c.institution})` : ''}`).join(', ')
+          autoriaTexto += ` e coautoria de ${coauthorsFormatted}`
+        }
 
-              {/* Corpo da Carta com espaçamento impecável */}
-              <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
-                <p>
-                  Declaramos, para os devidos fins e a quem possa interessar, que o trabalho científico intitulado{' '}
-                  <strong>&ldquo;{selectedAcceptanceArticle.title}&rdquo;</strong>, submetido na seção{' '}
-                  <strong>{selectedAcceptanceArticle.section || 'Artigo Científico'}</strong>, de autoria principal de{' '}
-                  <strong>{getAuthorName(selectedAcceptanceArticle.author_id)}</strong>
-                  {selectedAcceptanceArticle.author_institution ? ` (${selectedAcceptanceArticle.author_institution})` : ''}
-                  {selectedAcceptanceArticle.coauthors && selectedAcceptanceArticle.coauthors.length > 0 && (
-                    <span> e coautoria de {selectedAcceptanceArticle.coauthors.map((c: any) => c.name).filter(Boolean).join(', ')}</span>
-                  )}
-                  , foi submetido ao processo editorial por pares sob sistema duplo-cego (*double-blind peer review*) pela{' '}
-                  <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>.
-                </p>
+        const validationCode = `ASP-ACE-${selectedAcceptanceArticle.id.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-6)}`
 
-                <p>
-                  Informamos que, após a emissão de pareceres favoráveis pelo corpo de avaliadores técnico-científicos *ad-hoc* e homologação pelo comitê editorial executivo, o referido manuscrito foi oficialmente{' '}
-                  <strong className="text-indigo-950 font-bold">ACEITO PARA PUBLICAÇÃO</strong>, com veiculação programada para o{' '}
-                  <strong>{getExpectedIssue()}</strong>.
-                </p>
-
-                <p className="text-xs text-slate-500 italic">
-                  Esta declaração tem validade comprobatória perante programas de pós-graduação, agências de fomento, concursos públicos e comitês de avaliação acadêmica.
-                </p>
-              </div>
-            </div>
-
-            {/* Bloco de Assinatura e Chancela Digital */}
-            <div className="pt-8">
-              <div className="text-center space-y-4">
-                <p className="text-xs text-slate-600">
-                  Caruaru/PE, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.
-                </p>
-
-                {/* Assinatura do Editor Chefe */}
-                <div className="pt-2">
-                  <div className="w-72 border-b border-slate-600 mx-auto mb-1"></div>
-                  <p className="font-bold text-slate-900 text-sm">Dr. Edson Leandro de Almeida</p>
-                  <p className="text-xs text-slate-700 font-medium">Editor-Chefe</p>
-                  <p className="text-[11px] text-slate-500">Revista Saber Psicanalítico • ASP</p>
-                </div>
-
-                {/* Chancela de Assinatura Eletrônica */}
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 max-w-lg mx-auto text-left flex items-center justify-between text-[10px] text-slate-500">
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-indigo-900 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      REGISTRO DE ASSINATURA ELETRÔNICA QUALIFICADA
-                    </p>
-                    <p>Assinado digitalmente por: <strong>Dr. Edson Leandro de Almeida</strong></p>
-                    <p>Autenticação do Documento: <span className="font-mono text-slate-700">ASP-ACE-{selectedAcceptanceArticle.id.slice(0, 8).toUpperCase()}-{Date.now().toString().slice(-6)}</span></p>
-                  </div>
-                  <div className="text-right text-[9px] text-slate-400 pl-2 border-l border-slate-200">
-                    <p>Emissão Oficial</p>
-                    <p>Sistema Editorial</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Rodapé Timbrado com Logo da ASP */}
-              <div className="border-t border-slate-200 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] text-slate-500">
-                <div className="flex items-center gap-2">
+        return (
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+            <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
+              
+              {/* Cabeçalho Timbrado com Logo da Revista em Grande Destaque */}
+              <div>
+                <div className="flex justify-between items-center border-b-2 border-indigo-950 pb-6 gap-6">
                   <img
-                    src="/logo-asp.png"
-                    alt="ASP"
-                    className="h-7 object-contain"
+                    src="/logo-revista.png"
+                    alt="Revista Saber Psicanalítico"
+                    className="h-32 md:h-36 object-contain max-w-[280px]"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
-                  <div>
-                    <p className="font-bold text-slate-700">Associação Saber Psicanalítico (ASP)</p>
-                    <p>CNPJ: 44.966.907/0001-85 • Entidade Mantenedora</p>
+                  <div className="text-right space-y-1">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Revista Saber Psicanalítico</h2>
+                    <p className="text-xs font-bold text-indigo-700 tracking-wider">ISSN 3086-8416</p>
+                    <p className="text-[11px] text-slate-600">Associação Saber Psicanalítico (ASP)</p>
+                    <p className="text-[10px] text-slate-400">Publicação Semestral Técnico-Científica</p>
                   </div>
                 </div>
 
-                <div className="text-center sm:text-right text-[9px] text-slate-400">
-                  <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-                  <p>www.asppsicanalise.com.br • revistasaberpsicanalitico@gmail.com</p>
+                <div className="text-center my-8">
+                  <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 inline-block pb-1">
+                    DECLARAÇÃO DE ACEITE PARA PUBLICAÇÃO
+                  </h3>
+                </div>
+
+                {/* Corpo da Carta */}
+                <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
+                  <p>
+                    Declaramos, para os devidos fins de comprovação acadêmica e científica, que o trabalho intitulado{' '}
+                    <strong>&ldquo;{selectedAcceptanceArticle.title}&rdquo;</strong>, submetido na seção{' '}
+                    <strong>{selectedAcceptanceArticle.section || 'Artigo Científico'}</strong>, de autoria de{' '}
+                    <strong>{autoriaTexto}</strong>, foi submetido ao processo editorial por pares sob sistema duplo-cego{' '}
+                    (<span className="italic">double-blind peer review</span>) pela{' '}
+                    <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>.
+                  </p>
+
+                  <p>
+                    Informamos que, após a emissão de pareceres favoráveis pelo corpo de avaliadores técnico-científicos *ad-hoc* e homologação pelo comitê editorial executivo, o referido manuscrito foi oficialmente{' '}
+                    <strong className="text-indigo-950 font-bold">ACEITO PARA PUBLICAÇÃO</strong>, com veiculação programada para o{' '}
+                    <strong>{getExpectedIssue()}</strong>.
+                  </p>
+
+                  <p className="text-xs text-slate-500 italic">
+                    Esta declaração possui validade comprobatória perante programas de pós-graduação, agências de fomento (CAPES/CNPq), concursos públicos e comitês de avaliação acadêmica.
+                  </p>
                 </div>
               </div>
-            </div>
 
-            {/* Botões da Tela (Ocultados na Impressão) */}
-            <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
-              <button
-                type="button"
-                onClick={() => setSelectedAcceptanceArticle(null)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Fechar
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                Imprimir / Salvar em PDF (A4)
-              </button>
+              {/* Bloco de Assinatura Sem Linha Manual */}
+              <div className="pt-8">
+                <div className="text-center space-y-4">
+                  <p className="text-xs text-slate-600">
+                    Caruaru/PE, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.
+                  </p>
+
+                  <div className="pt-2">
+                    <p className="font-bold text-slate-900 text-base">Dr. Edson Leandro de Almeida</p>
+                    <p className="text-xs text-indigo-900 font-semibold uppercase tracking-wider">Editor-Chefe</p>
+                    <p className="text-xs text-slate-500">Revista Saber Psicanalítico • ASP</p>
+                  </div>
+
+                  {/* Chancela de Validação Eletrônica */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 max-w-lg mx-auto text-left flex items-center justify-between text-[10px] text-slate-600">
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-indigo-950 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        ASSINATURA ELETRÔNICA QUALIFICADA
+                      </p>
+                      <p>Assinado digitalmente por: <strong>Dr. Edson Leandro de Almeida</strong></p>
+                      <p>Chancela de Autenticação: <span className="font-mono text-slate-800 font-bold">{validationCode}</span></p>
+                    </div>
+                    <div className="text-right text-[9px] text-slate-400 pl-3 border-l border-slate-200">
+                      <p>Emissão Oficial</p>
+                      <p>Sistema Editorial</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rodapé Timbrado com Logo da ASP */}
+                <div className="border-t border-slate-200 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src="/logo-asp.png"
+                      alt="ASP"
+                      className="h-9 object-contain"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                    <div>
+                      <p className="font-bold text-slate-700">Associação Saber Psicanalítico (ASP)</p>
+                      <p>CNPJ: 44.966.907/0001-85 • Entidade Mantenedora</p>
+                    </div>
+                  </div>
+
+                  <div className="text-center sm:text-right text-[9px] text-slate-400 space-y-0.5">
+                    <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
+                    <p>Verifique a autenticidade deste documento em: <strong>revista-saber-portal.vercel.app</strong></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAcceptanceArticle(null)}
+                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Imprimir / Salvar em PDF (A4)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* ========================================================= */}
       {/* MODAL: DECLARAÇÃO PARA O CURRÍCULO LATTES (FORMATO A4) */}
       {/* ========================================================= */}
-      {selectedReviewCert && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-          <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
-            
-            {/* Cabeçalho Timbrado */}
-            <div>
-              <div className="flex justify-between items-center border-b-2 border-indigo-900/80 pb-6 gap-6">
-                <img
-                  src="/logo-revista.png"
-                  alt="Revista Saber Psicanalítico"
-                  className="h-24 md:h-28 object-contain"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-                <div className="text-right space-y-0.5">
-                  <h2 className="text-xl font-bold tracking-tight text-slate-900">Revista Saber Psicanalítico</h2>
-                  <p className="text-xs font-bold text-indigo-700 tracking-wider">ISSN 3086-8416</p>
-                  <p className="text-[11px] text-slate-600">Associação Saber Psicanalítico (ASP)</p>
-                  <p className="text-[10px] text-slate-500">Publicação Semestral Científica</p>
-                </div>
-              </div>
+      {selectedReviewCert && (() => {
+        const revName = selectedReviewCert.reviewer?.full_name || 'Parecerista'
+        const revInst = selectedReviewCert.reviewer?.institution ? ` (${selectedReviewCert.reviewer.institution})` : ''
+        const validationCode = `ASP-PAR-${selectedReviewCert.review.id.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-6)}`
 
-              {/* Título do Documento */}
-              <div className="text-center my-8">
-                <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 inline-block pb-1">
-                  DECLARAÇÃO DE ATUAÇÃO COMO PARECERISTA AD-HOC
-                </h3>
-              </div>
-
-              {/* Corpo da Declaração com espaçamento rigoroso */}
-              <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
-                <p>
-                  Declaramos, para os devidos fins de comprovação acadêmica e especialmente para fins de pontuação de produção técnica junto ao{' '}
-                  <strong>Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq / Plataforma Lattes)</strong>, que o(a) pesquisador(a){' '}
-                  <strong>{selectedReviewCert.reviewer?.full_name}</strong>
-                  {selectedReviewCert.reviewer?.institution ? ` (${selectedReviewCert.reviewer.institution})` : ''}
-                  , atuou formalmente como <strong>PARECERISTA AD-HOC</strong> para a{' '}
-                  <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, publicação científica semestral mantida pela{' '}
-                  Associação Saber Psicanalítico (ASP).
-                </p>
-
-                <p>
-                  O(A) avaliador(a) emitiu parecer técnico-científico crítico e detalhado em sistema duplo-cego (*double-blind peer review*), concluído em{' '}
-                  <strong>{new Date(selectedReviewCert.review.updated_at || selectedReviewCert.review.created_at).toLocaleDateString('pt-BR')}</strong>, 
-                  contribuindo decisivamente para o rigor conceitual, metodológico e clínico das publicações deste periódico.
-                </p>
-
-                <p className="text-xs text-slate-500 italic">
-                  Documento comprobatório emitido pelo sistema de editoração eletrônica da Revista Saber Psicanalítico, preservando o sigilo do título avaliado conforme as diretrizes internacionais de avaliação por pares.
-                </p>
-              </div>
-            </div>
-
-            {/* Bloco de Assinatura e Registro Digital */}
-            <div className="pt-8">
-              <div className="text-center space-y-4">
-                <p className="text-xs text-slate-600">
-                  Caruaru/PE, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.
-                </p>
-
-                {/* Assinatura do Editor Chefe */}
-                <div className="pt-2">
-                  <div className="w-72 border-b border-slate-600 mx-auto mb-1"></div>
-                  <p className="font-bold text-slate-900 text-sm">Dr. Edson Leandro de Almeida</p>
-                  <p className="text-xs text-slate-700 font-medium">Editor-Chefe</p>
-                  <p className="text-[11px] text-slate-500">Revista Saber Psicanalítico • ASP</p>
-                </div>
-
-                {/* Chancela de Validação Eletrônica */}
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 max-w-lg mx-auto text-left flex items-center justify-between text-[10px] text-slate-500">
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-indigo-900 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      CERTIFICAÇÃO EDITORIAL DE ATUAÇÃO TÉCNICA
-                    </p>
-                    <p>Homologado por: <strong>Dr. Edson Leandro de Almeida (Editor-Chefe)</strong></p>
-                    <p>Código Verificador: <span className="font-mono text-slate-700">ASP-PAR-{selectedReviewCert.review.id.slice(0, 8).toUpperCase()}-{Date.now().toString().slice(-6)}</span></p>
-                  </div>
-                  <div className="text-right text-[9px] text-slate-400 pl-2 border-l border-slate-200">
-                    <p>Válido para o Lattes</p>
-                    <p>CNPq / CAPES</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Rodapé Timbrado com Logo da ASP */}
-              <div className="border-t border-slate-200 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] text-slate-500">
-                <div className="flex items-center gap-2">
+        return (
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+            <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
+              
+              {/* Cabeçalho Timbrado com Logo da Revista em Grande Destaque */}
+              <div>
+                <div className="flex justify-between items-center border-b-2 border-indigo-950 pb-6 gap-6">
                   <img
-                    src="/logo-asp.png"
-                    alt="ASP"
-                    className="h-7 object-contain"
+                    src="/logo-revista.png"
+                    alt="Revista Saber Psicanalítico"
+                    className="h-32 md:h-36 object-contain max-w-[280px]"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
-                  <div>
-                    <p className="font-bold text-slate-700">Associação Saber Psicanalítico (ASP)</p>
-                    <p>CNPJ: 44.966.907/0001-85 • Entidade Mantenedora</p>
+                  <div className="text-right space-y-1">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Revista Saber Psicanalítico</h2>
+                    <p className="text-xs font-bold text-indigo-700 tracking-wider">ISSN 3086-8416</p>
+                    <p className="text-[11px] text-slate-600">Associação Saber Psicanalítico (ASP)</p>
+                    <p className="text-[10px] text-slate-400">Publicação Semestral Técnico-Científica</p>
                   </div>
                 </div>
 
-                <div className="text-center sm:text-right text-[9px] text-slate-400">
-                  <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-                  <p>www.asppsicanalise.com.br • revistasaberpsicanalitico@gmail.com</p>
+                <div className="text-center my-8">
+                  <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 inline-block pb-1">
+                    DECLARAÇÃO DE ATUAÇÃO COMO PARECERISTA AD-HOC
+                  </h3>
+                </div>
+
+                {/* Corpo da Declaração sem asteriscos */}
+                <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
+                  <p>
+                    Declaramos, para os devidos fins de comprovação acadêmica e especialmente para fins de pontuação de produção técnica junto ao{' '}
+                    <strong>Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq / Plataforma Lattes)</strong>, que o(a) pesquisador(a){' '}
+                    <strong>{revName}</strong>
+                    {revInst}
+                    , atuou formalmente como <strong>PARECERISTA AD-HOC</strong> para a{' '}
+                    <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, publicação científica semestral mantida pela{' '}
+                    Associação Saber Psicanalítico (ASP).
+                  </p>
+
+                  <p>
+                    O(A) avaliador(a) emitiu parecer técnico-científico crítico e detalhado em sistema duplo-cego{' '}
+                    (<span className="italic">double-blind peer review</span>), concluído em{' '}
+                    <strong>{new Date(selectedReviewCert.review.updated_at || selectedReviewCert.review.created_at).toLocaleDateString('pt-BR')}</strong>, 
+                    contribuindo decisivamente para o rigor conceitual, metodológico e clínico das publicações deste periódico.
+                  </p>
+
+                  <p className="text-xs text-slate-500 italic">
+                    Documento comprobatório emitido pelo sistema de editoração eletrônica da Revista Saber Psicanalítico, preservando o sigilo do título avaliado conforme as diretrizes internacionais de avaliação por pares.
+                  </p>
                 </div>
               </div>
-            </div>
 
-            {/* Botões da Tela */}
-            <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
-              <button
-                type="button"
-                onClick={() => setSelectedReviewCert(null)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Fechar
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                Imprimir / Salvar em PDF (A4)
-              </button>
+              {/* Bloco de Assinatura Sem Linha Manual */}
+              <div className="pt-8">
+                <div className="text-center space-y-4">
+                  <p className="text-xs text-slate-600">
+                    Caruaru/PE, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.
+                  </p>
+
+                  <div className="pt-2">
+                    <p className="font-bold text-slate-900 text-base">Dr. Edson Leandro de Almeida</p>
+                    <p className="text-xs text-indigo-900 font-semibold uppercase tracking-wider">Editor-Chefe</p>
+                    <p className="text-xs text-slate-500">Revista Saber Psicanalítico • ASP</p>
+                  </div>
+
+                  {/* Chancela de Validação Eletrônica */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 max-w-lg mx-auto text-left flex items-center justify-between text-[10px] text-slate-600">
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-indigo-950 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        CERTIFICAÇÃO EDITORIAL DE ATUAÇÃO TÉCNICA
+                      </p>
+                      <p>Homologado por: <strong>Dr. Edson Leandro de Almeida (Editor-Chefe)</strong></p>
+                      <p>Código Verificador: <span className="font-mono text-slate-800 font-bold">{validationCode}</span></p>
+                    </div>
+                    <div className="text-right text-[9px] text-slate-400 pl-3 border-l border-slate-200">
+                      <p>Válido para o Lattes</p>
+                      <p>CNPq / CAPES</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rodapé Timbrado com Logo da ASP */}
+                <div className="border-t border-slate-200 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src="/logo-asp.png"
+                      alt="ASP"
+                      className="h-9 object-contain"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                    <div>
+                      <p className="font-bold text-slate-700">Associação Saber Psicanalítico (ASP)</p>
+                      <p>CNPJ: 44.966.907/0001-85 • Entidade Mantenedora</p>
+                    </div>
+                  </div>
+
+                  <div className="text-center sm:text-right text-[9px] text-slate-400 space-y-0.5">
+                    <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
+                    <p>Verifique a autenticidade deste documento em: <strong>revista-saber-portal.vercel.app</strong></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
+                <button
+                  type="button"
+                  onClick={() => setSelectedReviewCert(null)}
+                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Imprimir / Salvar em PDF (A4)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* ========================================================= */}
       {/* MODAL: QUADRO DE AGRADECIMENTO AOS PARECERISTAS */}
@@ -1726,9 +1865,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* MODAL DE SUBMISSÃO COMPLETO: AUTOR, COAUTORES, LATTES E ORCID */}
-      {/* ========================================================= */}
+      {/* MODAL DE SUBMISSÃO COMPLETO */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
@@ -1760,7 +1897,6 @@ export default function Home() {
                     <option value="Relato de Experiência Clínica">Relato de Experiência Clínica</option>
                     <option value="Resenha">Resenha</option>
                   </select>
-                  <p className="text-[10px] text-slate-400 mt-1">Selecione a categoria conforme as normas da Revista Saber Psicanalítico.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -2176,7 +2312,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DO PARECERISTA: COM AVISO DE SIGILO DO WORD */}
+      {/* MODAL DO PARECERISTA */}
       {reviewModalData && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
