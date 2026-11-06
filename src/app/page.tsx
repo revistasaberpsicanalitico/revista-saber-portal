@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { 
   BookOpen, User, Lock, Mail, Building, Phone, ArrowRight, 
   Upload, FileText, CheckCircle, Clock, AlertCircle, LogOut, 
-  ShieldCheck, Users
+  ShieldCheck, Users, UserCheck, Download, MessageSquare, Send
 } from 'lucide-react'
 
 export default function Home() {
@@ -13,7 +13,7 @@ export default function Home() {
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  // Estados de Auth
+  // Auth States
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,7 +23,7 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
-  // Estados do Autor
+  // Author States
   const [authorArticles, setAuthorArticles] = useState<any[]>([])
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -32,9 +32,19 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Estados do Editor
+  // Editor States
   const [allArticles, setAllArticles] = useState<any[]>([])
   const [allProfiles, setAllProfiles] = useState<any[]>([])
+  const [assignModalArticle, setAssignModalArticle] = useState<any>(null)
+  const [selectedReviewerId, setSelectedReviewerId] = useState('')
+
+  // Reviewer States
+  const [reviewerAssignments, setReviewerAssignments] = useState<any[]>([])
+  const [reviewModalData, setReviewModalData] = useState<any>(null)
+  const [recommendation, setRecommendation] = useState('aceitar')
+  const [commentsAuthor, setCommentsAuthor] = useState('')
+  const [commentsEditor, setCommentsEditor] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,7 +65,6 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Inicializa ou recupera o perfil do usuário
   const initUser = async (currentSession: any) => {
     const user = currentSession.user
     try {
@@ -67,10 +76,8 @@ export default function Home() {
 
       if (data) {
         setProfile(data)
-        if (data.role === 'editor') fetchEditorData()
-        else fetchAuthorArticles(user.id)
+        loadRoleData(data.role, user.id)
       } else {
-        // Cria perfil básico caso ainda não exista
         const fallbackProfile = {
           id: user.id,
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Autor',
@@ -81,46 +88,55 @@ export default function Home() {
         }
         await supabase.from('profiles').upsert(fallbackProfile)
         setProfile(fallbackProfile)
-        fetchAuthorArticles(user.id)
+        loadRoleData('author', user.id)
       }
     } catch (err) {
       console.error(err)
-      // Mesmo com erro, garante que a tela abra
       setProfile({ full_name: user.email?.split('@')[0], role: 'author' })
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchAuthorArticles = async (authorId: string) => {
-    try {
-      const { data } = await supabase
-        .from('articles')
-        .select('*')
-        .eq('author_id', authorId)
-        .order('created_at', { ascending: false })
-      if (data) setAuthorArticles(data)
-    } catch (e) {
-      console.error(e)
+  const loadRoleData = (role: string, userId: string) => {
+    if (role === 'editor') {
+      fetchEditorData()
+    } else if (role === 'reviewer') {
+      fetchReviewerData(userId)
+    } else {
+      fetchAuthorArticles(userId)
     }
   }
 
-  const fetchEditorData = async () => {
-    try {
-      const { data: articles } = await supabase
-        .from('articles')
-        .select('*, profiles(full_name, email, institution)')
-        .order('created_at', { ascending: false })
-      if (articles) setAllArticles(articles)
+  const fetchAuthorArticles = async (authorId: string) => {
+    const { data } = await supabase
+      .from('articles')
+      .select('*, reviews(*)')
+      .eq('author_id', authorId)
+      .order('created_at', { ascending: false })
+    if (data) setAuthorArticles(data)
+  }
 
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('full_name')
-      if (profiles) setAllProfiles(profiles)
-    } catch (e) {
-      console.error(e)
-    }
+  const fetchEditorData = async () => {
+    const { data: articles } = await supabase
+      .from('articles')
+      .select('*, profiles(full_name, email, institution), reviews(*, reviewer:profiles!reviews_reviewer_id_fkey(full_name))')
+      .order('created_at', { ascending: false })
+    if (articles) setAllArticles(articles)
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('full_name')
+    if (profiles) setAllProfiles(profiles)
+  }
+
+  const fetchReviewerData = async (reviewerId: string) => {
+    const { data } = await supabase
+      .from('reviews')
+      .select('*, articles(id, title, abstract, keywords, file_url, status)')
+      .eq('reviewer_id', reviewerId)
+    if (data) setReviewerAssignments(data)
   }
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -186,7 +202,7 @@ export default function Home() {
 
       if (insertError) throw insertError
 
-      alert('Trabalho submetido com sucesso à Revista!')
+      alert('Trabalho submetido com sucesso!')
       setShowSubmitModal(false)
       setNewTitle('')
       setNewAbstract('')
@@ -213,6 +229,83 @@ export default function Home() {
     }
   }
 
+  // Ações do Editor
+  const handleUpdateStatus = async (articleId: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .update({ status })
+        .eq('id', articleId)
+      if (error) throw error
+      alert(`Status atualizado para: ${status.replace('_', ' ').toUpperCase()}`)
+      fetchEditorData()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId)
+      if (error) throw error
+      alert('Função atualizada com sucesso!')
+      fetchEditorData()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const handleAssignReviewer = async () => {
+    if (!selectedReviewerId || !assignModalArticle) return
+    try {
+      const { error } = await supabase.from('reviews').insert({
+        article_id: assignModalArticle.id,
+        reviewer_id: selectedReviewerId,
+        status: 'pendente',
+      })
+      if (error) throw error
+
+      // Atualiza o artigo para 'em_avaliacao' se ainda estava como submetido
+      await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
+
+      alert('Parecerista atribuído com sucesso!')
+      setAssignModalArticle(null)
+      setSelectedReviewerId('')
+      fetchEditorData()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  // Ação do Parecerista
+  const handleSubmitReview = async () => {
+    if (!reviewModalData) return
+    setSubmittingReview(true)
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .update({
+          recommendation,
+          comments_for_author: commentsAuthor,
+          confidential_comments_editor: commentsEditor,
+          status: 'concluido',
+        })
+        .eq('id', reviewModalData.id)
+
+      if (error) throw error
+      alert('Seu parecer foi enviado com sucesso à Revista! Muito obrigado pela colaboração.')
+      setReviewModalData(null)
+      fetchReviewerData(session.user.id)
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">
@@ -221,7 +314,7 @@ export default function Home() {
     )
   }
 
-  // TELA DE LOGIN / CADASTRO
+  // LOGIN SCREEN
   if (!session) {
     return (
       <main className="min-h-screen flex flex-col justify-center items-center p-4 bg-slate-50">
@@ -370,8 +463,9 @@ export default function Home() {
     )
   }
 
-  // TELA LOGADA
+  // ROLES
   const isEditor = profile?.role === 'editor'
+  const isReviewer = profile?.role === 'reviewer'
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -388,7 +482,7 @@ export default function Home() {
               <p className="text-xs text-slate-500">
                 Portal Editorial • Conectado como{' '}
                 <span className="font-semibold text-indigo-600 uppercase">
-                  {isEditor ? 'Editor Geral' : 'Autor'}
+                  {isEditor ? 'Editor Geral' : isReviewer ? 'Parecerista Convidado' : 'Autor'}
                 </span>
               </p>
             </div>
@@ -396,7 +490,7 @@ export default function Home() {
 
           <div className="flex items-center gap-4">
             <span className="text-sm text-slate-600 hidden sm:inline">
-              Olá, <strong>{profile?.full_name || 'Colega'}</strong>
+              Olá, <strong>{profile?.full_name}</strong>
             </span>
             <button
               onClick={() => supabase.auth.signOut()}
@@ -409,15 +503,18 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-        {/* SE NÃO FOR EDITOR -> SEMPRE MOSTRA O PAINEL DO AUTOR */}
-        {!isEditor ? (
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+        
+        {/* ========================================================= */}
+        {/* PAINEL DO AUTOR */}
+        {/* ========================================================= */}
+        {!isEditor && !isReviewer && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <div>
                 <h2 className="text-xl font-bold text-slate-800">Meus Trabalhos Submetidos</h2>
                 <p className="text-sm text-slate-500">
-                  Acompanhe em tempo real o status de avaliação e as devolutivas dos seus artigos.
+                  Acompanhe em tempo real as devolutivas e o parecer do conselho editorial.
                 </p>
               </div>
               <button
@@ -434,7 +531,7 @@ export default function Home() {
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <h3 className="text-base font-semibold text-slate-700">Nenhum trabalho submetido ainda</h3>
                 <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                  Clique no botão azul acima para enviar seu texto (.doc, .docx ou .pdf) para avaliação editorial.
+                  Clique no botão acima para enviar seu texto (.doc, .docx ou .pdf).
                 </p>
               </div>
             ) : (
@@ -443,8 +540,13 @@ export default function Home() {
                   <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-4">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                          {art.status.toUpperCase()}
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          art.status === 'aceito' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          art.status === 'recusado' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                          art.status === 'correcoes_pendentes' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                          'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                        }`}>
+                          {art.status.replace('_', ' ').toUpperCase()}
                         </span>
                         <span className="text-xs text-slate-400">
                           Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
@@ -452,14 +554,31 @@ export default function Home() {
                       </div>
                       <h3 className="text-lg font-bold text-slate-800">{art.title}</h3>
                       <p className="text-sm text-slate-600 line-clamp-2">{art.abstract}</p>
+
+                      {/* Devolutivas dos Pareceristas (Anonimizadas) */}
+                      {art.reviews && art.reviews.filter((r: any) => r.status === 'concluido').length > 0 && (
+                        <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                          <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Pareceres e Devolutivas da Revista:
+                          </h5>
+                          {art.reviews
+                            .filter((r: any) => r.status === 'concluido')
+                            .map((rev: any, idx: number) => (
+                              <div key={rev.id} className="text-xs text-slate-700 bg-white p-3 rounded border border-slate-200">
+                                <span className="font-semibold text-indigo-700">Avaliação {idx + 1} ({rev.recommendation.replace('_', ' ').toUpperCase()}):</span>
+                                <p className="mt-1 whitespace-pre-line text-slate-600">{rev.comments_for_author}</p>
+                              </div>
+                            ))}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex flex-col justify-center gap-2 min-w-[200px]">
+                    <div className="flex flex-col justify-center min-w-[200px]">
                       <button
                         onClick={() => handleDownloadFile(art.file_url)}
                         className="w-full px-3 py-2 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5"
                       >
-                        <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                        <Download className="w-3.5 h-3.5 text-indigo-600" />
                         Baixar Manuscrito Enviado
                       </button>
                     </div>
@@ -468,20 +587,95 @@ export default function Home() {
               </div>
             )}
           </div>
-        ) : (
-          /* PAINEL DO EDITOR */
+        )}
+
+        {/* ========================================================= */}
+        {/* PAINEL DO PARECERISTA (AVALIAÇÃO CEGA) */}
+        {/* ========================================================= */}
+        {isReviewer && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos para Avaliação</h2>
+              <p className="text-sm text-slate-500">
+                Avaliação Duplo-Cega (*Blind Peer Review*): os dados do autor permanecem anônimos.
+              </p>
+            </div>
+
+            {reviewerAssignments.length === 0 ? (
+              <div className="bg-white p-12 text-center rounded-xl border border-slate-200">
+                <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-slate-700">Nenhum manuscrito aguardando seu parecer</h3>
+                <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+                  Quando o corpo editorial atribuir um artigo a você, ele aparecerá aqui para leitura e emissão de parecer.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {reviewerAssignments.map((rev) => (
+                  <div key={rev.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          rev.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {rev.status === 'concluido' ? 'PARECER ENVIADO' : 'AGUARDANDO SEU PARECER'}
+                        </span>
+                        <h3 className="text-lg font-bold text-slate-900 mt-2">{rev.articles?.title}</h3>
+                        <p className="text-xs text-slate-500 mt-1">Palavras-chave: {rev.articles?.keywords}</p>
+                      </div>
+
+                      <button
+                        onClick={() => handleDownloadFile(rev.articles?.file_url)}
+                        className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5"
+                      >
+                        <Download className="w-3.5 h-3.5 text-indigo-600" />
+                        Baixar Artigo (Word/PDF)
+                      </button>
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-xs text-slate-600">
+                      <p className="font-semibold text-slate-700 mb-1">Resumo do Manuscrito:</p>
+                      <p className="leading-relaxed">{rev.articles?.abstract}</p>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        onClick={() => {
+                          setReviewModalData(rev)
+                          setRecommendation(rev.recommendation || 'aceitar')
+                          setCommentsAuthor(rev.comments_for_author || '')
+                          setCommentsEditor(rev.confidential_comments_editor || '')
+                        }}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        {rev.status === 'concluido' ? 'Visualizar / Editar Meu Parecer' : 'Preencher Parecer Editorial'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* PAINEL DO EDITOR GERAL (VOCÊ) */}
+        {/* ========================================================= */}
+        {isEditor && (
           <div className="space-y-8">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <div className="flex items-center gap-2 text-indigo-700 mb-1">
                 <ShieldCheck className="w-5 h-5" />
-                <span className="text-xs font-bold uppercase tracking-wider">Painel do Editor Geral</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Sala Editorial</span>
               </div>
               <h2 className="text-xl font-bold text-slate-800">Gestão de Artigos e Pareceristas</h2>
               <p className="text-sm text-slate-500">
-                Visualize todos os manuscritos enviados e gerencie os avaliadores.
+                Coordene o fluxo duplo-cego, atribua pareceristas e tome as decisões editoriais finais.
               </p>
             </div>
 
+            {/* ARTIGOS RECEBIDOS */}
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-indigo-600" />
@@ -489,25 +683,162 @@ export default function Home() {
               </h3>
 
               <div className="grid gap-4">
-                {allArticles.length === 0 ? (
-                  <div className="bg-white p-8 text-center rounded-xl border border-slate-200 text-slate-400 text-sm">
-                    Nenhum artigo submetido até o momento.
-                  </div>
-                ) : (
-                  allArticles.map((art) => (
-                    <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm p-4">
-                      <h4 className="text-base font-bold">{art.title}</h4>
-                      <p className="text-xs text-slate-500">Autor: {art.profiles?.full_name}</p>
+                {allArticles.map((art) => (
+                  <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            {art.status.replace('_', ' ').toUpperCase()}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                        <h4 className="text-lg font-bold text-slate-900">{art.title}</h4>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Autor: <strong>{art.profiles?.full_name}</strong> ({art.profiles?.email}) • Instituição: {art.profiles?.institution}
+                        </p>
+                      </div>
+
+                      {/* Botões de Ação do Artigo */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => handleDownloadFile(art.file_url)}
+                          className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 text-slate-700"
+                        >
+                          <Download className="w-3.5 h-3.5 text-indigo-600" />
+                          Baixar Manuscrito
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setAssignModalArticle(art)
+                            setSelectedReviewerId('')
+                          }}
+                          className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 flex items-center gap-1.5"
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          + Atribuir Parecerista
+                        </button>
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-slate-500">Status:</span>
+                          <select
+                            value={art.status}
+                            onChange={(e) => handleUpdateStatus(art.id, e.target.value)}
+                            className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="submetido">Submetido</option>
+                            <option value="em_avaliacao">Em Avaliação</option>
+                            <option value="correcoes_pendentes">Correções Pendentes</option>
+                            <option value="aceito">Aceito para Publicação</option>
+                            <option value="recusado">Recusado</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                  ))
-                )}
+
+                    {/* Lista de Pareceres deste Artigo */}
+                    {art.reviews && art.reviews.length > 0 && (
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-2">
+                        <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Pareceristas Designados para este Trabalho:
+                        </h5>
+                        <div className="grid gap-2">
+                          {art.reviews.map((r: any) => (
+                            <div key={r.id} className="bg-white p-3 rounded-lg border border-slate-200 text-xs flex justify-between items-center">
+                              <div>
+                                <span className="font-semibold text-slate-800">{r.reviewer?.full_name || 'Parecerista'}</span>
+                                <span className={`ml-2 px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                  r.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}>
+                                  {r.status === 'concluido' ? `CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO RESPOSTA'}
+                                </span>
+                              </div>
+
+                              {r.status === 'concluido' && (
+                                <button
+                                  onClick={() => alert(`PARECER DE ${r.reviewer?.full_name}:\n\nRecomendação: ${r.recommendation}\n\nPara o Autor:\n${r.comments_for_author}\n\nNotas Confidenciais ao Editor:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
+                                  className="text-xs text-indigo-600 hover:underline font-semibold"
+                                >
+                                  Ler Parecer Completo
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* TABELA DE GESTÃO DE USUÁRIOS */}
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-600" />
+                    Quadro de Usuários Cadastrados ({allProfiles.length})
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Defina aqui quem são os Pareceristas da Revista. Basta alterar na coluna à direita.
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-600">
+                  <thead className="bg-slate-50 text-slate-700 uppercase font-semibold">
+                    <tr>
+                      <th className="p-3">Nome</th>
+                      <th className="p-3">E-mail</th>
+                      <th className="p-3">Instituição</th>
+                      <th className="p-3">Telefone</th>
+                      <th className="p-3">Função Atual</th>
+                      <th className="p-3 text-right">Alterar Função</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {allProfiles.map((p) => (
+                      <tr key={p.id}>
+                        <td className="p-3 font-semibold text-slate-900">{p.full_name}</td>
+                        <td className="p-3">{p.email}</td>
+                        <td className="p-3">{p.institution || '-'}</td>
+                        <td className="p-3">{p.phone || '-'}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                            p.role === 'editor' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                            p.role === 'reviewer' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                            'bg-slate-100 text-slate-700'
+                          }`}>
+                            {p.role === 'editor' ? 'EDITOR' : p.role === 'reviewer' ? 'PARECERISTA' : 'AUTOR'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <select
+                            value={p.role}
+                            onChange={(e) => handleUpdateRole(p.id, e.target.value)}
+                            className="p-1 border border-slate-200 rounded bg-white text-xs font-medium focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="author">Autor</option>
+                            <option value="reviewer">Parecerista</option>
+                            <option value="editor">Editor</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* MODAL DE SUBMISSÃO */}
+      {/* MODAL DO AUTOR: SUBMISSÃO */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -578,6 +909,141 @@ export default function Home() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DO EDITOR: ATRIBUIR PARECERISTA */}
+      {assignModalArticle && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Designar Parecerista para Artigo</h3>
+            <p className="text-xs text-slate-500">
+              Artigo: <strong>{assignModalArticle.title}</strong>
+            </p>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-semibold text-slate-700">Selecione o Parecerista:</label>
+              <select
+                value={selectedReviewerId}
+                onChange={(e) => setSelectedReviewerId(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white"
+              >
+                <option value="">-- Escolha um parecerista --</option>
+                {allProfiles
+                  .filter((p) => p.role === 'reviewer' || p.role === 'editor')
+                  .map((rev) => (
+                    <option key={rev.id} value={rev.id}>
+                      {rev.full_name} ({rev.institution || rev.email})
+                    </option>
+                  ))}
+              </select>
+
+              {allProfiles.filter((p) => p.role === 'reviewer').length === 0 && (
+                <p className="text-[11px] text-amber-600">
+                  Dica: Nenhum usuário com perfil "Parecerista" cadastrado ainda. Você pode promover algum usuário na tabela abaixo para ele aparecer nesta lista.
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3">
+              <button
+                type="button"
+                onClick={() => setAssignModalArticle(null)}
+                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={!selectedReviewerId}
+                onClick={handleAssignReviewer}
+                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+              >
+                Confirmar Atribuição
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DO PARECERISTA: EMITIR PARECER */}
+      {reviewModalData && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-slate-900">Formulário de Avaliação Editorial</h3>
+            <p className="text-xs text-slate-500">
+              Artigo em avaliação: <strong>{reviewModalData.articles?.title}</strong>
+            </p>
+
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  1. Recomendação Editorial Final *
+                </label>
+                <select
+                  value={recommendation}
+                  onChange={(e) => setRecommendation(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white"
+                >
+                  <option value="aceitar">Aceitar sem restrições (Aprovado)</option>
+                  <option value="correcoes_obrigatorias">Aceitar mediante correções obrigatórias</option>
+                  <option value="rejeitar">Recusar manuscrito (Não aprovado)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  2. Parecer Detalhado e Orientações para o Autor *
+                </label>
+                <p className="text-[11px] text-slate-400 mb-1">
+                  Este texto será disponibilizado ao autor para que ele realize as correções (sua identidade permanecerá anônima).
+                </p>
+                <textarea
+                  required
+                  rows={6}
+                  value={commentsAuthor}
+                  onChange={(e) => setCommentsAuthor(e.target.value)}
+                  placeholder="Descreva suas considerações teóricas, clareza dos conceitos psicanalíticos, relevância clínica e recomendações de correção..."
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  3. Observações Confidenciais para o Editor Geral (Opcional)
+                </label>
+                <p className="text-[11px] text-slate-400 mb-1">
+                  Texto visível apenas para o Editor-adjunto e equipe editorial (o autor NÃO terá acesso).
+                </p>
+                <textarea
+                  rows={3}
+                  value={commentsEditor}
+                  onChange={(e) => setCommentsEditor(e.target.value)}
+                  placeholder="Observações de bastidores, dúvidas éticas ou notas internas..."
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setReviewModalData(null)}
+                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                disabled={submittingReview || !commentsAuthor}
+                onClick={handleSubmitReview}
+                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {submittingReview ? 'Enviando...' : 'Concluir e Enviar Parecer'}
+              </button>
+            </div>
           </div>
         </div>
       )}
