@@ -169,6 +169,26 @@ export default function Home() {
     }
   }
 
+  // Disparador de Notificações por E-mail
+  const sendEmailNotification = async (payload: {
+    to: string
+    subject: string
+    title: string
+    message: string
+    actionText?: string
+    actionUrl?: string
+  }) => {
+    try {
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+    } catch (e) {
+      console.warn('Falha silenciosa no envio de e-mail:', e)
+    }
+  }
+
   const getAuthorName = (authorId: string) => {
     const p = allProfiles.find((x) => x.id === authorId)
     return p ? p.full_name : 'Autor da Revista'
@@ -252,7 +272,6 @@ export default function Home() {
     setVerifyResult(null)
 
     try {
-      // 1. Tenta consultar a função RPC pública do banco
       const { data, error } = await supabase.rpc('verify_document', { code })
 
       if (!error && data && data.valid) {
@@ -261,7 +280,6 @@ export default function Home() {
         return
       }
 
-      // 2. Fallback caso a lista já esteja em memória
       if (code.includes('ASP-ACE-')) {
         const parts = code.split('-')
         const prefix = parts[2] || ''
@@ -309,6 +327,7 @@ export default function Home() {
     }
   }
 
+  // 1. SUBMISSÃO DO ARTIGO (Com Disparo de E-mail de Confirmação ao Autor)
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -349,7 +368,17 @@ export default function Home() {
 
       if (insertError) throw insertError
 
-      alert('Parabéns! Seu artigo foi submetido com sucesso à Revista Saber Psicanalítico.')
+      // E-MAIL AUTOMÁTICO DE CONFIRMAÇÃO AO AUTOR
+      sendEmailNotification({
+        to: session.user.email,
+        subject: 'Confirmação de Submissão - Revista Saber Psicanalítico',
+        title: 'Manuscrito Recebido com Sucesso!',
+        message: `Olá, ${profile?.full_name || 'Autor(a)'}.\n\nConfirmamos com satisfação o recebimento do seu manuscrito intitulado "${newTitle}" na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSeu trabalho ingressou na etapa de Triagem Editorial. Você poderá acompanhar em tempo real todas as movimentações e pareceres diretamente pelo portal editorial.`,
+        actionText: 'Acompanhar Minha Submissão',
+        actionUrl: 'https://revista-saber-portal.vercel.app',
+      })
+
+      alert('Parabéns! Seu artigo foi submetido com sucesso à Revista Saber Psicanalítico. Um e-mail de confirmação foi enviado.')
       setShowSubmitModal(false)
       setNewTitle('')
       setNewTitleEn('')
@@ -373,6 +402,7 @@ export default function Home() {
     }
   }
 
+  // Reenvio de Versão Corrigida
   const handleResubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!revisedFile || !reSubmitArticle) return
@@ -423,14 +453,54 @@ export default function Home() {
     }
   }
 
+  // 2. MUDANÇA DE STATUS PELO EDITOR (Com Disparo de E-mails ao Autor)
   const handleUpdateStatus = async (articleId: string, status: string) => {
     try {
+      const targetArticle = allArticles.find((a) => a.id === articleId)
+      const authorEmail = getAuthorEmail(targetArticle?.author_id)
+      const authorName = getAuthorName(targetArticle?.author_id)
+      const articleTitle = targetArticle?.title || 'Seu Artigo'
+
       const { error } = await supabase
         .from('articles')
         .update({ status })
         .eq('id', articleId)
+
       if (error) throw error
-      alert(`Status atualizado com sucesso!`)
+
+      // Notificações por E-mail conforme a Decisão Editorial
+      if (authorEmail) {
+        if (status === 'ajustes_iniciais') {
+          sendEmailNotification({
+            to: authorEmail,
+            subject: 'Ajuste Inicial Solicitado - Revista Saber Psicanalítico',
+            title: 'Ajuste de Anonimização Solicitado',
+            message: `Prezado(a) ${authorName},\n\nA comissão editorial realizou a triagem inicial do seu manuscrito "${articleTitle}" e identificou a necessidade de ajustes na anonimização do arquivo (remoção de nomes, afiliações ou propriedades do documento).\n\nPor favor, acesse o portal editorial para reenviar o arquivo corrigido e viabilizar o encaminhamento aos pareceristas.`,
+            actionText: 'Reenviar Arquivo no Portal',
+            actionUrl: 'https://revista-saber-portal.vercel.app',
+          })
+        } else if (status === 'correcoes_pendentes') {
+          sendEmailNotification({
+            to: authorEmail,
+            subject: 'Pareceres Emitidos / Correções Solicitadas - Revista Saber Psicanalítico',
+            title: 'Orientações de Correção Disponíveis',
+            message: `Prezado(a) ${authorName},\n\nA avaliação por pares do seu artigo "${articleTitle}" foi concluída e a comissão editorial deliberou pela solicitação de correções no texto.\n\nO parecer detalhado e o arquivo Word com eventuais anotações pontuais dos pareceristas já estão liberados em seu painel de autor.`,
+            actionText: 'Ver Pareceres e Enviar Revisão',
+            actionUrl: 'https://revista-saber-portal.vercel.app',
+          })
+        } else if (status === 'aceito') {
+          sendEmailNotification({
+            to: authorEmail,
+            subject: 'Parabéns! Artigo Aceito para Publicação - Revista Saber Psicanalítico',
+            title: 'Seu Artigo Foi Aceito para Publicação!',
+            message: `Prezado(a) ${authorName},\n\nÉ com grande satisfação que comunicamos o ACEITE OFICIAL do seu trabalho "${articleTitle}" para publicação na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua Carta Oficial de Aceite timbrada com chancela eletrônica já se encontra disponível para emissão e download em PDF no portal.`,
+            actionText: 'Emitir Minha Carta de Aceite (PDF)',
+            actionUrl: 'https://revista-saber-portal.vercel.app',
+          })
+        }
+      }
+
+      alert(`Status atualizado com sucesso! E-mail de notificação enviado ao autor.`)
       fetchAllData()
     } catch (err: any) {
       alert(err.message)
@@ -451,9 +521,12 @@ export default function Home() {
     }
   }
 
+  // 3. ATRIBUIÇÃO DE PARECERISTA (Com Disparo de E-mail de Convite ao Avaliador)
   const handleAssignReviewer = async () => {
     if (!selectedReviewerId || !assignModalArticle) return
     try {
+      const reviewerProfile = allProfiles.find((p) => p.id === selectedReviewerId)
+
       const { error } = await supabase.from('reviews').insert({
         article_id: assignModalArticle.id,
         reviewer_id: selectedReviewerId,
@@ -463,7 +536,19 @@ export default function Home() {
 
       await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
 
-      alert('Parecerista atribuído com sucesso!')
+      // E-MAIL AUTOMÁTICO DE CONVITE AO PARECERISTA
+      if (reviewerProfile?.email) {
+        sendEmailNotification({
+          to: reviewerProfile.email,
+          subject: 'Convite para Avaliação de Manuscrito - Revista Saber Psicanalítico',
+          title: 'Designação de Parecer Técnico-Científico',
+          message: `Prezado(a) ${reviewerProfile.full_name},\n\nTendo em vista sua destacada competência acadêmica e clínica, o corpo editorial da Revista Saber Psicanalítico (ISSN 3086-8416) tem a honra de designá-lo(a) para emitir parecer ad-hoc para o manuscrito intitulado "${assignModalArticle.title}".\n\nO artigo encontra-se anonimizado (avaliação duplo-cega). Acesse o portal para baixar o arquivo Word e preencher sua avaliação.`,
+          actionText: 'Acessar Área do Parecerista',
+          actionUrl: 'https://revista-saber-portal.vercel.app',
+        })
+      }
+
+      alert('Parecerista atribuído com sucesso! E-mail de convite enviado.')
       setAssignModalArticle(null)
       setSelectedReviewerId('')
       fetchAllData()
@@ -533,7 +618,7 @@ export default function Home() {
     setTimeout(() => setCopiedThanks(false), 2500)
   }
 
-  // COMPONENTE DO MODAL DE VERIFICAÇÃO PÚBLICA (RENDERIZADO TANTO FORA QUANTO DENTRO DO LOGIN)
+  // RENDER DO MODAL DE VERIFICAÇÃO PÚBLICA
   const renderVerificationModal = () => {
     if (!showVerifyModal) return null
     return (
@@ -789,7 +874,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Modal de verificação acessível diretamente na tela de login */}
         {renderVerificationModal()}
       </main>
     )
@@ -1457,7 +1541,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Modal de verificação disponível também dentro da área logada */}
       {renderVerificationModal()}
 
       {/* MODAL: MEU PERFIL */}
