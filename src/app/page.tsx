@@ -5,13 +5,13 @@ import { supabase } from '@/lib/supabase'
 import { 
   BookOpen, User, Lock, Mail, Building, Phone, ArrowRight, 
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
-  Download, MessageSquare, Send, Eye
+  Download, MessageSquare, Send
 } from 'lucide-react'
 
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
-  const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor'>('author')
+  const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor'>('editor')
   const [loading, setLoading] = useState(true)
 
   // Auth States
@@ -24,8 +24,12 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
-  // Author States
-  const [authorArticles, setAuthorArticles] = useState<any[]>([])
+  // Data States
+  const [allArticles, setAllArticles] = useState<any[]>([])
+  const [allProfiles, setAllProfiles] = useState<any[]>([])
+  const [allReviews, setAllReviews] = useState<any[]>([])
+
+  // Modal States
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newAbstract, setNewAbstract] = useState('')
@@ -33,14 +37,11 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Editor States
-  const [allArticles, setAllArticles] = useState<any[]>([])
-  const [allProfiles, setAllProfiles] = useState<any[]>([])
+  // Editor Assign Modal
   const [assignModalArticle, setAssignModalArticle] = useState<any>(null)
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
 
-  // Reviewer States
-  const [reviewerAssignments, setReviewerAssignments] = useState<any[]>([])
+  // Reviewer Modal
   const [reviewModalData, setReviewModalData] = useState<any>(null)
   const [recommendation, setRecommendation] = useState('aceitar')
   const [commentsAuthor, setCommentsAuthor] = useState('')
@@ -78,21 +79,20 @@ export default function Home() {
       if (data) {
         setProfile(data)
         setViewMode(data.role)
-        loadAllData(user.id)
       } else {
         const fallbackProfile = {
           id: user.id,
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Autor',
+          full_name: user.user_metadata?.full_name || 'José Aniervson Souza dos Santos',
           email: user.email || '',
-          role: 'author',
-          institution: user.user_metadata?.institution || 'Associação Saber Psicanalítico',
-          phone: user.user_metadata?.phone || '',
+          role: 'editor',
+          institution: 'Associação Saber Psicanalítico',
+          phone: '',
         }
         await supabase.from('profiles').upsert(fallbackProfile)
         setProfile(fallbackProfile)
-        setViewMode('author')
-        loadAllData(user.id)
+        setViewMode('editor')
       }
+      fetchAllData()
     } catch (err) {
       console.error(err)
     } finally {
@@ -100,84 +100,47 @@ export default function Home() {
     }
   }
 
-  const loadAllData = async (userId: string) => {
-    fetchAuthorArticles(userId)
-    fetchReviewerData(userId)
-    fetchEditorData()
-  }
-
-  const fetchAuthorArticles = async (authorId: string) => {
-    const { data } = await supabase
-      .from('articles')
-      .select('*, reviews(*)')
-      .eq('author_id', authorId)
-      .order('created_at', { ascending: false })
-    if (data) setAuthorArticles(data)
-  }
-
-  const fetchEditorData = async () => {
-    const { data: articles } = await supabase
-      .from('articles')
-      .select('*, profiles(full_name, email, institution), reviews(*)')
-      .order('created_at', { ascending: false })
-    if (articles) setAllArticles(articles)
-
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('full_name')
-    if (profiles) setAllProfiles(profiles)
-  }
-
-  const fetchReviewerData = async (reviewerId: string) => {
-    const { data } = await supabase
-      .from('reviews')
-      .select('*, articles(id, title, abstract, keywords, file_url, status)')
-      .eq('reviewer_id', reviewerId)
-    if (data) setReviewerAssignments(data)
-  }
-
-  const getReviewerName = (reviewerId: string) => {
-    const found = allProfiles.find((p) => p.id === reviewerId)
-    return found ? found.full_name : 'Parecerista Designado'
-  }
-
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setAuthLoading(true)
-    setAuthMessage(null)
-
+  // Busca limpa de todas as tabelas (sem falhas de cruzamento)
+  const fetchAllData = async () => {
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              role: 'author',
-              institution,
-              phone,
-            },
-          },
-        })
-        if (error) throw error
-        setAuthMessage({
-          type: 'success',
-          text: 'Conta criada! Faça login com seu e-mail e senha.',
-        })
-        setIsLogin(true)
-      }
-    } catch (err: any) {
-      setAuthMessage({ type: 'error', text: err.message || 'Erro ao processar.' })
-    } finally {
-      setAuthLoading(false)
+      const { data: profiles } = await supabase.from('profiles').select('*').order('full_name')
+      if (profiles) setAllProfiles(profiles)
+
+      const { data: articles } = await supabase.from('articles').select('*').order('created_at', { ascending: false })
+      if (articles) setAllArticles(articles)
+
+      const { data: reviews } = await supabase.from('reviews').select('*')
+      if (reviews) setAllReviews(reviews)
+    } catch (e) {
+      console.error(e)
     }
   }
 
+  const getAuthorName = (authorId: string) => {
+    const p = allProfiles.find((x) => x.id === authorId)
+    return p ? p.full_name : 'Autor da Revista'
+  }
+
+  const getAuthorEmail = (authorId: string) => {
+    const p = allProfiles.find((x) => x.id === authorId)
+    return p ? p.email : ''
+  }
+
+  const getAuthorInst = (authorId: string) => {
+    const p = allProfiles.find((x) => x.id === authorId)
+    return p ? p.institution || '-' : '-'
+  }
+
+  const getArticleReviews = (articleId: string) => {
+    return allReviews.filter((r) => r.article_id === articleId)
+  }
+
+  const getReviewerName = (reviewerId: string) => {
+    const p = allProfiles.find((x) => x.id === reviewerId)
+    return p ? p.full_name : 'Parecerista Designado'
+  }
+
+  // Submissão do Manuscrito
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -211,7 +174,7 @@ export default function Home() {
       setNewAbstract('')
       setNewKeywords('')
       setSelectedFile(null)
-      loadAllData(session.user.id)
+      fetchAllData()
     } catch (err: any) {
       alert(`Erro na submissão: ${err.message}`)
     } finally {
@@ -240,7 +203,7 @@ export default function Home() {
         .eq('id', articleId)
       if (error) throw error
       alert(`Status atualizado para: ${status.replace('_', ' ').toUpperCase()}`)
-      loadAllData(session.user.id)
+      fetchAllData()
     } catch (err: any) {
       alert(err.message)
     }
@@ -254,7 +217,7 @@ export default function Home() {
         .eq('id', userId)
       if (error) throw error
       alert('Função do usuário atualizada com sucesso!')
-      loadAllData(session.user.id)
+      fetchAllData()
     } catch (err: any) {
       alert(err.message)
     }
@@ -275,7 +238,7 @@ export default function Home() {
       alert('Parecerista atribuído com sucesso!')
       setAssignModalArticle(null)
       setSelectedReviewerId('')
-      loadAllData(session.user.id)
+      fetchAllData()
     } catch (err: any) {
       alert(err.message)
     }
@@ -298,7 +261,7 @@ export default function Home() {
       if (error) throw error
       alert('Parecer enviado com sucesso! Muito obrigado pela avaliação.')
       setReviewModalData(null)
-      loadAllData(session.user.id)
+      fetchAllData()
     } catch (err: any) {
       alert(err.message)
     } finally {
@@ -352,115 +315,101 @@ export default function Home() {
           </div>
 
           {authMessage && (
-            <div
-              className={`p-3 rounded-lg text-sm mb-4 ${
-                authMessage.type === 'error'
-                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              }`}
-            >
+            <div className="p-3 rounded-lg text-sm mb-4 bg-rose-50 text-rose-700 border border-rose-200">
               {authMessage.text}
             </div>
           )}
 
-          <form onSubmit={handleAuth} className="space-y-4">
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            setAuthLoading(true)
+            try {
+              if (isLogin) {
+                const { error } = await supabase.auth.signInWithPassword({ email, password })
+                if (error) throw error
+              } else {
+                const { error } = await supabase.auth.signUp({
+                  email,
+                  password,
+                  options: { data: { full_name: fullName, role: 'author', institution, phone } },
+                })
+                if (error) throw error
+                setAuthMessage({ type: 'success', text: 'Conta criada! Faça login com seu e-mail e senha.' })
+                setIsLogin(true)
+              }
+            } catch (err: any) {
+              setAuthMessage({ type: 'error', text: err.message || 'Erro ao processar.' })
+            } finally {
+              setAuthLoading(false)
+            }
+          }} className="space-y-4">
             {!isLogin && (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Nome Completo do Autor
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Ex: Dr. Fulano de Tal"
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Ex: Dr. Fulano de Tal"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Instituição / Vínculo
-                  </label>
-                  <div className="relative">
-                    <Building className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      required
-                      value={institution}
-                      onChange={(e) => setInstitution(e.target.value)}
-                      placeholder="Ex: Associação Saber Psicanalítico / USP"
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Telefone / WhatsApp
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="(11) 90000-0000"
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Instituição</label>
+                  <input
+                    type="text"
+                    required
+                    value={institution}
+                    onChange={(e) => setInstitution(e.target.value)}
+                    placeholder="Ex: Associação Saber Psicanalítico"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
               </>
             )}
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu.email@exemplo.com"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu.email@exemplo.com"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
             </div>
 
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm disabled:opacity-50"
             >
               {authLoading ? 'Processando...' : isLogin ? 'Acessar o Portal' : 'Cadastrar como Autor'}
-              <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         </div>
       </main>
     )
   }
+
+  // Filtros dos dados por visão
+  const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
+  const myReviewAssignments = allReviews.filter((r) => r.reviewer_id === session?.user?.id)
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -484,7 +433,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Alternador de Visão exclusivo para o Editor */}
+            {/* Alternador de Modos para o Editor */}
             {profile?.role === 'editor' && (
               <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                 <button
@@ -531,7 +480,7 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
         
         {/* ========================================================= */}
-        {/* PAINEL DO AUTOR */}
+        {/* VISÃO DO AUTOR */}
         {/* ========================================================= */}
         {viewMode === 'author' && (
           <div className="space-y-6">
@@ -539,7 +488,7 @@ export default function Home() {
               <div>
                 <h2 className="text-xl font-bold text-slate-800">Meus Trabalhos Submetidos</h2>
                 <p className="text-sm text-slate-500">
-                  Acompanhe em tempo real as devolutivas e o parecer do conselho editorial.
+                  Acompanhe o status e as devolutivas de avaliação dos seus artigos.
                 </p>
               </div>
               <button
@@ -551,43 +500,44 @@ export default function Home() {
               </button>
             </div>
 
-            {authorArticles.length === 0 ? (
+            {myAuthorArticles.length === 0 ? (
               <div className="bg-white p-12 text-center rounded-xl border border-slate-200">
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <h3 className="text-base font-semibold text-slate-700">Nenhum trabalho submetido ainda</h3>
                 <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                  Clique no botão acima para enviar seu texto (.doc, .docx ou .pdf).
+                  Clique no botão azul acima para enviar seu texto (.doc, .docx ou .pdf).
                 </p>
               </div>
             ) : (
               <div className="grid gap-4">
-                {authorArticles.map((art) => (
-                  <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-4">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          art.status === 'aceito' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          art.status === 'recusado' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                          art.status === 'correcoes_pendentes' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                          'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                        }`}>
-                          {art.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-800">{art.title}</h3>
-                      <p className="text-sm text-slate-600">{art.abstract}</p>
+                {myAuthorArticles.map((art) => {
+                  const revs = getArticleReviews(art.id).filter((r) => r.status === 'concluido')
+                  return (
+                    <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-4">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            art.status === 'aceito' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                            art.status === 'recusado' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                            art.status === 'correcoes_pendentes' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          }`}>
+                            {art.status.replace('_', ' ').toUpperCase()}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-800">{art.title}</h3>
+                        <p className="text-sm text-slate-600">{art.abstract}</p>
 
-                      {art.reviews && art.reviews.filter((r: any) => r.status === 'concluido').length > 0 && (
-                        <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-                          <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                            Pareceres e Devolutivas da Revista:
-                          </h5>
-                          {art.reviews
-                            .filter((r: any) => r.status === 'concluido')
-                            .map((rev: any, idx: number) => (
+                        {/* Devolutivas anônimas */}
+                        {revs.length > 0 && (
+                          <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                            <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                              Pareceres e Devolutivas da Revista:
+                            </h5>
+                            {revs.map((rev, idx) => (
                               <div key={rev.id} className="text-xs text-slate-700 bg-white p-3 rounded border border-slate-200">
                                 <span className="font-semibold text-indigo-700">
                                   Parecer {idx + 1} ({rev.recommendation?.replace('_', ' ').toUpperCase()}):
@@ -595,98 +545,106 @@ export default function Home() {
                                 <p className="mt-1 whitespace-pre-line text-slate-600">{rev.comments_for_author}</p>
                               </div>
                             ))}
-                        </div>
-                      )}
-                    </div>
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="flex flex-col justify-center min-w-[200px]">
-                      <button
-                        onClick={() => handleDownloadFile(art.file_url)}
-                        className="w-full px-3 py-2 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5"
-                      >
-                        <Download className="w-3.5 h-3.5 text-indigo-600" />
-                        Baixar Manuscrito Enviado
-                      </button>
+                      <div className="flex flex-col justify-center min-w-[200px]">
+                        <button
+                          onClick={() => handleDownloadFile(art.file_url)}
+                          className="w-full px-3 py-2 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5 text-indigo-600" />
+                          Baixar Manuscrito Enviado
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
         )}
 
         {/* ========================================================= */}
-        {/* PAINEL DO PARECERISTA (AVALIAÇÃO CEGA) */}
+        {/* VISÃO DO PARECERISTA (DUPLO-CEGO) */}
         {/* ========================================================= */}
         {viewMode === 'reviewer' && (
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos para Avaliação</h2>
               <p className="text-sm text-slate-500">
-                Avaliação Duplo-Cega (*Blind Peer Review*): os dados de autoria são mantidos em sigilo.
+                Avaliação Duplo-Cega (*Blind Peer Review*): os dados do autor permanecem anônimos.
               </p>
             </div>
 
-            {reviewerAssignments.length === 0 ? (
+            {myReviewAssignments.length === 0 ? (
               <div className="bg-white p-12 text-center rounded-xl border border-slate-200">
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-slate-700">Nenhum manuscrito atribuído a você no momento</h3>
+                <h3 className="text-base font-semibold text-slate-700">Nenhum manuscrito aguardando seu parecer</h3>
                 <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                  Quando o Editor Geral designar um artigo para seu parecer, ele aparecerá nesta tela.
+                  Quando o Editor designar um artigo para você avaliar, ele aparecerá nesta tela.
                 </p>
               </div>
             ) : (
               <div className="grid gap-4">
-                {reviewerAssignments.map((rev) => (
-                  <div key={rev.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                      <div>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          rev.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}>
-                          {rev.status === 'concluido' ? 'PARECER ENVIADO' : 'AGUARDANDO SEU PARECER'}
-                        </span>
-                        <h3 className="text-lg font-bold text-slate-900 mt-2">{rev.articles?.title}</h3>
-                        <p className="text-xs text-slate-500 mt-1">Palavras-chave: {rev.articles?.keywords}</p>
+                {myReviewAssignments.map((rev) => {
+                  const art = allArticles.find((a) => a.id === rev.article_id)
+                  return (
+                    <div key={rev.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            rev.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {rev.status === 'concluido' ? 'PARECER ENVIADO' : 'AGUARDANDO SEU PARECER'}
+                          </span>
+                          <h3 className="text-lg font-bold text-slate-900 mt-2">{art?.title || 'Artigo'}</h3>
+                          <p className="text-xs text-slate-500 mt-1">Palavras-chave: {art?.keywords}</p>
+                        </div>
+
+                        {art && (
+                          <button
+                            onClick={() => handleDownloadFile(art.file_url)}
+                            className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5"
+                          >
+                            <Download className="w-3.5 h-3.5 text-indigo-600" />
+                            Baixar Artigo (Sem Identificação)
+                          </button>
+                        )}
                       </div>
 
-                      <button
-                        onClick={() => handleDownloadFile(rev.articles?.file_url)}
-                        className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5"
-                      >
-                        <Download className="w-3.5 h-3.5 text-indigo-600" />
-                        Baixar Artigo (Sem Identificação)
-                      </button>
-                    </div>
+                      {art && (
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-xs text-slate-600">
+                          <p className="font-semibold text-slate-700 mb-1">Resumo do Manuscrito:</p>
+                          <p className="leading-relaxed">{art.abstract}</p>
+                        </div>
+                      )}
 
-                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-xs text-slate-600">
-                      <p className="font-semibold text-slate-700 mb-1">Resumo do Manuscrito:</p>
-                      <p className="leading-relaxed">{rev.articles?.abstract}</p>
+                      <div className="flex justify-end pt-2">
+                        <button
+                          onClick={() => {
+                            setReviewModalData(rev)
+                            setRecommendation(rev.recommendation || 'aceitar')
+                            setCommentsAuthor(rev.comments_for_author || '')
+                            setCommentsEditor(rev.confidential_comments_editor || '')
+                          }}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          {rev.status === 'concluido' ? 'Visualizar / Editar Meu Parecer' : 'Preencher Parecer Editorial'}
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex justify-end pt-2">
-                      <button
-                        onClick={() => {
-                          setReviewModalData(rev)
-                          setRecommendation(rev.recommendation || 'aceitar')
-                          setCommentsAuthor(rev.comments_for_author || '')
-                          setCommentsEditor(rev.confidential_comments_editor || '')
-                        }}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        {rev.status === 'concluido' ? 'Visualizar / Editar Meu Parecer' : 'Preencher Parecer Editorial'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
         )}
 
         {/* ========================================================= */}
-        {/* PAINEL DO EDITOR GERAL */}
+        {/* PAINEL DO EDITOR GERAL (SALA EDITORIAL) */}
         {/* ========================================================= */}
         {viewMode === 'editor' && (
           <div className="space-y-8">
@@ -710,7 +668,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* ARTIGOS RECEBIDOS */}
+            {/* LISTA DE ARTIGOS */}
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-indigo-600" />
@@ -718,103 +676,106 @@ export default function Home() {
               </h3>
 
               <div className="grid gap-4">
-                {allArticles.map((art) => (
-                  <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            {art.status.replace('_', ' ').toUpperCase()}
-                          </span>
-                          <span className="text-xs text-slate-400">
-                            Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
-                          </span>
+                {allArticles.map((art) => {
+                  const revs = getArticleReviews(art.id)
+                  return (
+                    <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              {art.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          <h4 className="text-lg font-bold text-slate-900">{art.title}</h4>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Autor: <strong>{getAuthorName(art.author_id)}</strong> ({getAuthorEmail(art.author_id)}) • Instituição: {getAuthorInst(art.author_id)}
+                          </p>
                         </div>
-                        <h4 className="text-lg font-bold text-slate-900">{art.title}</h4>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Autor: <strong>{art.profiles?.full_name}</strong> ({art.profiles?.email}) • Instituição: {art.profiles?.institution || '-'}
-                        </p>
-                      </div>
 
-                      {/* Botões de Ação do Editor */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => handleDownloadFile(art.file_url)}
-                          className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 text-slate-700"
-                        >
-                          <Download className="w-3.5 h-3.5 text-indigo-600" />
-                          Baixar Manuscrito
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setAssignModalArticle(art)
-                            setSelectedReviewerId('')
-                          }}
-                          className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 flex items-center gap-1.5"
-                        >
-                          <UserCheck className="w-3.5 h-3.5" />
-                          + Atribuir Parecerista
-                        </button>
-
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-slate-500">Decisão:</span>
-                          <select
-                            value={art.status}
-                            onChange={(e) => handleUpdateStatus(art.id, e.target.value)}
-                            className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                        {/* Botões do Editor */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => handleDownloadFile(art.file_url)}
+                            className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 text-slate-700"
                           >
-                            <option value="submetido">Submetido</option>
-                            <option value="em_avaliacao">Em Avaliação</option>
-                            <option value="correcoes_pendentes">Solicitar Correções</option>
-                            <option value="aceito">Aceito</option>
-                            <option value="recusado">Recusado</option>
-                          </select>
+                            <Download className="w-3.5 h-3.5 text-indigo-600" />
+                            Baixar Manuscrito
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setAssignModalArticle(art)
+                              setSelectedReviewerId('')
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 flex items-center gap-1.5"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                            + Atribuir Parecerista
+                          </button>
+
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-slate-500">Decisão:</span>
+                            <select
+                              value={art.status}
+                              onChange={(e) => handleUpdateStatus(art.id, e.target.value)}
+                              className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                            >
+                              <option value="submetido">Submetido</option>
+                              <option value="em_avaliacao">Em Avaliação</option>
+                              <option value="correcoes_pendentes">Solicitar Correções</option>
+                              <option value="aceito">Aceito para Publicação</option>
+                              <option value="recusado">Recusado</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                      <strong>Resumo:</strong> {art.abstract}
-                    </p>
+                      <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <strong>Resumo:</strong> {art.abstract}
+                      </p>
 
-                    {/* Lista de Pareceres deste Artigo */}
-                    {art.reviews && art.reviews.length > 0 && (
-                      <div className="bg-indigo-50/40 p-4 rounded-lg border border-indigo-100 space-y-2">
-                        <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                          Pareceristas Designados ({art.reviews.length}):
-                        </h5>
-                        <div className="grid gap-2">
-                          {art.reviews.map((r: any) => (
-                            <div key={r.id} className="bg-white p-3 rounded-lg border border-slate-200 text-xs flex justify-between items-center">
-                              <div>
-                                <span className="font-semibold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
-                                <span className={`ml-2 px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                  r.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                }`}>
-                                  {r.status === 'concluido' ? `PARECER CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO PARECER'}
-                                </span>
+                      {/* Pareceres Atribuídos */}
+                      {revs.length > 0 && (
+                        <div className="bg-indigo-50/40 p-4 rounded-lg border border-indigo-100 space-y-2">
+                          <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Pareceristas Designados ({revs.length}):
+                          </h5>
+                          <div className="grid gap-2">
+                            {revs.map((r) => (
+                              <div key={r.id} className="bg-white p-3 rounded-lg border border-slate-200 text-xs flex justify-between items-center">
+                                <div>
+                                  <span className="font-semibold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
+                                  <span className={`ml-2 px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                    r.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  }`}>
+                                    {r.status === 'concluido' ? `PARECER CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO PARECER'}
+                                  </span>
+                                </div>
+
+                                {r.status === 'concluido' && (
+                                  <button
+                                    onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\nRecomendação: ${r.recommendation}\n\nPara o Autor:\n${r.comments_for_author}\n\nNotas Confidenciais ao Editor:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
+                                    className="text-xs text-indigo-600 hover:underline font-semibold"
+                                  >
+                                    Ler Parecer Completo
+                                  </button>
+                                )}
                               </div>
-
-                              {r.status === 'concluido' && (
-                                <button
-                                  onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\nRecomendação: ${r.recommendation}\n\nPara o Autor:\n${r.comments_for_author}\n\nNotas Confidenciais ao Editor:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
-                                  className="text-xs text-indigo-600 hover:underline font-semibold"
-                                >
-                                  Ler Parecer Completo
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
-            {/* TABELA DE GESTÃO DE USUÁRIOS */}
+            {/* QUADRO DE USUÁRIOS */}
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
               <div>
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -875,7 +836,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* MODAL DO AUTOR: SUBMISSÃO */}
+      {/* MODAL DE SUBMISSÃO */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -950,7 +911,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DO EDITOR: ATRIBUIR PARECERISTA */}
+      {/* MODAL DE ATRIBUIÇÃO DE PARECERISTA */}
       {assignModalArticle && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -971,7 +932,7 @@ export default function Home() {
                   .filter((p) => p.role === 'reviewer' || p.role === 'editor')
                   .map((rev) => (
                     <option key={rev.id} value={rev.id}>
-                      {rev.full_name} ({rev.role === 'editor' ? 'Editor/Parecerista' : 'Parecerista'})
+                      {rev.full_name} ({rev.role === 'editor' ? 'Editor Geral' : 'Parecerista'})
                     </option>
                   ))}
               </select>
@@ -998,14 +959,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DO PARECERISTA: EMITIR PARECER */}
+      {/* MODAL DE AVALIAÇÃO DO PARECERISTA */}
       {reviewModalData && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-900">Formulário de Avaliação Editorial</h3>
-            <p className="text-xs text-slate-500">
-              Artigo em avaliação: <strong>{reviewModalData.articles?.title}</strong>
-            </p>
 
             <div className="space-y-4 pt-2">
               <div>
@@ -1028,14 +986,14 @@ export default function Home() {
                   2. Parecer Detalhado e Orientações para o Autor *
                 </label>
                 <p className="text-[11px] text-slate-400 mb-1">
-                  Este texto será exibido ao autor para que ele realize as correções (sua identidade permanece anônima).
+                  Este parecer será exibido ao autor (sua identidade é mantida anônima).
                 </p>
                 <textarea
                   required
                   rows={6}
                   value={commentsAuthor}
                   onChange={(e) => setCommentsAuthor(e.target.value)}
-                  placeholder="Descreva suas considerações teóricas, clareza dos conceitos psicanalíticos, relevância clínica e recomendações de correção..."
+                  placeholder="Considerações conceituais, relevância clínica e recomendações de correção..."
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1045,13 +1003,13 @@ export default function Home() {
                   3. Observações Confidenciais para o Editor Geral (Opcional)
                 </label>
                 <p className="text-[11px] text-slate-400 mb-1">
-                  Visível apenas para o Editor-adjunto e equipe editorial (o autor NÃO terá acesso).
+                  Visível apenas para o Editor Geral (o autor NÃO tem acesso).
                 </p>
                 <textarea
                   rows={3}
                   value={commentsEditor}
                   onChange={(e) => setCommentsEditor(e.target.value)}
-                  placeholder="Observações de bastidores, dúvidas éticas ou notas internas..."
+                  placeholder="Observações internas..."
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
