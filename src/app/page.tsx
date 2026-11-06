@@ -6,7 +6,7 @@ import {
   BookOpen, User, Lock, Mail, Building, Phone, ArrowRight, 
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
   Download, MessageSquare, Send, CheckCircle2, HelpCircle, 
-  FileCheck, AlertTriangle, RefreshCw, Plus, Trash2
+  FileCheck, AlertTriangle, RefreshCw, Plus, Trash2, ShieldAlert
 } from 'lucide-react'
 
 export default function Home() {
@@ -32,7 +32,7 @@ export default function Home() {
 
   // Modal Submissão do Autor
   const [showSubmitModal, setShowSubmitModal] = useState(false)
-  const [newSection, setNewSection] = useState('Artigo Teórico')
+  const [newSection, setNewSection] = useState('Artigo Científico')
   const [newTitle, setNewTitle] = useState('')
   const [newTitleEn, setNewTitleEn] = useState('')
   const [newAbstract, setNewAbstract] = useState('')
@@ -138,7 +138,6 @@ export default function Home() {
     }
   }
 
-  // Funções Auxiliares de Busca
   const getAuthorName = (authorId: string) => {
     const p = allProfiles.find((x) => x.id === authorId)
     return p ? p.full_name : 'Autor da Revista'
@@ -163,7 +162,6 @@ export default function Home() {
     return p ? p.full_name : 'Parecerista Designado'
   }
 
-  // Gestão Dinâmica de Coautores
   const handleAddCoauthor = () => {
     setCoauthors([
       ...coauthors,
@@ -181,7 +179,7 @@ export default function Home() {
     setCoauthors(coauthors.filter((_, i) => i !== index))
   }
 
-  // Submissão do Artigo pelo Autor
+  // Submissão do Artigo
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -221,7 +219,7 @@ export default function Home() {
 
       if (insertError) throw insertError
 
-      alert('Parabéns! Seu artigo e todas as afiliações foram submetidos com sucesso à Revista Saber Psicanalítico.')
+      alert('Parabéns! Seu artigo foi submetido com sucesso à Revista Saber Psicanalítico.')
       setShowSubmitModal(false)
       setNewTitle('')
       setNewTitleEn('')
@@ -302,7 +300,7 @@ export default function Home() {
         .update({ status })
         .eq('id', articleId)
       if (error) throw error
-      alert(`Status atualizado para: ${status.replace('_', ' ').toUpperCase()}`)
+      alert(`Status atualizado com sucesso!`)
       fetchAllData()
     } catch (err: any) {
       alert(err.message)
@@ -376,7 +374,7 @@ export default function Home() {
         .eq('id', reviewModalData.id)
 
       if (error) throw error
-      alert('Parecer emitido com sucesso! Agradecemos muito a sua colaboração.')
+      alert('Parecer emitido com sucesso! Agradecemos muito a sua colaboração com a Revista Saber Psicanalítico.')
       setReviewModalData(null)
       setReviewFile(null)
       fetchAllData()
@@ -625,7 +623,7 @@ export default function Home() {
               <div>
                 <h2 className="text-xl font-bold text-slate-800">Meus Trabalhos Submetidos</h2>
                 <p className="text-sm text-slate-500">
-                  Acompanhe em tempo real o status, as devolutivas dos pareceristas e envie versões corrigidas.
+                  Acompanhe em tempo real o status, as devolutivas da comissão editorial e reenvie versões ajustadas.
                 </p>
               </div>
               <button
@@ -650,32 +648,35 @@ export default function Home() {
                 {myAuthorArticles.map((art) => {
                   const revs = getArticleReviews(art.id).filter((r) => r.status === 'concluido')
                   const isPendingCorrections = art.status === 'correcoes_pendentes'
+                  const isInitialDeskAdjust = art.status === 'ajustes_iniciais'
+                  const canShowReviews = art.status === 'correcoes_pendentes' || art.status === 'aceito' || art.status === 'recusado'
 
                   return (
                     <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col space-y-4">
                       <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                         <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                              {art.section || 'Artigo Teórico'}
+                              {art.section || 'Artigo Científico'}
                             </span>
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                               art.status === 'aceito' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                               art.status === 'recusado' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
                               art.status === 'correcoes_pendentes' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                              art.status === 'ajustes_iniciais' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
                               'bg-indigo-50 text-indigo-700 border border-indigo-200'
                             }`}>
-                              {art.status.replace('_', ' ').toUpperCase()}
+                              {art.status === 'ajustes_iniciais' ? 'AJUSTES INICIAIS / ANONIMIZAÇÃO' : art.status.replace('_', ' ').toUpperCase()}
                             </span>
                             <span className="text-xs text-slate-400">
                               Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
                             </span>
                           </div>
+
                           <h3 className="text-lg font-bold text-slate-800">{art.title}</h3>
                           {art.title_en && <p className="text-xs text-slate-400 italic">{art.title_en}</p>}
                           <p className="text-sm text-slate-600 line-clamp-3">{art.abstract}</p>
 
-                          {/* Coautores */}
                           {art.coauthors && art.coauthors.length > 0 && (
                             <p className="text-xs text-slate-500">
                               <strong>Coautores:</strong> {art.coauthors.map((c: any) => c.name).filter(Boolean).join(', ')}
@@ -692,7 +693,8 @@ export default function Home() {
                             Baixar Manuscrito Atual
                           </button>
 
-                          {isPendingCorrections && (
+                          {/* Se houver correções ou ajuste inicial de anonimização */}
+                          {(isPendingCorrections || isInitialDeskAdjust) && (
                             <button
                               onClick={() => {
                                 setReSubmitArticle(art)
@@ -701,18 +703,32 @@ export default function Home() {
                               className="w-full px-3 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg flex items-center justify-center gap-1.5 shadow-sm"
                             >
                               <RefreshCw className="w-3.5 h-3.5" />
-                              Enviar Versão Corrigida
+                              Enviar Arquivo Corrigido
                             </button>
                           )}
                         </div>
                       </div>
 
-                      {/* Devolutivas anônimas */}
-                      {revs.length > 0 && (
+                      {/* Aviso de Triagem Inicial / Anonimização Solicitada pelo Editor */}
+                      {isInitialDeskAdjust && (
+                        <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-900 space-y-1">
+                          <p className="font-bold flex items-center gap-1.5">
+                            <AlertTriangle className="w-4 h-4 text-orange-600" />
+                            Ajuste Solicitado pelo Editor Geral (Triagem Inicial):
+                          </p>
+                          <p>
+                            Por favor, verifique se o arquivo do seu manuscrito contém seu nome, afiliação ou identificação pessoal. 
+                            Remova qualquer dado de autoria do texto e clique no botão <strong>"Enviar Arquivo Corrigido"</strong> acima para darmos início à avaliação pelos pareceristas.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Devolutivas só aparecem se o Editor liberou (Correções, Aceito ou Recusado) */}
+                      {canShowReviews && revs.length > 0 && (
                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
                           <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                             <MessageSquare className="w-4 h-4 text-indigo-600" />
-                            Pareceres e Orientações da Equipe Editorial:
+                            Pareceres e Orientações Liberados pela Equipe Editorial:
                           </h5>
                           {revs.map((rev, idx) => (
                             <div key={rev.id} className="text-xs text-slate-700 bg-white p-4 rounded-lg border border-slate-200 space-y-2">
@@ -774,7 +790,7 @@ export default function Home() {
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                              {art?.section || 'Artigo Teórico'}
+                              {art?.section || 'Artigo Científico'}
                             </span>
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                               rev.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -828,7 +844,7 @@ export default function Home() {
         )}
 
         {/* ========================================================= */}
-        {/* PAINEL DO EDITOR GERAL */}
+        {/* PAINEL DO EDITOR GERAL (SALA EDITORIAL) */}
         {/* ========================================================= */}
         {viewMode === 'editor' && (
           <div className="space-y-8">
@@ -840,7 +856,7 @@ export default function Home() {
                 </div>
                 <h2 className="text-xl font-bold text-slate-800">Gestão de Artigos e Pareceristas</h2>
                 <p className="text-sm text-slate-500">
-                  Coordene o fluxo duplo-cego, acesse os dados completos de autoria/ORCID e tome decisões editoriais.
+                  Coordene a triagem inicial, fluxo duplo-cego, acesse os dados completos de autoria/ORCID e defina as decisões finais.
                 </p>
               </div>
               <button
@@ -866,12 +882,12 @@ export default function Home() {
                     <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                              {art.section || 'Artigo Teórico'}
+                              {art.section || 'Artigo Científico'}
                             </span>
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                              {art.status.replace('_', ' ').toUpperCase()}
+                              {art.status === 'ajustes_iniciais' ? 'AJUSTE DE ANONIMIZAÇÃO' : art.status.replace('_', ' ').toUpperCase()}
                             </span>
                             <span className="text-xs text-slate-400">
                               Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
@@ -919,9 +935,10 @@ export default function Home() {
                               onChange={(e) => handleUpdateStatus(art.id, e.target.value)}
                               className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
                             >
-                              <option value="submetido">Submetido</option>
-                              <option value="em_avaliacao">Em Avaliação</option>
-                              <option value="correcoes_pendentes">Solicitar Correções</option>
+                              <option value="submetido">Submetido (Aguardando Triagem)</option>
+                              <option value="ajustes_iniciais">Solicitar Anonimização / Ajuste Inicial</option>
+                              <option value="em_avaliacao">Em Avaliação (Pareceristas)</option>
+                              <option value="correcoes_pendentes">Solicitar Correções (Liberar Parecer)</option>
                               <option value="aceito">Aceito para Publicação</option>
                               <option value="recusado">Recusado</option>
                             </select>
@@ -980,7 +997,7 @@ export default function Home() {
 
                                   {r.status === 'concluido' && (
                                     <button
-                                      onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\n${r.comments_for_author}\n\nNotas Confidenciais ao Editor:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
+                                      onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\n${r.comments_for_author}\n\nNOTAS CONFIDENCIAIS AO EDITOR:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
                                       className="text-xs text-indigo-600 hover:underline font-semibold"
                                     >
                                       Ler Parecer Completo
@@ -1060,7 +1077,7 @@ export default function Home() {
       </main>
 
       {/* ========================================================= */}
-      {/* MODAL DE SUBMISSÃO COMPLETO: AUTOR, COAUTORES E ORCID */}
+      {/* MODAL DE SUBMISSÃO COMPLETO: COM AS 4 SEÇÕES OFICIAIS */}
       {/* ========================================================= */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -1078,7 +1095,7 @@ export default function Home() {
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <User className="w-4 h-4 text-indigo-600" />
-                  1. Dados de Autoria Principal e Seção
+                  1. Seção da Revista e Dados do Autor Principal
                 </h4>
 
                 <div>
@@ -1086,13 +1103,14 @@ export default function Home() {
                   <select
                     value={newSection}
                     onChange={(e) => setNewSection(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white"
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white font-medium"
                   >
-                    <option value="Artigo Teórico">Artigo Teórico (Articulação de conceitos psicanalíticos)</option>
-                    <option value="Estudo de Caso / Pesquisa Clínica">Estudo de Caso / Pesquisa Clínica (Clínica e técnica psicanalítica)</option>
-                    <option value="Psicanálise e Sociedade">Psicanálise e Sociedade (Cultura, arte e laço social)</option>
-                    <option value="Ensaio / Resenha">Ensaio / Resenha de Obras</option>
+                    <option value="Artigo Científico">Artigo Científico</option>
+                    <option value="Ensaio Teórico">Ensaio Teórico</option>
+                    <option value="Relato de Experiência Clínica">Relato de Experiência Clínica</option>
+                    <option value="Resenha">Resenha</option>
                   </select>
+                  <p className="text-[10px] text-slate-400 mt-1">Selecione o tipo de trabalho correspondente conforme as normas da Revista.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1310,15 +1328,20 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* BLOCO 4: ARQUIVO WORD */}
+              {/* BLOCO 4: ARQUIVO WORD COMPLETO */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
                 <label className="block text-xs font-bold text-slate-800">
-                  4. Arquivo do Manuscrito (.docx - Word Obrigatório) *
+                  4. Arquivo do Manuscrito Completo (.docx - Word Obrigatório) *
                 </label>
-                <p className="text-[11px] text-slate-500">
-                  O arquivo <strong>deve ser enviado exclusivamente em formato Word (.docx)</strong> para viabilizar as anotações editoriais dos pareceristas. 
-                  <strong> Certifique-se de que o documento NÃO contenha o nome de autores nem referências diretas de afiliação</strong> (avaliação cega).
-                </p>
+                <div className="text-[11px] text-slate-600 space-y-1 bg-white p-3 rounded-lg border border-slate-200">
+                  <p className="font-semibold text-indigo-900">⚠️ Como preparar o arquivo para submissão:</p>
+                  <p>
+                    • O documento Word deve estar <strong>COMPLETO</strong>: contendo Título, Título em Inglês, Resumo, Abstract, Palavras-chave, Texto integral, Vinhetas Clínicas e Referências Bibliográficas completas.
+                  </p>
+                  <p className="text-rose-600 font-semibold">
+                    • O arquivo NÃO PODE conter nome dos autores, nem afiliações, notas biográficas ou agradecimentos que permitam identificar a autoria (para garantir a avaliação duplo-cega).
+                  </p>
+                </div>
                 <input
                   type="file"
                   required
@@ -1403,7 +1426,7 @@ export default function Home() {
                 Orientações para o reenvio:
               </p>
               <p>
-                Anexe o arquivo Word (.docx) revisado contemplando as correções solicitadas. Ao enviar, o manuscrito retornará automaticamente à comissão editorial.
+                Anexe o arquivo Word (.docx) revisado contemplando as correções solicitadas (ou sem identificação, caso tenha sido solicitado ajuste inicial). Ao enviar, o manuscrito retornará automaticamente à comissão editorial.
               </p>
             </div>
 
@@ -1490,7 +1513,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DO PARECERISTA */}
+      {/* MODAL DO PARECERISTA: COM AVISO DE SIGILO DO WORD */}
       {reviewModalData && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
@@ -1502,6 +1525,7 @@ export default function Home() {
               </p>
             </div>
 
+            {/* Aviso 1: Orientações Didáticas */}
             <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-950 space-y-1.5">
               <p className="font-bold flex items-center gap-1.5 text-indigo-900">
                 <HelpCircle className="w-4 h-4 text-indigo-600" />
@@ -1510,6 +1534,18 @@ export default function Home() {
               <p className="leading-relaxed">
                 Você pode baixar o arquivo Word (.docx), abri-lo em seu computador e ativar o recurso 
                 <strong> "Controlar Alterações"</strong> (na aba <em>Revisão</em> do Word) ou inserir <strong>Comentários</strong> pontuais nas frases que necessitarem de aprimoramento. Depois de salvar, anexe o arquivo com suas anotações no campo específico abaixo.
+              </p>
+            </div>
+
+            {/* Aviso 2: Sigilo do Avaliador no Word */}
+            <div className="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-amber-800">
+                <ShieldAlert className="w-4 h-4 text-amber-600" />
+                Atenção ao Sigilo do Parecerista no Word:
+              </p>
+              <p className="leading-relaxed text-[11px]">
+                Ao usar comentários no Word, certifique-se de que seu nome pessoal não fique gravado nas notas. 
+                <strong> Dica no Word:</strong> Vá em <em>Arquivo &gt; Informações &gt; Verificar se há Problemas &gt; Inspecionar Documento</em> e remova "Propriedades do Documento e Informações Pessoais", ou altere seu nome de usuário nas opções do Word para "Parecerista".
               </p>
             </div>
 
@@ -1567,10 +1603,11 @@ export default function Home() {
                   onChange={(e) => setRecommendation(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white font-medium"
                 >
-                  <option value="aceitar">Aceitar sem restrições (Aprovado)</option>
+                  <option value="aceitar">Aceitar sem restrições (Recomendado)</option>
                   <option value="correcoes_obrigatorias">Aceitar mediante correções obrigatórias</option>
-                  <option value="rejeitar">Recusar manuscrito (Não aprovado)</option>
+                  <option value="rejeitar">Recusar manuscrito (Não recomendado)</option>
                 </select>
+                <p className="text-[10px] text-slate-400 mt-1">Sua recomendação será analisada pelo Editor Geral, que tomará a decisão final.</p>
               </div>
 
               <div>
@@ -1586,7 +1623,7 @@ export default function Home() {
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Este texto será encaminhado ao autor para orientá-lo (sua identidade é mantida 100% sob sigilo).
+                  Este texto será liberado ao autor caso o Editor decida solicitar correções (sua identidade é mantida 100% anônima).
                 </p>
               </div>
 
@@ -1617,7 +1654,7 @@ export default function Home() {
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Visível exclusivamente para a equipe editorial (o autor NÃO tem acesso).
+                  Visível exclusivamente para a equipe editorial (o autor NUNCA terá acesso a este campo).
                 </p>
               </div>
             </div>
@@ -1631,7 +1668,7 @@ export default function Home() {
                 Voltar
               </button>
               <button
-                type="submit"
+                type="button"
                 disabled={submittingReview || !commentsAuthor}
                 onClick={handleSubmitReview}
                 className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
