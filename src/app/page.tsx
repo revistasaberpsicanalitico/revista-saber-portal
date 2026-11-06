@@ -6,7 +6,7 @@ import {
   BookOpen, User, Lock, Mail, Building, Phone, ArrowRight, 
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
   Download, MessageSquare, Send, CheckCircle2, HelpCircle, 
-  FileCheck, AlertTriangle, RefreshCw
+  FileCheck, AlertTriangle, RefreshCw, Plus, Trash2, ExternalLink
 } from 'lucide-react'
 
 export default function Home() {
@@ -39,13 +39,17 @@ export default function Home() {
   const [newAbstractEn, setNewAbstractEn] = useState('')
   const [newKeywords, setNewKeywords] = useState('')
   const [newKeywordsEn, setNewKeywordsEn] = useState('')
+  const [authorInstitution, setAuthorInstitution] = useState('')
+  const [authorOrcid, setAuthorOrcid] = useState('')
+  const [authorBio, setAuthorBio] = useState('')
+  const [coauthors, setCoauthors] = useState<any[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [termOriginal, setTermOriginal] = useState(false)
   const [termEthics, setTermEthics] = useState(false)
   const [termAnonymous, setTermAnonymous] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  // Modal de Reenvio de Versão Corrigida (Autor)
+  // Modal Reenvio Versão Corrigida
   const [reSubmitArticle, setReSubmitArticle] = useState<any>(null)
   const [revisedFile, setRevisedFile] = useState<File | null>(null)
   const [submittingRevision, setSubmittingRevision] = useState(false)
@@ -96,6 +100,7 @@ export default function Home() {
       if (data) {
         setProfile(data)
         setViewMode(data.role === 'editor' ? 'editor' : data.role === 'reviewer' ? 'reviewer' : 'author')
+        setAuthorInstitution(data.institution || '')
       } else {
         const fallbackProfile = {
           id: user.id,
@@ -108,6 +113,7 @@ export default function Home() {
         await supabase.from('profiles').upsert(fallbackProfile)
         setProfile(fallbackProfile)
         setViewMode('editor')
+        setAuthorInstitution('Associação Saber Psicanalítico')
       }
       fetchAllData()
     } catch (err) {
@@ -142,11 +148,6 @@ export default function Home() {
     return p ? p.email : ''
   }
 
-  const getAuthorInst = (authorId: string) => {
-    const p = allProfiles.find((x) => x.id === authorId)
-    return p ? p.institution || '-' : '-'
-  }
-
   const getArticleReviews = (articleId: string) => {
     return allReviews.filter((r) => r.article_id === articleId)
   }
@@ -156,12 +157,30 @@ export default function Home() {
     return p ? p.full_name : 'Parecerista Designado'
   }
 
-  // Submissão Inicial do Manuscrito pelo Autor
+  // Gestão Dinâmica de Coautores
+  const handleAddCoauthor = () => {
+    setCoauthors([
+      ...coauthors,
+      { name: '', email: '', institution: '', orcid: '' }
+    ])
+  }
+
+  const handleUpdateCoauthor = (index: number, field: string, value: string) => {
+    const updated = [...coauthors]
+    updated[index][field] = value
+    setCoauthors(updated)
+  }
+
+  const handleRemoveCoauthor = (index: number) => {
+    setCoauthors(coauthors.filter((_, i) => i !== index))
+  }
+
+  // Submissão do Artigo pelo Autor
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
     if (!termOriginal || !termEthics || !termAnonymous) {
-      alert('Por favor, marque todas as 3 declarações obrigatórias para prosseguir com a submissão.')
+      alert('Por favor, confirme as 3 declarações obrigatórias no final do formulário.')
       return
     }
 
@@ -186,13 +205,17 @@ export default function Home() {
         abstract_en: newAbstractEn,
         keywords: newKeywords,
         keywords_en: newKeywordsEn,
+        author_institution: authorInstitution,
+        author_orcid: authorOrcid,
+        author_bio: authorBio,
+        coauthors: coauthors,
         file_url: filePath,
         status: 'submetido',
       })
 
       if (insertError) throw insertError
 
-      alert('Parabéns! Seu trabalho foi submetido com sucesso à Revista Saber Psicanalítico.')
+      alert('Parabéns! Seu artigo e todas as afiliações foram submetidos com sucesso à Revista Saber Psicanalítico.')
       setShowSubmitModal(false)
       setNewTitle('')
       setNewTitleEn('')
@@ -200,6 +223,9 @@ export default function Home() {
       setNewAbstractEn('')
       setNewKeywords('')
       setNewKeywordsEn('')
+      setAuthorOrcid('')
+      setAuthorBio('')
+      setCoauthors([])
       setSelectedFile(null)
       setTermOriginal(false)
       setTermEthics(false)
@@ -212,7 +238,7 @@ export default function Home() {
     }
   }
 
-  // Reenvio de Versão Corrigida pelo Autor
+  // Reenvio de Versão Corrigida
   const handleResubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!revisedFile || !reSubmitArticle) return
@@ -239,12 +265,12 @@ export default function Home() {
 
       if (updateError) throw updateError
 
-      alert('Versão corrigida enviada com sucesso! A comissão editorial dará andamento.')
+      alert('Versão corrigida enviada com sucesso!')
       setReSubmitArticle(null)
       setRevisedFile(null)
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro no envio da revisão: ${err.message}`)
+      alert(`Erro no envio: ${err.message}`)
     } finally {
       setSubmittingRevision(false)
     }
@@ -312,7 +338,6 @@ export default function Home() {
     }
   }
 
-  // Envio do Parecer pelo Parecerista (com anexo opcional de correções)
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -345,7 +370,7 @@ export default function Home() {
         .eq('id', reviewModalData.id)
 
       if (error) throw error
-      alert('Parecer emitido com sucesso! Agradecemos muito a sua valiosa colaboração com a Revista Saber Psicanalítico.')
+      alert('Parecer emitido com sucesso! Agradecemos muito a sua colaboração.')
       setReviewModalData(null)
       setReviewFile(null)
       fetchAllData()
@@ -594,7 +619,7 @@ export default function Home() {
               <div>
                 <h2 className="text-xl font-bold text-slate-800">Meus Trabalhos Submetidos</h2>
                 <p className="text-sm text-slate-500">
-                  Acompanhe em tempo real as decisões e orientações de correção do conselho editorial.
+                  Acompanhe em tempo real o status, as devolutivas dos pareceristas e envie versões corrigidas.
                 </p>
               </div>
               <button
@@ -611,7 +636,7 @@ export default function Home() {
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <h3 className="text-base font-semibold text-slate-700">Nenhum trabalho submetido ainda</h3>
                 <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                  Clique no botão azul acima para submeter seu artigo à Revista.
+                  Clique no botão azul acima para submeter seu artigo à Revista Saber Psicanalítico.
                 </p>
               </div>
             ) : (
@@ -643,6 +668,13 @@ export default function Home() {
                           <h3 className="text-lg font-bold text-slate-800">{art.title}</h3>
                           {art.title_en && <p className="text-xs text-slate-400 italic">{art.title_en}</p>}
                           <p className="text-sm text-slate-600 line-clamp-3">{art.abstract}</p>
+
+                          {/* Coautores */}
+                          {art.coauthors && art.coauthors.length > 0 && (
+                            <p className="text-xs text-slate-500">
+                              <strong>Coautores:</strong> {art.coauthors.map((c: any) => c.name).filter(Boolean).join(', ')}
+                            </p>
+                          )}
                         </div>
 
                         <div className="flex flex-col gap-2 min-w-[220px]">
@@ -654,7 +686,6 @@ export default function Home() {
                             Baixar Manuscrito Atual
                           </button>
 
-                          {/* Botão de Enviar Versão Corrigida */}
                           {isPendingCorrections && (
                             <button
                               onClick={() => {
@@ -684,7 +715,6 @@ export default function Home() {
                                   Avaliação {idx + 1}: {rev.recommendation?.replace('_', ' ').toUpperCase()}
                                 </span>
 
-                                {/* Download do arquivo Word com anotações do parecerista */}
                                 {rev.review_file_url && (
                                   <button
                                     onClick={() => handleDownloadFile(rev.review_file_url)}
@@ -716,7 +746,7 @@ export default function Home() {
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos para Avaliação</h2>
               <p className="text-sm text-slate-500">
-                Avaliação Duplo-Cega (*Double-Blind Review*): a autoria permanece em absoluto sigilo.
+                Avaliação Duplo-Cega (*Double-Blind Review*): a autoria e os dados de filiação permanecem em absoluto sigilo.
               </p>
             </div>
 
@@ -804,7 +834,7 @@ export default function Home() {
                 </div>
                 <h2 className="text-xl font-bold text-slate-800">Gestão de Artigos e Pareceristas</h2>
                 <p className="text-sm text-slate-500">
-                  Coordene o fluxo duplo-cego, atribua pareceristas e tome as decisões editoriais finais.
+                  Coordene o fluxo duplo-cego, acesse os dados completos de autoria/ORCID e tome decisões editoriais.
                 </p>
               </div>
               <button
@@ -843,7 +873,15 @@ export default function Home() {
                           </div>
                           <h4 className="text-lg font-bold text-slate-900">{art.title}</h4>
                           <p className="text-xs text-slate-500 mt-1">
-                            Autor: <strong>{getAuthorName(art.author_id)}</strong> ({getAuthorEmail(art.author_id)}) • Instituição: {getAuthorInst(art.author_id)}
+                            Autor Principal: <strong>{getAuthorName(art.author_id)}</strong> ({getAuthorEmail(art.author_id)})
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            Filiação: <strong>{art.author_institution || getAuthorInst(art.author_id)}</strong>
+                            {art.author_orcid && (
+                              <span className="ml-2 inline-flex items-center gap-1 text-emerald-700 font-medium">
+                                • ORCID: {art.author_orcid}
+                              </span>
+                            )}
                           </p>
                         </div>
 
@@ -884,6 +922,22 @@ export default function Home() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Quadro de Coautores Completo para o Editor */}
+                      {art.coauthors && art.coauthors.length > 0 && (
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                          <p className="font-semibold text-slate-700 mb-1">Coautores Cadastrados ({art.coauthors.length}):</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                            {art.coauthors.map((c: any, idx: number) => (
+                              <div key={idx} className="bg-white p-2.5 rounded border border-slate-200">
+                                <p className="font-bold text-slate-800">{c.name || 'Sem nome'}</p>
+                                <p className="text-slate-500 text-[11px]">{c.email || 'Sem e-mail'} • {c.institution || 'Sem filiação'}</p>
+                                {c.orcid && <p className="text-emerald-700 text-[11px] font-medium">ORCID: {c.orcid}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
                         <strong>Resumo:</strong> {art.abstract}
@@ -1000,131 +1054,264 @@ export default function Home() {
       </main>
 
       {/* ========================================================= */}
-      {/* MODAL DE SUBMISSÃO COMPLETO E EXPLICATIVO (AUTOR) */}
+      {/* MODAL DE SUBMISSÃO COMPLETO: AUTOR, COAUTORES E ORCID */}
       {/* ========================================================= */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="border-b border-slate-100 pb-3">
               <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Submissão Editorial</span>
-              <h3 className="text-lg font-bold text-slate-900">Submeter Novo Trabalho para Avaliação</h3>
+              <h3 className="text-lg font-bold text-slate-900">Submeter Novo Manuscrito</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Preencha os dados do seu manuscrito. Todos os campos possuem orientações explicativas abaixo.
+                Preencha todos os dados com atenção. Os campos contêm orientações explicativas abaixo.
               </p>
             </div>
 
-            <form onSubmit={handleSubmitArticle} className="space-y-4">
-              {/* Seção */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Seção da Revista *</label>
-                <select
-                  value={newSection}
-                  onChange={(e) => setNewSection(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white"
-                >
-                  <option value="Artigo Teórico">Artigo Teórico (Articulação de conceitos psicanalíticos)</option>
-                  <option value="Estudo de Caso / Pesquisa Clínica">Estudo de Caso / Pesquisa Clínica (Clínica e técnica psicanalítica)</option>
-                  <option value="Psicanálise e Sociedade">Psicanálise e Sociedade (Cultura, arte e laço social)</option>
-                  <option value="Ensaio / Resenha">Ensaio / Resenha de Obras</option>
-                </select>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Selecione a categoria temática que melhor corresponde à proposta do seu texto.
-                </p>
-              </div>
+            <form onSubmit={handleSubmitArticle} className="space-y-5">
+              {/* BLOCO 1: SEÇÃO E AUTOR PRINCIPAL */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-indigo-600" />
+                  1. Dados de Autoria Principal e Seção
+                </h4>
 
-              {/* Títulos */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Título do Artigo (Português) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="Ex: O Inconsciente e o Corpo na Contemporaneidade"
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">Título claro e representativo do conteúdo.</p>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Seção da Revista *</label>
+                  <select
+                    value={newSection}
+                    onChange={(e) => setNewSection(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white"
+                  >
+                    <option value="Artigo Teórico">Artigo Teórico (Articulação de conceitos psicanalíticos)</option>
+                    <option value="Estudo de Caso / Pesquisa Clínica">Estudo de Caso / Pesquisa Clínica (Clínica e técnica psicanalítica)</option>
+                    <option value="Psicanálise e Sociedade">Psicanálise e Sociedade (Cultura, arte e laço social)</option>
+                    <option value="Ensaio / Resenha">Ensaio / Resenha de Obras</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Filiação Institucional do Autor *</label>
+                    <input
+                      type="text"
+                      required
+                      value={authorInstitution}
+                      onChange={(e) => setAuthorInstitution(e.target.value)}
+                      placeholder="Ex: Associação Saber Psicanalítico / USP / Consultório Privado"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Instituição de ensino, clínica ou associação a que se vincula.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">ORCID do Autor (Opcional)</label>
+                    <input
+                      type="text"
+                      value={authorOrcid}
+                      onChange={(e) => setAuthorOrcid(e.target.value)}
+                      placeholder="Ex: 0000-0002-1825-0097"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Identificador internacional do pesquisador (se possuir).</p>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Title (Título em Inglês) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Minibiografia / Titulação do Autor (Opcional)</label>
                   <input
                     type="text"
-                    required
-                    value={newTitleEn}
-                    onChange={(e) => setNewTitleEn(e.target.value)}
-                    placeholder="Ex: The Unconscious and the Body in Contemporaneity"
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={authorBio}
+                    onChange={(e) => setAuthorBio(e.target.value)}
+                    placeholder="Ex: Psicanalista, Mestre em Psicologia Clínica, Membro da Associação Saber Psicanalítico."
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">Versão em inglês exigida para indexação internacional.</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Breve descrição que constará no expediente da publicação.</p>
                 </div>
               </div>
 
-              {/* Resumos */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Resumo em Português (150 a 250 palavras) *</label>
-                <textarea
-                  required
-                  rows={4}
-                  value={newAbstract}
-                  onChange={(e) => setNewAbstract(e.target.value)}
-                  placeholder="Apresente os objetivos, a fundamentação teórica psicanalítica, o método de abordagem e as considerações finais..."
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">Texto corrido em parágrafo único, sintetizando o trabalho.</p>
+              {/* BLOCO 2: COAUTORES (DINÂMICO) */}
+              <div className="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-indigo-600" />
+                      2. Coautores do Trabalho ({coauthors.length})
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Caso o artigo tenha sido escrito em coautoria, adicione cada coautor abaixo.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddCoauthor}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Adicionar Coautor
+                  </button>
+                </div>
+
+                {coauthors.map((c, idx) => (
+                  <div key={idx} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3 relative">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-indigo-700">Coautor #{idx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCoauthor(idx)}
+                        className="text-rose-600 hover:text-rose-800 text-xs font-semibold flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Remover
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">Nome Completo *</label>
+                        <input
+                          type="text"
+                          required
+                          value={c.name}
+                          onChange={(e) => handleUpdateCoauthor(idx, 'name', e.target.value)}
+                          placeholder="Nome do coautor"
+                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">E-mail *</label>
+                        <input
+                          type="email"
+                          required
+                          value={c.email}
+                          onChange={(e) => handleUpdateCoauthor(idx, 'email', e.target.value)}
+                          placeholder="email@exemplo.com"
+                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">Filiação Institucional *</label>
+                        <input
+                          type="text"
+                          required
+                          value={c.institution}
+                          onChange={(e) => handleUpdateCoauthor(idx, 'institution', e.target.value)}
+                          placeholder="Universidade / Associação"
+                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">ORCID (Opcional)</label>
+                        <input
+                          type="text"
+                          value={c.orcid}
+                          onChange={(e) => handleUpdateCoauthor(idx, 'orcid', e.target.value)}
+                          placeholder="0000-0000-0000-0000"
+                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Abstract (Resumo em Inglês) *</label>
-                <textarea
-                  required
-                  rows={4}
-                  value={newAbstractEn}
-                  onChange={(e) => setNewAbstractEn(e.target.value)}
-                  placeholder="Translation of the abstract into English..."
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">Tradução fiel do resumo para língua inglesa.</p>
-              </div>
+              {/* BLOCO 3: METADADOS BILÍNGUES */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                  <FileText className="w-4 h-4 text-indigo-600" />
+                  3. Título, Resumo e Palavras-chave (Português e Inglês)
+                </h4>
 
-              {/* Palavras-chave */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Título do Artigo (Português) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      placeholder="Ex: O Inconsciente e o Corpo na Contemporaneidade"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Título claro e fiel à temática central.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Title (Título em Inglês) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newTitleEn}
+                      onChange={(e) => setNewTitleEn(e.target.value)}
+                      placeholder="Ex: The Unconscious and the Body in Contemporaneity"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Exigência para catalogação e indexadores acadêmicos.</p>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Palavras-chave (3 a 5 termos) *</label>
-                  <input
-                    type="text"
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Resumo em Português (150 a 250 palavras) *</label>
+                  <textarea
                     required
-                    value={newKeywords}
-                    onChange={(e) => setNewKeywords(e.target.value)}
-                    placeholder="Ex: Psicanálise; Transferência; Clínica; Sintoma"
+                    rows={4}
+                    value={newAbstract}
+                    onChange={(e) => setNewAbstract(e.target.value)}
+                    placeholder="Apresente os objetivos, a fundamentação teórica psicanalítica, a metodologia e as considerações finais..."
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">Termos separados por ponto e vírgula (;).</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Parágrafo único sintetizando a tese principal do texto.</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Keywords (Palavras-chave em Inglês) *</label>
-                  <input
-                    type="text"
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Abstract (Resumo em Inglês) *</label>
+                  <textarea
                     required
-                    value={newKeywordsEn}
-                    onChange={(e) => setNewKeywordsEn(e.target.value)}
-                    placeholder="Ex: Psychoanalysis; Transference; Clinic; Symptom"
+                    rows={4}
+                    value={newAbstractEn}
+                    onChange={(e) => setNewAbstractEn(e.target.value)}
+                    placeholder="English translation of the abstract..."
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">Tradução dos termos em inglês.</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Tradução acadêmica e rigorosa do resumo.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Palavras-chave (3 a 5 termos) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newKeywords}
+                      onChange={(e) => setNewKeywords(e.target.value)}
+                      placeholder="Ex: Psicanálise; Transferência; Clínica; Sintoma"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Separadas por ponto e vírgula (;).</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Keywords (Palavras-chave em Inglês) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newKeywordsEn}
+                      onChange={(e) => setNewKeywordsEn(e.target.value)}
+                      placeholder="Ex: Psychoanalysis; Transference; Clinic; Symptom"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Tradução dos termos correspondentes.</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Upload Word Obrigatório */}
+              {/* BLOCO 4: ARQUIVO WORD */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
                 <label className="block text-xs font-bold text-slate-800">
-                  Arquivo do Manuscrito (.docx - Word Obrigatório) *
+                  4. Arquivo do Manuscrito (.docx - Word Obrigatório) *
                 </label>
                 <p className="text-[11px] text-slate-500">
-                  O arquivo <strong>deve estar obrigatoriamente em formato Word (.docx)</strong> para permitir anotações pontuais dos pareceristas. 
-                  <strong> Certifique-se de que o documento NÃO contenha o nome dos autores, nem afiliações ou agradecimentos diretos</strong> (garantindo a avaliação cega).
+                  O arquivo <strong>deve ser enviado exclusivamente em formato Word (.docx)</strong> para viabilizar as anotações editoriais dos pareceristas. 
+                  <strong> Certifique-se de que o documento NÃO contenha o nome de autores nem referências diretas de afiliação</strong> (avaliação cega).
                 </p>
                 <input
                   type="file"
@@ -1135,7 +1322,7 @@ export default function Home() {
                 />
               </div>
 
-              {/* Declarações Obrigatórias */}
+              {/* BLOCO 5: DECLARAÇÕES ÉTICAS */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
                 <label className="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
                   <input
@@ -1145,7 +1332,7 @@ export default function Home() {
                     className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
                   />
                   <span>
-                    <strong>Ineditismo e Autoria:</strong> Declaro que este manuscrito é original, de minha autoria e não foi publicado e nem está sob avaliação simultânea em outro periódico.
+                    <strong>Ineditismo e Autoria:</strong> Declaro que este manuscrito é original, de autoria própria (e dos coautores cadastrados) e não se encontra sob avaliação simultânea em outro periódico.
                   </span>
                 </label>
 
@@ -1157,7 +1344,7 @@ export default function Home() {
                     className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
                   />
                   <span>
-                    <strong>Sigilo Clínico e Ética Psicanalítica:</strong> Declaro que quaisquer dados clínicos de pacientes foram devidamente anonimizados e descaracterizados para preservar o sigilo absoluto.
+                    <strong>Sigilo Clínico e Ética Psicanalítica:</strong> Declaro que quaisquer dados clínicos e vinhetas de pacientes foram devidamente anonimizados e descaracterizados, respeitando o sigilo ético absoluto.
                   </span>
                 </label>
 
@@ -1169,7 +1356,7 @@ export default function Home() {
                     className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
                   />
                   <span>
-                    <strong>Anonimização do Manuscrito:</strong> Confirmo que retirei do arquivo Word qualquer menção ao nome dos autores, notas biográficas ou dados que permitam identificação.
+                    <strong>Anonimização do Manuscrito:</strong> Confirmo que retirei do arquivo Word qualquer menção ao nome dos autores, notas biográficas ou dados nas propriedades do arquivo.
                   </span>
                 </label>
               </div>
@@ -1195,9 +1382,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ========================================================= */}
       {/* MODAL DO AUTOR: ENVIAR VERSÃO CORRIGIDA */}
-      {/* ========================================================= */}
       {reSubmitArticle && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -1209,10 +1394,10 @@ export default function Home() {
             <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
               <p className="font-semibold flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
-                Orientações para a versão corrigida:
+                Orientações para o reenvio:
               </p>
               <p>
-                Anexe o arquivo Word (.docx) revisado de acordo com as solicitações dos pareceristas. Ao enviar, o artigo voltará para a fase de avaliação do corpo editorial.
+                Anexe o arquivo Word (.docx) revisado contemplando as correções solicitadas. Ao enviar, o manuscrito retornará automaticamente à comissão editorial.
               </p>
             </div>
 
@@ -1251,9 +1436,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ========================================================= */}
       {/* MODAL DO EDITOR: ATRIBUIR PARECERISTA */}
-      {/* ========================================================= */}
       {assignModalArticle && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -1301,9 +1484,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* MODAL DO PARECERISTA COM ORIENTAÇÕES E ANEXO DE WORD */}
-      {/* ========================================================= */}
+      {/* MODAL DO PARECERISTA */}
       {reviewModalData && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
@@ -1315,7 +1496,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Caixa de Orientação Didática ao Parecerista */}
             <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-950 space-y-1.5">
               <p className="font-bold flex items-center gap-1.5 text-indigo-900">
                 <HelpCircle className="w-4 h-4 text-indigo-600" />
@@ -1328,7 +1508,6 @@ export default function Home() {
             </div>
 
             <div className="space-y-4">
-              {/* Critérios Acadêmicos */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-700 mb-1">Título e Resumo</label>
@@ -1373,7 +1552,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Recomendação */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Recomendação Editorial Final *
@@ -1389,7 +1567,6 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Parecer para o Autor */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Parecer Descritivo e Orientações para o Autor *
@@ -1407,7 +1584,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Anexo de Arquivo com Correções (Opcional) */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
                 <label className="block text-xs font-semibold text-slate-800">
                   Anexar Arquivo com Comentários / Correções (.docx - Opcional)
@@ -1423,7 +1599,6 @@ export default function Home() {
                 />
               </div>
 
-              {/* Notas ao Editor */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Observações Confidenciais para o Editor Geral (Opcional)
@@ -1450,7 +1625,7 @@ export default function Home() {
                 Voltar
               </button>
               <button
-                type="button"
+                type="submit"
                 disabled={submittingReview || !commentsAuthor}
                 onClick={handleSubmitReview}
                 className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
