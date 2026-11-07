@@ -8,7 +8,47 @@ export default function RedefinirSenha() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [ready, setReady] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
+
+  useEffect(() => {
+    // 1. Processa código de segurança da URL (?code=...)
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (!error && data?.session) {
+          setReady(true)
+        } else {
+          checkSession()
+        }
+      })
+    } else {
+      checkSession()
+    }
+
+    // 2. Escuta se a sessão foi recuperada pelo link
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || session) {
+        setReady(true)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      setReady(true)
+    } else {
+      setTimeout(async () => {
+        const { data: { session: retry } } = await supabase.auth.getSession()
+        if (retry) setReady(true)
+      }, 1200)
+    }
+  }
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,18 +66,23 @@ export default function RedefinirSenha() {
 
     setLoading(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Sessão expirada. Por favor, solicite um novo link de recuperação no portal.')
+      }
+
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
 
       setMessage({
         type: 'success',
-        text: 'Senha redefinida com sucesso! Você já pode acessar o sistema.',
+        text: 'Senha redefinida com sucesso! Entrando no portal...',
       })
       setTimeout(() => {
         window.location.href = '/'
-      }, 2500)
+      }, 2000)
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Erro ao redefinir senha. O link pode ter expirado.' })
+      setMessage({ type: 'error', text: err.message || 'Erro ao redefinir senha.' })
     } finally {
       setLoading(false)
     }
