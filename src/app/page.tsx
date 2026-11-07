@@ -7,7 +7,7 @@ import {
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
   Download, MessageSquare, Send, CheckCircle2, HelpCircle, 
   FileCheck, AlertTriangle, RefreshCw, Plus, Trash2, ShieldAlert,
-  Award, Printer, Copy, Check, Edit3, Link as LinkIcon, Search, X, AlertCircle, KeyRound, Ban
+  Award, Printer, Copy, Check, Edit3, Link as LinkIcon, Search, X, AlertCircle, KeyRound, Ban, Calendar, Clock, FileSpreadsheet
 } from 'lucide-react'
 
 export default function Home() {
@@ -39,6 +39,10 @@ export default function Home() {
   const [allProfiles, setAllProfiles] = useState<any[]>([])
   const [allReviews, setAllReviews] = useState<any[]>([])
 
+  // Filtros e Busca Rápida na Sala Editorial (Item 3)
+  const [editorSearch, setEditorSearch] = useState('')
+  const [editorStatusFilter, setEditorStatusFilter] = useState('todos')
+
   // Modal Verificador Público
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [verifyCodeInput, setVerifyCodeInput] = useState('')
@@ -54,7 +58,7 @@ export default function Home() {
   const [profileOrcid, setProfileOrcid] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
 
-  // Modal Submissão do Autor
+  // Modal Submissão do Autor com Termos Internacionais (Item 4)
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [newSection, setNewSection] = useState('Artigo Científico')
   const [newTitle, setNewTitle] = useState('')
@@ -72,6 +76,8 @@ export default function Home() {
   const [termOriginal, setTermOriginal] = useState(false)
   const [termEthics, setTermEthics] = useState(false)
   const [termAnonymous, setTermAnonymous] = useState(false)
+  const [termCC, setTermCC] = useState(false)
+  const [termAI, setTermAI] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   // Modal Reenvio Versão Corrigida
@@ -79,9 +85,10 @@ export default function Home() {
   const [revisedFile, setRevisedFile] = useState<File | null>(null)
   const [submittingRevision, setSubmittingRevision] = useState(false)
 
-  // Modal Atribuir Parecerista
+  // Modal Atribuir Parecerista com Prazo Manual (Item 1)
   const [assignModalArticle, setAssignModalArticle] = useState<any>(null)
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
+  const [assignDeadline, setAssignDeadline] = useState('')
 
   // Modal Recusa com Justificativa do Editor
   const [rejectionModalArticle, setRejectionModalArticle] = useState<any>(null)
@@ -107,7 +114,6 @@ export default function Home() {
   const [copiedThanks, setCopiedThanks] = useState(false)
 
   useEffect(() => {
-    // Detecta se o usuário abriu um link de redefinição de senha
     if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
       setShowNewPasswordModal(true)
     }
@@ -239,13 +245,47 @@ export default function Home() {
     return p ? p.full_name : 'Parecerista Designado'
   }
 
-  // Previsão ou definição do Fascículo
   const getArticleIssue = (art: any) => {
     if (art?.target_issue) return art.target_issue
     const d = new Date(art?.created_at || Date.now())
     const month = d.getMonth() + 1
     const year = d.getFullYear()
     return month <= 5 ? `Fascículo de Junho de ${year}` : `Fascículo de Dezembro de ${year}`
+  }
+
+  // Cálculo de Prazo Restante para Parecerista (Item 1)
+  const getDeadlineBadge = (deadlineStr: string | null) => {
+    if (!deadlineStr) return null
+    const deadlineDate = new Date(deadlineStr + 'T23:59:59')
+    const now = new Date()
+    const diffTime = deadlineDate.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    const formattedDate = new Date(deadlineStr + 'T12:00:00').toLocaleDateString('pt-BR')
+
+    if (diffDays > 0) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          Restam {diffDays} {diffDays === 1 ? 'dia' : 'dias'} (Prazo: {formattedDate})
+        </span>
+      )
+    } else if (diffDays === 0) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" />
+          Vence hoje ({formattedDate})!
+        </span>
+      )
+    } else {
+      const atraso = Math.abs(diffDays)
+      return (
+        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          Expirado há {atraso} {atraso === 1 ? 'dia' : 'dias'} ({formattedDate})
+        </span>
+      )
+    }
   }
 
   const handleAddCoauthor = () => {
@@ -314,7 +354,6 @@ export default function Home() {
     }
   }
 
-  // Solicitação de Redefinição de Senha
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!forgotEmail) return
@@ -329,7 +368,7 @@ export default function Home() {
         to: forgotEmail,
         subject: 'Recuperação de Senha - Revista Saber Psicanalítico',
         title: 'Redefinição de Senha de Acesso',
-        message: `Olá,\n\nRecebemos uma solicitação de redefinição de senha para a sua conta no Portal Editorial da Revista Saber Psicanalítico.\n\nSe você realizou esta solicitação, clique no botão abaixo para cadastrar sua nova senha com segurança. Caso não tenha solicitado, por favor desconsidere este e-mail.`,
+        message: `Olá,\n\nRecebemos uma solicitação de redefinição de senha para a sua conta no Portal Editorial da Revista Saber Psicanalítico.\n\nSe você realizou esta solicitação, clique no botão abaixo para cadastrar sua nova senha com segurança.`,
         actionText: 'Redefinir Minha Senha',
         actionUrl: 'https://revista-saber-portal.vercel.app/#type=recovery',
       })
@@ -344,7 +383,6 @@ export default function Home() {
     }
   }
 
-  // Salvar Nova Senha
   const handleSaveNewPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPasswordInput) return
@@ -360,6 +398,68 @@ export default function Home() {
     } finally {
       setSavingNewPassword(false)
     }
+  }
+
+  // Exportar Backup Completo em CSV / Excel (Item 5)
+  const handleExportBackup = () => {
+    if (allArticles.length === 0) {
+      alert('Nenhum dado disponível para exportação no momento.')
+      return
+    }
+
+    const headers = [
+      'ID Artigo',
+      'Titulo',
+      'Secao',
+      'Status Atual',
+      'Data Submissao',
+      'Fasciculo Previsto',
+      'Autor Principal',
+      'Email Autor',
+      'Filiacao Autor',
+      'ORCID Autor',
+      'Lattes Autor',
+      'Coautores',
+      'Total Pareceres',
+      'Pareceres Detalhados',
+      'Justificativa Recusa'
+    ]
+
+    const rows = allArticles.map((art) => {
+      const revs = getArticleReviews(art.id)
+      const reviewsSummary = revs.map((r) => `${getReviewerName(r.reviewer_id)}: [${r.status.toUpperCase()} - ${r.recommendation || 'Pendente'}]`).join(' | ')
+      const coauthorsSummary = (art.coauthors || []).map((c: any) => `${c.name} (${c.institution || ''})`).join('; ')
+
+      return [
+        art.id,
+        `"${art.title.replace(/"/g, '""')}"`,
+        `"${art.section || 'Artigo Científico'}"`,
+        `"${art.status}"`,
+        `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`,
+        `"${art.target_issue || getArticleIssue(art)}"`,
+        `"${getAuthorName(art.author_id).replace(/"/g, '""')}"`,
+        `"${getAuthorEmail(art.author_id)}"`,
+        `"${(art.author_institution || getAuthorInst(art.author_id)).replace(/"/g, '""')}"`,
+        `"${art.author_orcid || ''}"`,
+        `"${art.author_lattes || ''}"`,
+        `"${coauthorsSummary.replace(/"/g, '""')}"`,
+        revs.length,
+        `"${reviewsSummary.replace(/"/g, '""')}"`,
+        `"${(art.rejection_reason || '').replace(/"/g, '""')}"`
+      ]
+    })
+
+    // UTF-8 BOM (\uFEFF) para abrir com acentuação perfeita no Excel
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Backup_Revista_Saber_Psicanalitico_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   // Verificador Público de Autenticidade
@@ -445,12 +545,12 @@ export default function Home() {
     }
   }
 
-  // Submissão do Artigo
+  // Submissão do Artigo com Termos Internacionais e Histórico Inicial (Item 2 e 4)
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
-    if (!termOriginal || !termEthics || !termAnonymous) {
-      alert('Por favor, confirme as 3 declarações obrigatórias no final do formulário.')
+    if (!termOriginal || !termEthics || !termAnonymous || !termCC || !termAI) {
+      alert('Por favor, confirme todas as 5 declarações éticas e internacionais no final do formulário.')
       return
     }
 
@@ -481,6 +581,9 @@ export default function Home() {
         author_bio: authorBio,
         coauthors: coauthors,
         file_url: filePath,
+        original_file_url: filePath, // Guarda versão original para histórico permanente
+        term_creative_commons: termCC,
+        term_ai_declaration: termAI,
         status: 'submetido',
       })
 
@@ -511,6 +614,8 @@ export default function Home() {
       setTermOriginal(false)
       setTermEthics(false)
       setTermAnonymous(false)
+      setTermCC(false)
+      setTermAI(false)
       fetchAllData()
     } catch (err: any) {
       alert(`Erro na submissão: ${err.message}`)
@@ -519,7 +624,7 @@ export default function Home() {
     }
   }
 
-  // Reenvio de Versão Corrigida pelo Autor (Item e: vai para revisao_submetida)
+  // Reenvio de Versão Corrigida pelo Autor (Item 2: preserva original_file_url)
   const handleResubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!revisedFile || !reSubmitArticle) return
@@ -566,7 +671,7 @@ export default function Home() {
     }
   }
 
-  // Download com Nome Legível do Arquivo (Item d)
+  // Download com Nome Legível do Arquivo
   const handleDownloadFile = async (filePath: string, articleTitle: string, fileType = 'Manuscrito') => {
     try {
       const { data, error } = await supabase.storage
@@ -581,7 +686,6 @@ export default function Home() {
         const link = document.createElement('a')
         link.href = url
         
-        // Higieniza o nome do arquivo para download perfeito
         const cleanTitle = articleTitle.replace(/[^a-zA-Z0-9À-ÿ]/g, '_').slice(0, 45)
         const ext = filePath.split('.').pop() || 'docx'
         link.download = `${fileType}_${cleanTitle}.${ext}`
@@ -595,7 +699,7 @@ export default function Home() {
     }
   }
 
-  // Mudança de Status com E-mails e Tratamento de Recusa (Item f)
+  // Mudança de Status com E-mails e Recusa
   const handleUpdateStatus = async (articleId: string, status: string) => {
     if (status === 'recusado') {
       const target = allArticles.find((a) => a.id === articleId)
@@ -655,7 +759,6 @@ export default function Home() {
     }
   }
 
-  // Confirmação de Recusa com Justificativa (Item f)
   const handleConfirmRejection = async () => {
     if (!rejectionModalArticle || !rejectionReasonText.trim()) {
       alert('Por favor, informe a justificativa editorial para a não aceitação do artigo.')
@@ -723,14 +826,20 @@ export default function Home() {
     }
   }
 
+  // Atribuição de Parecerista com Prazo Definido pelo Editor (Item 1)
   const handleAssignReviewer = async () => {
-    if (!selectedReviewerId || !assignModalArticle) return
+    if (!selectedReviewerId || !assignModalArticle || !assignDeadline) {
+      alert('Por favor, selecione o parecerista e defina a data limite para o parecer.')
+      return
+    }
+
     try {
       const reviewerProfile = allProfiles.find((p) => p.id === selectedReviewerId)
 
       const { error } = await supabase.from('reviews').insert({
         article_id: assignModalArticle.id,
         reviewer_id: selectedReviewerId,
+        deadline: assignDeadline,
         status: 'pendente',
       })
       if (error) throw error
@@ -738,19 +847,21 @@ export default function Home() {
       await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
 
       if (reviewerProfile?.email) {
+        const formattedDeadline = new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')
         sendEmailNotification({
           to: reviewerProfile.email,
           subject: 'Convite para Avaliação de Manuscrito - Revista Saber Psicanalítico',
           title: 'Designação de Parecer Técnico-Científico',
-          message: `Prezado(a) ${reviewerProfile.full_name},\n\nTendo em vista sua destacada competência acadêmica e clínica, o corpo editorial da Revista Saber Psicanalítico (ISSN 3086-8416) tem a honra de designá-lo(a) para emitir parecer ad-hoc para o manuscrito intitulado "${assignModalArticle.title}".\n\nO artigo encontra-se anonimizado (avaliação duplo-cega). Acesse o portal para baixar o arquivo Word e preencher sua avaliação.`,
+          message: `Prezado(a) ${reviewerProfile.full_name},\n\nTendo em vista sua destacada competência acadêmica e clínica, o corpo editorial da Revista Saber Psicanalítico (ISSN 3086-8416) tem a honra de designá-lo(a) para emitir parecer ad-hoc para o manuscrito intitulado "${assignModalArticle.title}".\n\n• Prazo limite para envio do parecer: ${formattedDeadline}\n\nO artigo encontra-se anonimizado (avaliação duplo-cega). Acesse o portal para baixar o arquivo Word e preencher sua avaliação.`,
           actionText: 'Acessar Área do Parecerista',
           actionUrl: 'https://revista-saber-portal.vercel.app',
         })
       }
 
-      alert('Parecerista atribuído com sucesso! E-mail de convite enviado.')
+      alert('Parecerista atribuído com sucesso! E-mail de convite com prazo enviado.')
       setAssignModalArticle(null)
       setSelectedReviewerId('')
+      setAssignDeadline('')
       fetchAllData()
     } catch (err: any) {
       alert(err.message)
@@ -818,7 +929,20 @@ export default function Home() {
     setTimeout(() => setCopiedThanks(false), 2500)
   }
 
-  // MODAL DE VERIFICAÇÃO PÚBLICA
+  // Filtragem dos Artigos na Sala Editorial (Item 3)
+  const filteredArticles = allArticles.filter((art) => {
+    const authorName = getAuthorName(art.author_id).toLowerCase()
+    const title = art.title.toLowerCase()
+    const section = (art.section || '').toLowerCase()
+    const query = editorSearch.toLowerCase()
+
+    const matchesSearch = title.includes(query) || authorName.includes(query) || section.includes(query)
+    const matchesStatus = editorStatusFilter === 'todos' || art.status === editorStatusFilter
+
+    return matchesSearch && matchesStatus
+  })
+
+  // MODAL DE VALIDAÇÃO PÚBLICA
   const renderVerificationModal = () => {
     if (!showVerifyModal) return null
     return (
@@ -1115,7 +1239,6 @@ export default function Home() {
 
         {renderVerificationModal()}
 
-        {/* MODAL: RECUPERAÇÃO DE SENHA */}
         {showForgotModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -1373,6 +1496,7 @@ export default function Home() {
                               </button>
                             )}
 
+                            {/* Download com Nome Legível do Arquivo */}
                             <button
                               type="button"
                               onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito')}
@@ -1411,7 +1535,6 @@ export default function Home() {
                           </div>
                         )}
 
-                        {/* Justificativa de Recusa para o Autor (Item f) */}
                         {isRejected && art.rejection_reason && (
                           <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-950 space-y-1.5">
                             <p className="font-bold flex items-center gap-1.5 text-rose-800">
@@ -1459,7 +1582,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* VISÃO DO PARECERISTA */}
+          {/* VISÃO DO PARECERISTA COM CONTAGEM DE PRAZO (Item 1) */}
           {viewMode === 'reviewer' && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -1487,7 +1610,7 @@ export default function Home() {
                       <div key={rev.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                           <div>
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                                 {art?.section || 'Artigo Científico'}
                               </span>
@@ -1496,6 +1619,9 @@ export default function Home() {
                               }`}>
                                 {isCompleted ? 'PARECER ENVIADO' : 'AGUARDANDO SEU PARECER'}
                               </span>
+
+                              {/* Badge de Prazo Restante para o Parecerista (Item 1) */}
+                              {!isCompleted && getDeadlineBadge(rev.deadline)}
                             </div>
                             <h3 className="text-lg font-bold text-slate-900">{art?.title || 'Artigo'}</h3>
                             <p className="text-xs text-slate-500 mt-1">Palavras-chave: {art?.keywords}</p>
@@ -1557,10 +1683,10 @@ export default function Home() {
             </div>
           )}
 
-          {/* PAINEL DO EDITOR GERAL */}
+          {/* PAINEL DO EDITOR GERAL (COM BUSCA, FILTROS, HISTÓRICO E BACKUP) */}
           {viewMode === 'editor' && (
             <div className="space-y-8">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-indigo-700 mb-1">
                     <ShieldCheck className="w-5 h-5" />
@@ -1568,18 +1694,29 @@ export default function Home() {
                   </div>
                   <h2 className="text-xl font-bold text-slate-800">Gestão de Artigos, Pareceres e Expediente</h2>
                   <p className="text-sm text-slate-500">
-                    Coordene o fluxo duplo-cego, emita Cartas Oficiais e certifique pareceristas.
+                    Coordene a triagem, prazos, fluxo duplo-cego e emita relatórios da revista.
                   </p>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Botão de Exportar Backup Completo (Item 5) */}
+                  <button
+                    type="button"
+                    onClick={handleExportBackup}
+                    className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1.5 border border-emerald-200 shadow-sm"
+                    title="Baixar planilha Excel com todos os artigos e pareceres"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    Exportar Backup (Excel)
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setShowReviewerThankModal(true)}
                     className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs flex items-center gap-1.5 border border-slate-200"
                   >
                     <Award className="w-3.5 h-3.5 text-indigo-600" />
-                    Quadro de Pareceristas (Agradecimento)
+                    Quadro de Pareceristas
                   </button>
 
                   <button
@@ -1593,253 +1730,323 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* LISTA DE ARTIGOS */}
+              {/* BARRA DE PESQUISA E FILTROS RÁPIDOS (Item 3) */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={editorSearch}
+                    onChange={(e) => setEditorSearch(e.target.value)}
+                    placeholder="Pesquise por título, nome do autor ou seção do manuscrito..."
+                    className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                  {[
+                    { id: 'todos', label: 'Todos os Artigos', count: allArticles.length },
+                    { id: 'submetido', label: 'Triagem', count: allArticles.filter(a => a.status === 'submetido').length },
+                    { id: 'ajustes_iniciais', label: 'Ajuste Anonimização', count: allArticles.filter(a => a.status === 'ajustes_iniciais').length },
+                    { id: 'em_avaliacao', label: 'Em Avaliação', count: allArticles.filter(a => a.status === 'em_avaliacao').length },
+                    { id: 'correcoes_pendentes', label: 'Correções Solicitadas', count: allArticles.filter(a => a.status === 'correcoes_pendentes').length },
+                    { id: 'revisao_submetida', label: 'Revisão Enviada', count: allArticles.filter(a => a.status === 'revisao_submetida').length },
+                    { id: 'aceito', label: 'Aceitos', count: allArticles.filter(a => a.status === 'aceito').length },
+                    { id: 'recusado', label: 'Recusados', count: allArticles.filter(a => a.status === 'recusado').length },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setEditorStatusFilter(tab.id)}
+                      className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                        editorStatusFilter === tab.id ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {tab.label}
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                        editorStatusFilter === tab.id ? 'bg-indigo-800 text-indigo-100' : 'bg-slate-200 text-slate-700'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* LISTA DE ARTIGOS FILTRADOS */}
               <div className="space-y-4">
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-indigo-600" />
-                  Todos os Artigos Recebidos ({allArticles.length})
+                  Artigos Exibidos ({filteredArticles.length})
                 </h3>
 
-                <div className="grid gap-4">
-                  {allArticles.map((art) => {
-                    const revs = getArticleReviews(art.id)
-                    const isAccepted = art.status === 'aceito'
-                    const isRejected = art.status === 'recusado'
-                    const isOwnArticle = art.author_id === session?.user?.id
+                {filteredArticles.length === 0 ? (
+                  <div className="bg-white p-12 text-center rounded-xl border border-slate-200 text-slate-400 text-xs">
+                    Nenhum manuscrito corresponde ao filtro ou busca selecionada.
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {filteredArticles.map((art) => {
+                      const revs = getArticleReviews(art.id)
+                      const isAccepted = art.status === 'aceito'
+                      const isRejected = art.status === 'recusado'
+                      const isOwnArticle = art.author_id === session?.user?.id
+                      const hasRevision = art.original_file_url && art.original_file_url !== art.file_url
 
-                    return (
-                      <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                                {art.section || 'Artigo Científico'}
-                              </span>
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                isAccepted ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                isRejected ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                                art.status === 'correcoes_pendentes' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                art.status === 'ajustes_iniciais' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                                art.status === 'revisao_submetida' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                                'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                              }`}>
-                                {art.status === 'ajustes_iniciais' ? 'AJUSTE DE ANONIMIZAÇÃO' : 
-                                 art.status === 'revisao_submetida' ? 'REVISÃO ENVIADA (AVALIAÇÃO DO EDITOR)' : 
-                                 art.status.replace('_', ' ').toUpperCase()}
-                              </span>
-
-                              {isOwnArticle && (
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
-                                  <ShieldAlert className="w-3 h-3" />
-                                  Seu Manuscrito (COPE)
+                      return (
+                        <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                  {art.section || 'Artigo Científico'}
                                 </span>
-                              )}
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                  isAccepted ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                  isRejected ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                  art.status === 'correcoes_pendentes' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                  art.status === 'ajustes_iniciais' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                                  art.status === 'revisao_submetida' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                  'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                }`}>
+                                  {art.status === 'ajustes_iniciais' ? 'AJUSTE DE ANONIMIZAÇÃO' : 
+                                   art.status === 'revisao_submetida' ? 'REVISÃO ENVIADA (AVALIAÇÃO DO EDITOR)' : 
+                                   art.status.replace('_', ' ').toUpperCase()}
+                                </span>
 
-                              <span className="text-xs text-slate-400">
-                                Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
-                              </span>
+                                {isOwnArticle && (
+                                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                                    <ShieldAlert className="w-3 h-3" />
+                                    Seu Manuscrito (COPE)
+                                  </span>
+                                )}
+
+                                <span className="text-xs text-slate-400">
+                                  Enviado em {new Date(art.created_at).toLocaleDateString('pt-BR')}
+                                </span>
+                              </div>
+                              <h4 className="text-lg font-bold text-slate-900">{art.title}</h4>
+                              <p className="text-xs text-slate-500 mt-1">
+                                Autor Principal: <strong>{getAuthorName(art.author_id)}</strong> ({getAuthorEmail(art.author_id)})
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                Filiação: <strong>{art.author_institution || getAuthorInst(art.author_id)}</strong>
+                                {art.author_lattes && (
+                                  <a href={art.author_lattes} target="_blank" rel="noreferrer" className="ml-2 text-indigo-600 hover:underline inline-flex items-center gap-0.5">
+                                    • Lattes
+                                  </a>
+                                )}
+                                {art.author_orcid && (
+                                  <span className="ml-2 text-emerald-700 font-medium">
+                                    • ORCID: {art.author_orcid}
+                                  </span>
+                                )}
+                              </p>
                             </div>
-                            <h4 className="text-lg font-bold text-slate-900">{art.title}</h4>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Autor Principal: <strong>{getAuthorName(art.author_id)}</strong> ({getAuthorEmail(art.author_id)})
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              Filiação: <strong>{art.author_institution || getAuthorInst(art.author_id)}</strong>
-                              {art.author_lattes && (
-                                <a href={art.author_lattes} target="_blank" rel="noreferrer" className="ml-2 text-indigo-600 hover:underline inline-flex items-center gap-0.5">
-                                  • Lattes
-                                </a>
-                              )}
-                              {art.author_orcid && (
-                                <span className="ml-2 text-emerald-700 font-medium">
-                                  • ORCID: {art.author_orcid}
-                                </span>
-                              )}
-                            </p>
-                          </div>
 
-                          <div className="flex flex-wrap items-center gap-2">
-                            {isAccepted && (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedAcceptanceArticle(art)}
-                                className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex items-center gap-1.5"
-                              >
-                                <Award className="w-3.5 h-3.5" />
-                                Carta de Aceite
-                              </button>
-                            )}
-
-                            {isRejected && (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedRejectionArticle(art)}
-                                className="px-3 py-1.5 text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center gap-1.5"
-                              >
-                                <Ban className="w-3.5 h-3.5" />
-                                Carta de Não Aceite
-                              </button>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito')}
-                              className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 text-slate-700"
-                            >
-                              <Download className="w-3.5 h-3.5 text-indigo-600" />
-                              Baixar Manuscrito
-                            </button>
-
-                            {!isOwnArticle ? (
-                              <>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {isAccepted && (
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setAssignModalArticle(art)
-                                    setSelectedReviewerId('')
-                                  }}
-                                  className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 flex items-center gap-1.5"
+                                  onClick={() => setSelectedAcceptanceArticle(art)}
+                                  className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex items-center gap-1.5"
                                 >
-                                  <UserCheck className="w-3.5 h-3.5" />
-                                  + Atribuir Parecerista
+                                  <Award className="w-3.5 h-3.5" />
+                                  Carta de Aceite
                                 </button>
+                              )}
 
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs text-slate-500 font-medium">Decisão:</span>
-                                  <select
-                                    value={art.status}
-                                    onChange={(e) => handleUpdateStatus(art.id, e.target.value)}
-                                    className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                              {isRejected && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedRejectionArticle(art)}
+                                  className="px-3 py-1.5 text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center gap-1.5"
+                                >
+                                  <Ban className="w-3.5 h-3.5" />
+                                  Carta de Não Aceite
+                                </button>
+                              )}
+
+                              {/* Versionamento: Download de Arquivo Atual vs Original (Item 2) */}
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')}
+                                className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 text-slate-700"
+                              >
+                                <Download className="w-3.5 h-3.5 text-indigo-600" />
+                                {hasRevision ? 'Baixar Versão Revisada (Atual)' : 'Baixar Manuscrito'}
+                              </button>
+
+                              {hasRevision && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadFile(art.original_file_url, art.title, 'Manuscrito_Original_Submissao')}
+                                  className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 bg-slate-50 hover:bg-slate-100 rounded-lg flex items-center gap-1 text-slate-600"
+                                  title="Baixar a versão inicial que o autor enviou antes dos pareceres"
+                                >
+                                  <FileText className="w-3 h-3 text-slate-400" />
+                                  Versão Original
+                                </button>
+                              )}
+
+                              {!isOwnArticle ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAssignModalArticle(art)
+                                      setSelectedReviewerId('')
+                                      // Sugere prazo padrão de 21 dias a partir de hoje
+                                      const defaultDate = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                                      setAssignDeadline(defaultDate)
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 flex items-center gap-1.5"
                                   >
-                                    <option value="submetido">Submetido (Aguardando Triagem)</option>
-                                    <option value="ajustes_iniciais">Solicitar Anonimização / Ajuste Inicial</option>
-                                    <option value="em_avaliacao">Em Avaliação (Pareceristas)</option>
-                                    <option value="correcoes_pendentes">Solicitar Correções (Liberar Parecer)</option>
-                                    <option value="revisao_submetida">Revisão Enviada (Avaliação do Editor)</option>
-                                    <option value="aceito">Aceito para Publicação</option>
-                                    <option value="recusado">Recusado (Não Aceito)</option>
-                                  </select>
-                                </div>
-                              </>
-                            ) : (
-                              <span className="px-3 py-1.5 text-[11px] font-medium bg-slate-100 text-slate-500 rounded-lg border border-slate-200 italic">
-                                Gerenciado por outro Editor (COPE)
-                              </span>
-                            )}
+                                    <UserCheck className="w-3.5 h-3.5" />
+                                    + Atribuir Parecerista
+                                  </button>
+
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-slate-500 font-medium">Decisão:</span>
+                                    <select
+                                      value={art.status}
+                                      onChange={(e) => handleUpdateStatus(art.id, e.target.value)}
+                                      className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                      <option value="submetido">Submetido (Aguardando Triagem)</option>
+                                      <option value="ajustes_iniciais">Solicitar Anonimização / Ajuste Inicial</option>
+                                      <option value="em_avaliacao">Em Avaliação (Pareceristas)</option>
+                                      <option value="correcoes_pendentes">Solicitar Correções (Liberar Parecer)</option>
+                                      <option value="revisao_submetida">Revisão Enviada (Avaliação do Editor)</option>
+                                      <option value="aceito">Aceito para Publicação</option>
+                                      <option value="recusado">Recusado (Não Aceito)</option>
+                                    </select>
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="px-3 py-1.5 text-[11px] font-medium bg-slate-100 text-slate-500 rounded-lg border border-slate-200 italic">
+                                  Gerenciado por outro Editor (COPE)
+                                </span>
+                              )}
+                            </div>
                           </div>
+
+                          {isAccepted && !isOwnArticle && (
+                            <div className="flex items-center gap-2 p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-lg text-xs">
+                              <span className="font-semibold text-emerald-950">Fascículo Programado:</span>
+                              <input
+                                type="text"
+                                defaultValue={art.target_issue || getArticleIssue(art)}
+                                onBlur={(e) => handleUpdateTargetIssue(art.id, e.target.value)}
+                                placeholder="Ex: Fascículo de Junho de 2026 (Vol. 2, nº 1)"
+                                className="px-2.5 py-1 text-xs border border-emerald-200 rounded bg-white flex-1 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                              <span className="text-[10px] text-emerald-700 italic">(Puxado na Carta de Aceite)</span>
+                            </div>
+                          )}
+
+                          {isOwnArticle && (
+                            <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-lg text-xs text-purple-900 space-y-0.5">
+                              <p className="font-bold flex items-center gap-1.5">
+                                <ShieldAlert className="w-4 h-4 text-purple-600" />
+                                Salvaguarda Ética de Avaliação por Pares:
+                              </p>
+                              <p className="text-[11px] text-purple-800">
+                                Por você ser autor deste trabalho, as ações de designar pareceristas e alterar o status foram restritas. Outro membro do comitê editorial conduzirá seu processo de forma cega. Acompanhe a evolução do trabalho pela sua <strong>Visão Autor</strong>.
+                              </p>
+                            </div>
+                          )}
+
+                          {art.coauthors && art.coauthors.length > 0 && (
+                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                              <p className="font-semibold text-slate-700 mb-1">Coautores Cadastrados ({art.coauthors.length}):</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                {art.coauthors.map((c: any, idx: number) => (
+                                  <div key={idx} className="bg-white p-2.5 rounded border border-slate-200">
+                                    <p className="font-bold text-slate-800">{c.name || 'Sem nome'}</p>
+                                    <p className="text-slate-500 text-[11px]">{c.email || 'Sem e-mail'} • {c.institution || 'Sem filiação'}</p>
+                                    <div className="flex gap-2 text-[11px] mt-0.5">
+                                      {c.lattes && <a href={c.lattes} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">Lattes</a>}
+                                      {c.orcid && <span className="text-emerald-700">ORCID: {c.orcid}</span>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <strong>Resumo:</strong> {art.abstract}
+                          </p>
+
+                          {!isOwnArticle && revs.length > 0 && (
+                            <div className="bg-indigo-50/40 p-4 rounded-lg border border-indigo-100 space-y-2">
+                              <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Pareceristas Designados ({revs.length}):
+                              </h5>
+                              <div className="grid gap-2">
+                                {revs.map((r) => (
+                                  <div key={r.id} className="bg-white p-3 rounded-lg border border-slate-200 text-xs flex justify-between items-center flex-wrap gap-2">
+                                    <div>
+                                      <span className="font-semibold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
+                                      <span className={`ml-2 px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                        r.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                      }`}>
+                                        {r.status === 'concluido' ? `PARECER CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO PARECER'}
+                                      </span>
+
+                                      {/* Prazo Restante na visão do Editor (Item 1) */}
+                                      {r.status !== 'concluido' && (
+                                        <span className="ml-2">{getDeadlineBadge(r.deadline)}</span>
+                                      )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      {r.status === 'concluido' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const revProf = allProfiles.find((p) => p.id === r.reviewer_id)
+                                            setSelectedReviewCert({ review: r, article: art, reviewer: revProf })
+                                          }}
+                                          className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded border border-emerald-200 flex items-center gap-1"
+                                        >
+                                          <Award className="w-3 h-3" />
+                                          Certificado Lattes
+                                        </button>
+                                      )}
+
+                                      {r.review_file_url && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Word_Anotado_Parecerista')}
+                                          className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 rounded border flex items-center gap-1"
+                                        >
+                                          <Download className="w-3 h-3 text-indigo-600" />
+                                          Word Anotado
+                                        </button>
+                                      )}
+
+                                      {r.status === 'concluido' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\n${r.comments_for_author}\n\nNOTAS CONFIDENCIAIS AO EDITOR:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
+                                          className="text-xs text-indigo-600 hover:underline font-semibold"
+                                        >
+                                          Ler Parecer
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-
-                        {/* Definição de Fascículo pelo Editor (Item h) */}
-                        {isAccepted && !isOwnArticle && (
-                          <div className="flex items-center gap-2 p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-lg text-xs">
-                            <span className="font-semibold text-emerald-950">Fascículo Programado:</span>
-                            <input
-                              type="text"
-                              defaultValue={art.target_issue || getArticleIssue(art)}
-                              onBlur={(e) => handleUpdateTargetIssue(art.id, e.target.value)}
-                              placeholder="Ex: Fascículo de Junho de 2026 (Vol. 2, nº 1)"
-                              className="px-2.5 py-1 text-xs border border-emerald-200 rounded bg-white flex-1 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
-                            <span className="text-[10px] text-emerald-700 italic">(Atualiza automaticamente a Carta de Aceite)</span>
-                          </div>
-                        )}
-
-                        {isOwnArticle && (
-                          <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-lg text-xs text-purple-900 space-y-0.5">
-                            <p className="font-bold flex items-center gap-1.5">
-                              <ShieldAlert className="w-4 h-4 text-purple-600" />
-                              Salvaguarda Ética de Avaliação por Pares:
-                            </p>
-                            <p className="text-[11px] text-purple-800">
-                              Por você ser autor deste trabalho, as ações de designar pareceristas e alterar o status foram restritas. Outro membro do comitê editorial conduzirá seu processo de forma cega. Acompanhe a evolução do trabalho pela sua <strong>Visão Autor</strong>.
-                            </p>
-                          </div>
-                        )}
-
-                        {art.coauthors && art.coauthors.length > 0 && (
-                          <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
-                            <p className="font-semibold text-slate-700 mb-1">Coautores Cadastrados ({art.coauthors.length}):</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                              {art.coauthors.map((c: any, idx: number) => (
-                                <div key={idx} className="bg-white p-2.5 rounded border border-slate-200">
-                                  <p className="font-bold text-slate-800">{c.name || 'Sem nome'}</p>
-                                  <p className="text-slate-500 text-[11px]">{c.email || 'Sem e-mail'} • {c.institution || 'Sem filiação'}</p>
-                                  <div className="flex gap-2 text-[11px] mt-0.5">
-                                    {c.lattes && <a href={c.lattes} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">Lattes</a>}
-                                    {c.orcid && <span className="text-emerald-700">ORCID: {c.orcid}</span>}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                          <strong>Resumo:</strong> {art.abstract}
-                        </p>
-
-                        {!isOwnArticle && revs.length > 0 && (
-                          <div className="bg-indigo-50/40 p-4 rounded-lg border border-indigo-100 space-y-2">
-                            <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                              Pareceristas Designados ({revs.length}):
-                            </h5>
-                            <div className="grid gap-2">
-                              {revs.map((r) => (
-                                <div key={r.id} className="bg-white p-3 rounded-lg border border-slate-200 text-xs flex justify-between items-center flex-wrap gap-2">
-                                  <div>
-                                    <span className="font-semibold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
-                                    <span className={`ml-2 px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                      r.status === 'concluido' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                    }`}>
-                                      {r.status === 'concluido' ? `PARECER CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO PARECER'}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    {r.status === 'concluido' && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const revProf = allProfiles.find((p) => p.id === r.reviewer_id)
-                                          setSelectedReviewCert({ review: r, article: art, reviewer: revProf })
-                                        }}
-                                        className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded border border-emerald-200 flex items-center gap-1"
-                                      >
-                                        <Award className="w-3 h-3" />
-                                        Certificado Lattes
-                                      </button>
-                                    )}
-
-                                    {r.review_file_url && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Word_Anotado_Parecerista')}
-                                        className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 rounded border flex items-center gap-1"
-                                      >
-                                        <Download className="w-3 h-3 text-indigo-600" />
-                                        Word Anotado
-                                      </button>
-                                    )}
-
-                                    {r.status === 'concluido' && (
-                                      <button
-                                        type="button"
-                                        onClick={() => alert(`PARECER DE ${getReviewerName(r.reviewer_id)}:\n\n${r.comments_for_author}\n\nNOTAS CONFIDENCIAIS AO EDITOR:\n${r.confidential_comments_editor || 'Nenhuma'}`)}
-                                        className="text-xs text-indigo-600 hover:underline font-semibold"
-                                      >
-                                        Ler Parecer
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* QUADRO DE USUÁRIOS */}
@@ -1985,7 +2192,7 @@ export default function Home() {
                   required
                   value={profileInst}
                   onChange={(e) => setProfileInst(e.target.value)}
-                  placeholder="Ex: Associação Saber Psicanalítico / Universidade"
+                  placeholder="Ex: Associação Saber Psicanalítico / UFPE"
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -2043,7 +2250,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL: CARTA OFICIAL DE ACEITE (Item g: sem negrito no "e coautoria de") */}
+      {/* MODAL: CARTA OFICIAL DE ACEITE */}
       {selectedAcceptanceArticle && (() => {
         const authorName = getAuthorName(selectedAcceptanceArticle.author_id)
         const authorInst = selectedAcceptanceArticle.author_institution || getAuthorInst(selectedAcceptanceArticle.author_id)
@@ -2184,7 +2391,7 @@ export default function Home() {
         )
       })()}
 
-      {/* MODAL: CARTA OFICIAL DE NÃO ACEITE (Item f) */}
+      {/* MODAL: CARTA OFICIAL DE NÃO ACEITE */}
       {selectedRejectionArticle && (() => {
         const authorName = getAuthorName(selectedRejectionArticle.author_id)
         const authorInst = selectedRejectionArticle.author_institution || getAuthorInst(selectedRejectionArticle.author_id)
@@ -2328,7 +2535,7 @@ export default function Home() {
         )
       })()}
 
-      {/* MODAL: DECLARAÇÃO PARA O CURRÍCULO LATTES (A4) */}
+      {/* MODAL: DECLARAÇÃO PARA O CURRÍCULO LATTES */}
       {selectedReviewCert && (() => {
         const revName = selectedReviewCert.reviewer?.full_name || 'Parecerista'
         const revInst = selectedReviewCert.reviewer?.institution ? ` (${selectedReviewCert.reviewer.institution})` : ''
@@ -2527,394 +2734,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL: SUBMETER NOVO MANUSCRITO (Item a) */}
-      {showSubmitModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="border-b border-slate-100 pb-3 flex justify-between items-start">
-              <div>
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Submissão Editorial • ISSN 3086-8416</span>
-                <h3 className="text-lg font-bold text-slate-900">Submeter Novo Manuscrito</h3>
-                <p className="text-xs text-slate-500 mt-1">Preencha todos os dados com atenção conforme as orientações.</p>
-              </div>
-              <button onClick={() => setShowSubmitModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitArticle} className="space-y-5">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-indigo-600" />
-                  1. Seção da Revista e Dados do Autor Principal
-                </h4>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Seção da Revista *</label>
-                  <select
-                    value={newSection}
-                    onChange={(e) => setNewSection(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white font-medium"
-                  >
-                    <option value="Artigo Científico">Artigo Científico</option>
-                    <option value="Ensaio Teórico">Ensaio Teórico</option>
-                    <option value="Relato de Experiência Clínica">Relato de Experiência Clínica</option>
-                    <option value="Resenha">Resenha</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Filiação Institucional *</label>
-                    <input
-                      type="text"
-                      required
-                      value={authorInstitution}
-                      onChange={(e) => setAuthorInstitution(e.target.value)}
-                      placeholder="Ex: Associação Saber Psicanalítico / Universidade"
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Link do Lattes (Opcional)</label>
-                    <input
-                      type="url"
-                      value={authorLattes}
-                      onChange={(e) => setAuthorLattes(e.target.value)}
-                      placeholder="http://lattes.cnpq.br/..."
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">ORCID (Opcional)</label>
-                    <input
-                      type="text"
-                      value={authorOrcid}
-                      onChange={(e) => setAuthorOrcid(e.target.value)}
-                      placeholder="0000-0000-0000-0000"
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Minibiografia / Titulação do Autor (Opcional)</label>
-                  <input
-                    type="text"
-                    value={authorBio}
-                    onChange={(e) => setAuthorBio(e.target.value)}
-                    placeholder="Ex: Psicanalista, Mestre em Psicologia Clínica, Membro da Associação Saber Psicanalítico."
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* BLOCO 2: COAUTORES COM LATTES E ORCID (Item b) */}
-              <div className="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-indigo-600" />
-                      2. Coautores do Trabalho ({coauthors.length})
-                    </h4>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddCoauthor}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Adicionar Coautor
-                  </button>
-                </div>
-
-                {coauthors.map((c, idx) => (
-                  <div key={idx} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3 relative">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-indigo-700">Coautor #{idx + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCoauthor(idx)}
-                        className="text-rose-600 hover:text-rose-800 text-xs font-semibold flex items-center gap-1"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Remover
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">Nome Completo *</label>
-                        <input
-                          type="text"
-                          required
-                          value={c.name}
-                          onChange={(e) => handleUpdateCoauthor(idx, 'name', e.target.value)}
-                          placeholder="Nome do coautor"
-                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">E-mail *</label>
-                        <input
-                          type="email"
-                          required
-                          value={c.email}
-                          onChange={(e) => handleUpdateCoauthor(idx, 'email', e.target.value)}
-                          placeholder="email@exemplo.com"
-                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">Filiação Institucional *</label>
-                        <input
-                          type="text"
-                          required
-                          value={c.institution}
-                          onChange={(e) => handleUpdateCoauthor(idx, 'institution', e.target.value)}
-                          placeholder="Universidade / Associação"
-                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">Link do Lattes (Opcional)</label>
-                        <input
-                          type="url"
-                          value={c.lattes}
-                          onChange={(e) => handleUpdateCoauthor(idx, 'lattes', e.target.value)}
-                          placeholder="http://lattes.cnpq.br/..."
-                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-semibold text-slate-600 mb-1">ORCID (Opcional) *</label>
-                        <input
-                          type="text"
-                          value={c.orcid}
-                          onChange={(e) => handleUpdateCoauthor(idx, 'orcid', e.target.value)}
-                          placeholder="0000-0000-0000-0000"
-                          className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-md"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* BLOCO 3: METADADOS */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Título do Artigo (Português) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      placeholder="Ex: O Inconsciente e o Corpo na Contemporaneidade"
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Title (Título em Inglês) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newTitleEn}
-                      onChange={(e) => setNewTitleEn(e.target.value)}
-                      placeholder="Ex: The Unconscious and the Body in Contemporaneity"
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Resumo em Português (150 a 250 palavras) *</label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={newAbstract}
-                    onChange={(e) => setNewAbstract(e.target.value)}
-                    placeholder="Apresente os objetivos, a fundamentação teórica psicanalítica, a metodologia e as considerações finais..."
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Abstract (Resumo em Inglês) *</label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={newAbstractEn}
-                    onChange={(e) => setNewAbstractEn(e.target.value)}
-                    placeholder="English translation of the abstract..."
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Palavras-chave (3 a 5 termos) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newKeywords}
-                      onChange={(e) => setNewKeywords(e.target.value)}
-                      placeholder="Ex: Psicanálise; Transferência; Clínica; Sintoma"
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Keywords (Palavras-chave em Inglês) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newKeywordsEn}
-                      onChange={(e) => setNewKeywordsEn(e.target.value)}
-                      placeholder="Ex: Psychoanalysis; Transference; Clinic; Symptom"
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* BLOCO 4: ARQUIVO WORD COMPLETO */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                <label className="block text-xs font-bold text-slate-800">
-                  4. Arquivo do Manuscrito Completo (.docx - Word Obrigatório) *
-                </label>
-                <div className="text-[11px] text-slate-600 space-y-1 bg-white p-3 rounded-lg border border-slate-200">
-                  <p className="font-semibold text-indigo-900">⚠️ Como preparar o arquivo para submissão:</p>
-                  <p>• O documento Word deve estar <strong>COMPLETO</strong>: contendo Título, Título em Inglês, Resumo, Abstract, Palavras-chave, Texto integral, Vinhetas Clínicas e Referências Bibliográficas completas.</p>
-                  <p className="text-rose-600 font-semibold">• O arquivo NÃO PODE conter nome dos autores, nem afiliações ou agradecimentos diretos.</p>
-                </div>
-                <input
-                  type="file"
-                  required
-                  accept=".docx,.doc"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                />
-              </div>
-
-              {/* BLOCO 5: DECLARAÇÕES ÉTICAS */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termOriginal}
-                    onChange={(e) => setTermOriginal(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span><strong>Ineditismo e Autoria:</strong> Declaro que este manuscrito é original, de autoria própria (e dos coautores cadastrados) e não se encontra sob avaliação simultânea em outro periódico.</span>
-                </label>
-
-                <label className="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termEthics}
-                    onChange={(e) => setTermEthics(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span><strong>Sigilo Clínico e Ética Psicanalítica:</strong> Declaro que quaisquer dados clínicos e vinhetas de pacientes foram devidamente anonimizados e descaracterizados, respeitando o sigilo ético absoluto.</span>
-                </label>
-
-                <label className="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termAnonymous}
-                    onChange={(e) => setTermAnonymous(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span><strong>Anonimização do Manuscrito:</strong> Confirmo que retirei do arquivo Word qualquer menção ao nome dos autores, notas biográficas ou dados nas propriedades do arquivo.</span>
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowSubmitModal(false)}
-                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 shadow-sm"
-                >
-                  {submitting ? 'Enviando Manuscrito...' : 'Concluir Submissão'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DO AUTOR: ENVIAR VERSÃO CORRIGIDA (Item c) */}
-      {reSubmitArticle && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex justify-between items-start border-b border-slate-100 pb-2">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Enviar Nova Versão Corrigida</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Artigo: <strong>{reSubmitArticle.title}</strong></p>
-              </div>
-              <button onClick={() => setReSubmitArticle(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
-              <p className="font-semibold flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                Orientações para o reenvio:
-              </p>
-              <p>
-                Anexe o arquivo Word (.docx) revisado contemplando as correções solicitadas. Ao enviar, o manuscrito será encaminhado diretamente ao Editor Geral para avaliação e decisão final.
-              </p>
-            </div>
-
-            <form onSubmit={handleResubmitArticle} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Arquivo Word Corrigido (.docx) *
-                </label>
-                <input
-                  type="file"
-                  required
-                  accept=".docx,.doc"
-                  onChange={(e) => setRevisedFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setReSubmitArticle(null)}
-                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingRevision || !revisedFile}
-                  className="px-4 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50 shadow-sm"
-                >
-                  {submittingRevision ? 'Enviando Revisão...' : 'Confirmar Envio da Versão Corrigida'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DO EDITOR: ATRIBUIR PARECERISTA (Item j) */}
+      {/* MODAL DE ATRIBUIÇÃO DE PARECERISTA COM PRAZO MANUAL (Item 1) */}
       {assignModalArticle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -2928,25 +2748,45 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="space-y-3">
-              <label className="block text-xs font-semibold text-slate-700">Selecione o Avaliador:</label>
-              <select
-                value={selectedReviewerId}
-                onChange={(e) => setSelectedReviewerId(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white"
-              >
-                <option value="">-- Escolha um parecerista --</option>
-                {allProfiles
-                  .filter((p) => (p.role === 'reviewer' || p.role === 'editor') && p.id !== assignModalArticle.author_id)
-                  .map((rev) => (
-                    <option key={rev.id} value={rev.id}>
-                      {rev.full_name} ({rev.role === 'editor' ? 'Editor' : 'Parecerista'}) - {rev.institution || 'ASP'}
-                    </option>
-                  ))}
-              </select>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Selecione o Avaliador *</label>
+                <select
+                  value={selectedReviewerId}
+                  onChange={(e) => setSelectedReviewerId(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white"
+                >
+                  <option value="">-- Escolha um parecerista --</option>
+                  {allProfiles
+                    .filter((p) => (p.role === 'reviewer' || p.role === 'editor') && p.id !== assignModalArticle.author_id)
+                    .map((rev) => (
+                      <option key={rev.id} value={rev.id}>
+                        {rev.full_name} ({rev.role === 'editor' ? 'Editor' : 'Parecerista'}) - {rev.institution || 'ASP'}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Campo para Definir Prazo Manualmente (Item 1) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                  Data Limite para Entrega do Parecer *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={assignDeadline}
+                  onChange={(e) => setAssignDeadline(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Defina o prazo de acordo com a urgência e o calendário do fascículo. A data constará no e-mail oficial ao parecerista.
+                </p>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setAssignModalArticle(null)}
@@ -2956,18 +2796,18 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                disabled={!selectedReviewerId}
+                disabled={!selectedReviewerId || !assignDeadline}
                 onClick={handleAssignReviewer}
                 className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
               >
-                Confirmar Atribuição
+                Confirmar Atribuição e Enviar Convite
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL DO EDITOR: JUSTIFICATIVA DE RECUSA (Item f) */}
+      {/* MODAL DO EDITOR: JUSTIFICATIVA DE RECUSA */}
       {rejectionModalArticle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -3017,7 +2857,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DO PARECERISTA (Item i) */}
+      {/* MODAL DO PARECERISTA */}
       {reviewModalData && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
