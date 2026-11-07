@@ -26,30 +26,26 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
-  // Recuperação e Redefinição de Senha
+  // Recuperação de Senha
   const [showForgotModal, setShowForgotModal] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
-  const [showNewPasswordModal, setShowNewPasswordModal] = useState(false)
-  const [newPasswordInput, setNewPasswordInput] = useState('')
-  const [savingNewPassword, setSavingNewPassword] = useState(false)
 
   // Data States
   const [allArticles, setAllArticles] = useState<any[]>([])
   const [allProfiles, setAllProfiles] = useState<any[]>([])
   const [allReviews, setAllReviews] = useState<any[]>([])
 
-  // Filtros e Busca Rápida na Sala Editorial (Item 3)
+  // Filtros da Sala Editorial
   const [editorSearch, setEditorSearch] = useState('')
   const [editorStatusFilter, setEditorStatusFilter] = useState('todos')
 
-  // Modal Verificador Público
+  // Modais de Controle
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [verifyCodeInput, setVerifyCodeInput] = useState('')
   const [verifyResult, setVerifyResult] = useState<any>(null)
   const [checkingCode, setCheckingCode] = useState(false)
 
-  // Modal Meu Perfil
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [profileInst, setProfileInst] = useState('')
@@ -58,7 +54,7 @@ export default function Home() {
   const [profileOrcid, setProfileOrcid] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
 
-  // Modal Submissão do Autor com Termos Internacionais (Item 4)
+  // Submissão do Autor
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [newSection, setNewSection] = useState('Artigo Científico')
   const [newTitle, setNewTitle] = useState('')
@@ -80,22 +76,22 @@ export default function Home() {
   const [termAI, setTermAI] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  // Modal Reenvio Versão Corrigida
+  // Reenvio de Versão Corrigida
   const [reSubmitArticle, setReSubmitArticle] = useState<any>(null)
   const [revisedFile, setRevisedFile] = useState<File | null>(null)
   const [submittingRevision, setSubmittingRevision] = useState(false)
 
-  // Modal Atribuir Parecerista com Prazo Manual (Item 1)
+  // Atribuição de Parecerista
   const [assignModalArticle, setAssignModalArticle] = useState<any>(null)
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
   const [assignDeadline, setAssignDeadline] = useState('')
 
-  // Modal Recusa com Justificativa do Editor
+  // Recusa Editorial
   const [rejectionModalArticle, setRejectionModalArticle] = useState<any>(null)
   const [rejectionReasonText, setRejectionReasonText] = useState('')
   const [savingRejection, setSavingRejection] = useState(false)
 
-  // Modal Parecerista
+  // Parecerista
   const [reviewModalData, setReviewModalData] = useState<any>(null)
   const [critTitle, setCritTitle] = useState('satisfatorio')
   const [critTheory, setCritTheory] = useState('consistente')
@@ -106,7 +102,7 @@ export default function Home() {
   const [reviewFile, setReviewFile] = useState<File | null>(null)
   const [submittingReview, setSubmittingReview] = useState(false)
 
-  // Modais de Documentos Timbrados
+  // Documentos Oficiais
   const [selectedAcceptanceArticle, setSelectedAcceptanceArticle] = useState<any>(null)
   const [selectedRejectionArticle, setSelectedRejectionArticle] = useState<any>(null)
   const [selectedReviewCert, setSelectedReviewCert] = useState<any>(null)
@@ -114,20 +110,13 @@ export default function Home() {
   const [copiedThanks, setCopiedThanks] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
-      setShowNewPasswordModal(true)
-    }
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session) initUser(session, true)
       else setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setShowNewPasswordModal(true)
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) initUser(session, false)
       else {
@@ -253,14 +242,12 @@ export default function Home() {
     return month <= 5 ? `Fascículo de Junho de ${year}` : `Fascículo de Dezembro de ${year}`
   }
 
-  // Cálculo de Prazo Restante para Parecerista (Item 1)
   const getDeadlineBadge = (deadlineStr: string | null) => {
     if (!deadlineStr) return null
     const deadlineDate = new Date(deadlineStr + 'T23:59:59')
     const now = new Date()
     const diffTime = deadlineDate.getTime() - now.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
     const formattedDate = new Date(deadlineStr + 'T12:00:00').toLocaleDateString('pt-BR')
 
     if (diffDays > 0) {
@@ -354,13 +341,14 @@ export default function Home() {
     }
   }
 
+  // Envio de E-mail para a Nova Rota /redefinir-senha (Item a)
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!forgotEmail) return
     setForgotLoading(true)
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: 'https://revista-saber-portal.vercel.app',
+        redirectTo: 'https://revista-saber-portal.vercel.app/redefinir-senha',
       })
       if (error) throw error
 
@@ -368,12 +356,12 @@ export default function Home() {
         to: forgotEmail,
         subject: 'Recuperação de Senha - Revista Saber Psicanalítico',
         title: 'Redefinição de Senha de Acesso',
-        message: `Olá,\n\nRecebemos uma solicitação de redefinição de senha para a sua conta no Portal Editorial da Revista Saber Psicanalítico.\n\nSe você realizou esta solicitação, clique no botão abaixo para cadastrar sua nova senha com segurança.`,
-        actionText: 'Redefinir Minha Senha',
-        actionUrl: 'https://revista-saber-portal.vercel.app/#type=recovery',
+        message: `Olá,\n\nRecebemos uma solicitação de redefinição de senha para a sua conta no Portal Editorial da Revista Saber Psicanalítico.\n\nPara cadastrar sua nova senha, clique no botão abaixo. Se você não solicitou esta alteração, por favor desconsidere este e-mail.`,
+        actionText: 'Cadastrar Nova Senha',
+        actionUrl: 'https://revista-saber-portal.vercel.app/redefinir-senha',
       })
 
-      alert('Instruções de redefinição de senha enviadas com sucesso para o seu e-mail!')
+      alert('Instruções enviadas com sucesso para o seu e-mail! Verifique também a pasta de spam.')
       setShowForgotModal(false)
       setForgotEmail('')
     } catch (err: any) {
@@ -383,24 +371,6 @@ export default function Home() {
     }
   }
 
-  const handleSaveNewPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newPasswordInput) return
-    setSavingNewPassword(true)
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPasswordInput })
-      if (error) throw error
-      alert('Senha atualizada com sucesso! Você já está conectado ao sistema.')
-      setShowNewPasswordModal(false)
-      setNewPasswordInput('')
-    } catch (err: any) {
-      alert(`Erro ao atualizar senha: ${err.message}`)
-    } finally {
-      setSavingNewPassword(false)
-    }
-  }
-
-  // Exportar Backup Completo em CSV / Excel (Item 5)
   const handleExportBackup = () => {
     if (allArticles.length === 0) {
       alert('Nenhum dado disponível para exportação no momento.')
@@ -408,21 +378,10 @@ export default function Home() {
     }
 
     const headers = [
-      'ID Artigo',
-      'Titulo',
-      'Secao',
-      'Status Atual',
-      'Data Submissao',
-      'Fasciculo Previsto',
-      'Autor Principal',
-      'Email Autor',
-      'Filiacao Autor',
-      'ORCID Autor',
-      'Lattes Autor',
-      'Coautores',
-      'Total Pareceres',
-      'Pareceres Detalhados',
-      'Justificativa Recusa'
+      'ID Artigo', 'Titulo', 'Secao', 'Status Atual', 'Data Submissao',
+      'Fasciculo Previsto', 'Autor Principal', 'Email Autor', 'Filiacao Autor',
+      'ORCID Autor', 'Lattes Autor', 'Coautores', 'Total Pareceres',
+      'Pareceres Detalhados', 'Justificativa Recusa'
     ]
 
     const rows = allArticles.map((art) => {
@@ -449,7 +408,6 @@ export default function Home() {
       ]
     })
 
-    // UTF-8 BOM (\uFEFF) para abrir com acentuação perfeita no Excel
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -462,7 +420,7 @@ export default function Home() {
     URL.revokeObjectURL(url)
   }
 
-  // Verificador Público de Autenticidade
+  // Verificador Público
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
     if (!code) return
@@ -545,7 +503,7 @@ export default function Home() {
     }
   }
 
-  // Submissão do Artigo com Termos Internacionais e Histórico Inicial (Item 2 e 4)
+  // Submissão do Manuscrito (Item d)
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -581,7 +539,7 @@ export default function Home() {
         author_bio: authorBio,
         coauthors: coauthors,
         file_url: filePath,
-        original_file_url: filePath, // Guarda versão original para histórico permanente
+        original_file_url: filePath,
         term_creative_commons: termCC,
         term_ai_declaration: termAI,
         status: 'submetido',
@@ -624,7 +582,7 @@ export default function Home() {
     }
   }
 
-  // Reenvio de Versão Corrigida pelo Autor (Item 2: preserva original_file_url)
+  // Reenvio de Versão Corrigida (Item c: funciona continuamente)
   const handleResubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!revisedFile || !reSubmitArticle) return
@@ -671,7 +629,6 @@ export default function Home() {
     }
   }
 
-  // Download com Nome Legível do Arquivo
   const handleDownloadFile = async (filePath: string, articleTitle: string, fileType = 'Manuscrito') => {
     try {
       const { data, error } = await supabase.storage
@@ -699,7 +656,6 @@ export default function Home() {
     }
   }
 
-  // Mudança de Status com E-mails e Recusa
   const handleUpdateStatus = async (articleId: string, status: string) => {
     if (status === 'recusado') {
       const target = allArticles.find((a) => a.id === articleId)
@@ -826,7 +782,6 @@ export default function Home() {
     }
   }
 
-  // Atribuição de Parecerista com Prazo Definido pelo Editor (Item 1)
   const handleAssignReviewer = async () => {
     if (!selectedReviewerId || !assignModalArticle || !assignDeadline) {
       alert('Por favor, selecione o parecerista e defina a data limite para o parecer.')
@@ -929,7 +884,6 @@ export default function Home() {
     setTimeout(() => setCopiedThanks(false), 2500)
   }
 
-  // Filtragem dos Artigos na Sala Editorial (Item 3)
   const filteredArticles = allArticles.filter((art) => {
     const authorName = getAuthorName(art.author_id).toLowerCase()
     const title = art.title.toLowerCase()
@@ -942,7 +896,7 @@ export default function Home() {
     return matchesSearch && matchesStatus
   })
 
-  // MODAL DE VALIDAÇÃO PÚBLICA
+  // MODAL DE VERIFICAÇÃO PÚBLICA
   const renderVerificationModal = () => {
     if (!showVerifyModal) return null
     return (
@@ -1496,7 +1450,6 @@ export default function Home() {
                               </button>
                             )}
 
-                            {/* Download com Nome Legível do Arquivo */}
                             <button
                               type="button"
                               onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito')}
@@ -1506,7 +1459,8 @@ export default function Home() {
                               Baixar Manuscrito Atual
                             </button>
 
-                            {(isPendingCorrections || isInitialDeskAdjust) && (
+                            {/* Botão de Enviar Arquivo Corrigido sempre operacional (Item c) */}
+                            {(isPendingCorrections || isInitialDeskAdjust || isRevisionSubmitted) && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1582,7 +1536,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* VISÃO DO PARECERISTA COM CONTAGEM DE PRAZO (Item 1) */}
+          {/* VISÃO DO PARECERISTA */}
           {viewMode === 'reviewer' && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -1620,7 +1574,6 @@ export default function Home() {
                                 {isCompleted ? 'PARECER ENVIADO' : 'AGUARDANDO SEU PARECER'}
                               </span>
 
-                              {/* Badge de Prazo Restante para o Parecerista (Item 1) */}
                               {!isCompleted && getDeadlineBadge(rev.deadline)}
                             </div>
                             <h3 className="text-lg font-bold text-slate-900">{art?.title || 'Artigo'}</h3>
@@ -1683,7 +1636,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* PAINEL DO EDITOR GERAL (COM BUSCA, FILTROS, HISTÓRICO E BACKUP) */}
+          {/* PAINEL DO EDITOR GERAL */}
           {viewMode === 'editor' && (
             <div className="space-y-8">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1699,7 +1652,6 @@ export default function Home() {
                 </div>
                 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* Botão de Exportar Backup Completo (Item 5) */}
                   <button
                     type="button"
                     onClick={handleExportBackup}
@@ -1730,7 +1682,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* BARRA DE PESQUISA E FILTROS RÁPIDOS (Item 3) */}
+              {/* FILTROS E BUSCA */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -1773,7 +1725,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* LISTA DE ARTIGOS FILTRADOS */}
+              {/* LISTA DE ARTIGOS */}
               <div className="space-y-4">
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-indigo-600" />
@@ -1867,7 +1819,6 @@ export default function Home() {
                                 </button>
                               )}
 
-                              {/* Versionamento: Download de Arquivo Atual vs Original (Item 2) */}
                               <button
                                 type="button"
                                 onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')}
@@ -1896,7 +1847,6 @@ export default function Home() {
                                     onClick={() => {
                                       setAssignModalArticle(art)
                                       setSelectedReviewerId('')
-                                      // Sugere prazo padrão de 21 dias a partir de hoje
                                       const defaultDate = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
                                       setAssignDeadline(defaultDate)
                                     }}
@@ -1995,8 +1945,7 @@ export default function Home() {
                                         {r.status === 'concluido' ? `PARECER CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO PARECER'}
                                       </span>
 
-                                      {/* Prazo Restante na visão do Editor (Item 1) */}
-                                      {r.status !== 'concluido' && (
+                                      {!r.status === 'concluido' && (
                                         <span className="ml-2">{getDeadlineBadge(r.deadline)}</span>
                                       )}
                                     </div>
@@ -2609,7 +2558,7 @@ export default function Home() {
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         CERTIFICAÇÃO EDITORIAL DE ATUAÇÃO TÉCNICA
                       </p>
-                      <p>Homologado por: <strong>Dr. Edson Leandro de Almeida (Editor-Chefe)</strong></p>
+                      <p>Homologado por: <strong>Dr. Edson Leandro de Almeida</strong></p>
                       <p>Código Verificador: <span className="font-mono text-slate-800 font-bold">{validationCode}</span></p>
                     </div>
                     <div className="text-right text-[9px] text-slate-400 pl-3 border-l border-slate-200">
@@ -2730,325 +2679,6 @@ export default function Home() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE ATRIBUIÇÃO DE PARECERISTA COM PRAZO MANUAL (Item 1) */}
-      {assignModalArticle && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex justify-between items-start border-b border-slate-100 pb-2">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Designar Parecerista para Artigo</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Artigo: <strong>{assignModalArticle.title}</strong></p>
-              </div>
-              <button onClick={() => setAssignModalArticle(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Selecione o Avaliador *</label>
-                <select
-                  value={selectedReviewerId}
-                  onChange={(e) => setSelectedReviewerId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white"
-                >
-                  <option value="">-- Escolha um parecerista --</option>
-                  {allProfiles
-                    .filter((p) => (p.role === 'reviewer' || p.role === 'editor') && p.id !== assignModalArticle.author_id)
-                    .map((rev) => (
-                      <option key={rev.id} value={rev.id}>
-                        {rev.full_name} ({rev.role === 'editor' ? 'Editor' : 'Parecerista'}) - {rev.institution || 'ASP'}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Campo para Definir Prazo Manualmente (Item 1) */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                  Data Limite para Entrega do Parecer *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={assignDeadline}
-                  onChange={(e) => setAssignDeadline(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Defina o prazo de acordo com a urgência e o calendário do fascículo. A data constará no e-mail oficial ao parecerista.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setAssignModalArticle(null)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={!selectedReviewerId || !assignDeadline}
-                onClick={handleAssignReviewer}
-                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
-              >
-                Confirmar Atribuição e Enviar Convite
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DO EDITOR: JUSTIFICATIVA DE RECUSA */}
-      {rejectionModalArticle && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex justify-between items-start border-b border-slate-100 pb-2">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Justificativa da Não Aceitação</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Artigo: <strong>{rejectionModalArticle.title}</strong></p>
-              </div>
-              <button onClick={() => setRejectionModalArticle(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-xs text-slate-600">
-                Descreva os fundamentos editoriais para a recusa deste artigo. Este texto será encaminhado por e-mail e constará na <strong>Carta Oficial de Não Aceite</strong> emitida ao autor:
-              </p>
-
-              <textarea
-                required
-                rows={5}
-                value={rejectionReasonText}
-                onChange={(e) => setRejectionReasonText(e.target.value)}
-                placeholder="Ex: Não atendimento às normas metodológicas solicitadas pelos pareceristas, incompatibilidade com o escopo temático da edição..."
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setRejectionModalArticle(null)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={savingRejection || !rejectionReasonText.trim()}
-                onClick={handleConfirmRejection}
-                className="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg disabled:opacity-50"
-              >
-                {savingRejection ? 'Gravando...' : 'Confirmar Recusa e Notificar Autor'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DO PARECERISTA */}
-      {reviewModalData && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="border-b border-slate-100 pb-3 flex justify-between items-start">
-              <div>
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Formulário de Parecer Técnico-Científico</span>
-                <h3 className="text-lg font-bold text-slate-900">Emissão de Parecer Editorial</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Artigo: <strong>{allArticles.find((a) => a.id === reviewModalData.article_id)?.title}</strong>
-                </p>
-              </div>
-              <button onClick={() => setReviewModalData(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-950 space-y-1.5">
-              <p className="font-bold flex items-center gap-1.5 text-indigo-900">
-                <HelpCircle className="w-4 h-4 text-indigo-600" />
-                Como fazer anotações e correções no texto:
-              </p>
-              <p className="leading-relaxed">
-                Você pode baixar o arquivo Word (.docx), abri-lo em seu computador e ativar o recurso 
-                <strong> "Controlar Alterações"</strong> (na aba <em>Revisão</em> do Word) ou inserir <strong>Comentários</strong> pontuais nas frases que necessitarem de aprimoramento. Depois de salvar, anexe o arquivo com suas anotações no campo específico abaixo.
-              </p>
-            </div>
-
-            <div className="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
-              <p className="font-bold flex items-center gap-1.5 text-amber-800">
-                <ShieldAlert className="w-4 h-4 text-amber-600" />
-                Atenção ao Sigilo do Parecerista no Word:
-              </p>
-              <p className="leading-relaxed text-[11px]">
-                Ao usar comentários no Word, certifique-se de que seu nome pessoal não fique gravado nas notas. 
-                <strong> Dica no Word:</strong> Vá em <em>Arquivo &gt; Informações &gt; Verificar se há Problemas &gt; Inspecionar Documento</em> e remova &ldquo;Propriedades do Documento e Informações Pessoais&rdquo;, ou altere seu nome de usuário nas opções do Word para &ldquo;Parecerista&rdquo;.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Título e Resumo</label>
-                  <select
-                    value={critTitle}
-                    onChange={(e) => setCritTitle(e.target.value)}
-                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg bg-white"
-                  >
-                    <option value="excelente">Excelente / Claro</option>
-                    <option value="satisfatorio">Satisfatório</option>
-                    <option value="reformular">Requer Reformulação</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Rigor Conceitual (Psicanálise)</label>
-                  <select
-                    value={critTheory}
-                    onChange={(e) => setCritTheory(e.target.value)}
-                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg bg-white"
-                  >
-                    <option value="consistente">Consistente e Fundamentado</option>
-                    <option value="parcial">Parcialmente Consistente</option>
-                    <option value="insuficiente">Insuficiente / Frágil</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Relevância para a Clínica</label>
-                  <select
-                    value={critClinical}
-                    onChange={(e) => setCritClinical(e.target.value)}
-                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg bg-white"
-                  >
-                    <option value="alta">Alta Relevância</option>
-                    <option value="media">Média Relevância</option>
-                    <option value="baixa">Baixa Relevância</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Recomendação Editorial Final *
-                </label>
-                <select
-                  value={recommendation}
-                  onChange={(e) => setRecommendation(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white font-medium"
-                >
-                  <option value="aceitar">Aceitar sem restrições (Recomendado)</option>
-                  <option value="correcoes_obrigatorias">Aceitar mediante correções obrigatórias</option>
-                  <option value="rejeitar">Recusar manuscrito (Não recomendado)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Parecer Detalhado e Orientações para o Autor *
-                </label>
-                <textarea
-                  required
-                  rows={5}
-                  value={commentsAuthor}
-                  onChange={(e) => setCommentsAuthor(e.target.value)}
-                  placeholder="Apresente suas considerações conceituais e recomendações de aprimoramento de forma construtiva e fundamentada..."
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                <label className="block text-xs font-semibold text-slate-800">
-                  Anexar Arquivo com Comentários / Correções (.docx - Opcional)
-                </label>
-                <input
-                  type="file"
-                  accept=".docx,.doc"
-                  onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Observações Confidenciais para o Editor Geral (Opcional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={commentsEditor}
-                  onChange={(e) => setCommentsEditor(e.target.value)}
-                  placeholder="Comentários internos, dúvidas éticas ou notas exclusivas para a equipe editorial..."
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setReviewModalData(null)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Voltar
-              </button>
-              <button
-                type="submit"
-                disabled={submittingReview || !commentsAuthor}
-                onClick={handleSubmitReview}
-                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
-              >
-                <Send className="w-3.5 h-3.5" />
-                {submittingReview ? 'Enviando...' : 'Concluir e Enviar Parecer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: NOVA SENHA (PÓS-RECUPERAÇÃO) */}
-      {showNewPasswordModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-            <div className="text-center space-y-1">
-              <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                <KeyRound className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900">Cadastrar Nova Senha</h3>
-              <p className="text-xs text-slate-500">
-                Digite a sua nova senha de acesso ao portal editorial.
-              </p>
-            </div>
-
-            <form onSubmit={handleSaveNewPassword} className="space-y-3">
-              <input
-                type="password"
-                required
-                value={newPasswordInput}
-                onChange={(e) => setNewPasswordInput(e.target.value)}
-                placeholder="Nova senha (mínimo 6 caracteres)"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="submit"
-                  disabled={savingNewPassword || newPasswordInput.length < 6}
-                  className="w-full py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 shadow-sm"
-                >
-                  {savingNewPassword ? 'Atualizando...' : 'Salvar Nova Senha'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
