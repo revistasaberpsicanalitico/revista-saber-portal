@@ -242,6 +242,7 @@ export default function Home() {
     return month <= 5 ? `Fascículo de Junho de ${year}` : `Fascículo de Dezembro de ${year}`
   }
 
+  // Cálculo de Prazo Restante para Parecerista
   const getDeadlineBadge = (deadlineStr: string | null) => {
     if (!deadlineStr) return null
     const deadlineDate = new Date(deadlineStr + 'T23:59:59')
@@ -341,7 +342,6 @@ export default function Home() {
     }
   }
 
-  // Envio de E-mail para a Nova Rota /redefinir-senha (Item a)
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!forgotEmail) return
@@ -503,7 +503,7 @@ export default function Home() {
     }
   }
 
-  // Submissão do Manuscrito (Item d)
+  // Submissão do Manuscrito
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -582,7 +582,7 @@ export default function Home() {
     }
   }
 
-  // Reenvio de Versão Corrigida (Item c: funciona continuamente)
+  // Reenvio de Versão Corrigida
   const handleResubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!revisedFile || !reSubmitArticle) return
@@ -896,7 +896,7 @@ export default function Home() {
     return matchesSearch && matchesStatus
   })
 
-  // MODAL DE VERIFICAÇÃO PÚBLICA
+  // MODAL DE VALIDAÇÃO PÚBLICA
   const renderVerificationModal = () => {
     if (!showVerifyModal) return null
     return (
@@ -1459,7 +1459,6 @@ export default function Home() {
                               Baixar Manuscrito Atual
                             </button>
 
-                            {/* Botão de Enviar Arquivo Corrigido sempre operacional (Item c) */}
                             {(isPendingCorrections || isInitialDeskAdjust || isRevisionSubmitted) && (
                               <button
                                 type="button"
@@ -1945,7 +1944,8 @@ export default function Home() {
                                         {r.status === 'concluido' ? `PARECER CONCLUÍDO (${r.recommendation?.toUpperCase()})` : 'AGUARDANDO PARECER'}
                                       </span>
 
-                                      {!r.status === 'concluido' && (
+                                      {/* Correção do erro do TypeScript (r.status !== 'concluido') */}
+                                      {r.status !== 'concluido' && (
                                         <span className="ml-2">{getDeadlineBadge(r.deadline)}</span>
                                       )}
                                     </div>
