@@ -7,14 +7,14 @@ import {
   Upload, FileText, LogOut, ShieldCheck, Users, UserCheck, 
   Download, MessageSquare, Send, CheckCircle2, HelpCircle, 
   FileCheck, AlertTriangle, RefreshCw, Plus, Trash2, ShieldAlert,
-  Award, Printer, Copy, Check, Edit3, Link as LinkIcon, Search, X, AlertCircle, KeyRound, Ban, Calendar, Clock, FileSpreadsheet
+  Award, Printer, Copy, Check, Edit3, Link as LinkIcon, Search, X, AlertCircle, KeyRound, Ban, Calendar, Clock, FileSpreadsheet, Eye
 } from 'lucide-react'
 import { SubmitModal, ResubmitModal } from './Modals'
 
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
-  const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor'>('author')
+  const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor' | 'council'>('author')
   const [loading, setLoading] = useState(true)
 
   // Auth States
@@ -77,22 +77,22 @@ export default function Home() {
   const [termAI, setTermAI] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  // Modal Reenvio Versão Corrigida
+  // Reenvio de Versão Corrigida
   const [reSubmitArticle, setReSubmitArticle] = useState<any>(null)
   const [revisedFile, setRevisedFile] = useState<File | null>(null)
   const [submittingRevision, setSubmittingRevision] = useState(false)
 
-  // Modal Atribuir Parecerista
+  // Atribuição de Parecerista
   const [assignModalArticle, setAssignModalArticle] = useState<any>(null)
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
   const [assignDeadline, setAssignDeadline] = useState('')
 
-  // Modal Recusa
+  // Recusa Editorial
   const [rejectionModalArticle, setRejectionModalArticle] = useState<any>(null)
   const [rejectionReasonText, setRejectionReasonText] = useState('')
   const [savingRejection, setSavingRejection] = useState(false)
 
-  // Modal Parecerista
+  // Parecerista
   const [reviewModalData, setReviewModalData] = useState<any>(null)
   const [critTitle, setCritTitle] = useState('satisfatorio')
   const [critTheory, setCritTheory] = useState('consistente')
@@ -141,7 +141,11 @@ export default function Home() {
       if (data) {
         setProfile(data)
         if (isFirstLoad) {
-          setViewMode(data.role === 'editor' ? 'editor' : data.role === 'reviewer' ? 'reviewer' : 'author')
+          setViewMode(
+            data.role === 'editor' ? 'editor' : 
+            data.role === 'council' ? 'council' : 
+            data.role === 'reviewer' ? 'reviewer' : 'author'
+          )
         }
         setAuthorInstitution(data.institution || '')
         setAuthorLattes(data.lattes_url || '')
@@ -319,7 +323,7 @@ export default function Home() {
 
   const handleDeleteUser = async (userToDelete: any) => {
     if (userToDelete.id === session.user.id) {
-      alert('Você não pode excluir o seu próprio perfil de editor!')
+      alert('Você não pode excluir o seu próprio perfil!')
       return
     }
 
@@ -411,89 +415,6 @@ export default function Home() {
     URL.revokeObjectURL(url)
   }
 
-  // Verificador Público
-  const handleVerifyCode = async () => {
-    const code = verifyCodeInput.trim().toUpperCase()
-    if (!code) return
-
-    setCheckingCode(true)
-    setVerifyResult(null)
-
-    try {
-      const { data, error } = await supabase.rpc('verify_document', { code })
-
-      if (!error && data && data.valid) {
-        setVerifyResult(data)
-        setCheckingCode(false)
-        return
-      }
-
-      if (code.includes('ASP-ACE-')) {
-        const parts = code.split('-')
-        const prefix = parts[2] || ''
-        const found = allArticles.find((a) => a.id.toUpperCase().startsWith(prefix) && a.status === 'aceito')
-
-        if (found) {
-          setVerifyResult({
-            valid: true,
-            type: 'Carta de Aceite para Publicação',
-            title: found.title,
-            person: getAuthorName(found.author_id),
-            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR'),
-            role: 'Autor(a) do Manuscrito',
-          })
-          setCheckingCode(false)
-          return
-        }
-      }
-
-      if (code.includes('ASP-REC-')) {
-        const parts = code.split('-')
-        const prefix = parts[2] || ''
-        const found = allArticles.find((a) => a.id.toUpperCase().startsWith(prefix) && a.status === 'recusado')
-
-        if (found) {
-          setVerifyResult({
-            valid: true,
-            type: 'Carta de Conclusão do Processo Editorial (Não Aceite)',
-            title: found.title,
-            person: getAuthorName(found.author_id),
-            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR'),
-            role: 'Autor(a) do Manuscrito',
-          })
-          setCheckingCode(false)
-          return
-        }
-      }
-
-      if (code.includes('ASP-PAR-')) {
-        const parts = code.split('-')
-        const prefix = parts[2] || ''
-        const foundRev = allReviews.find((r) => r.id.toUpperCase().startsWith(prefix) && r.status === 'concluido')
-
-        if (foundRev) {
-          const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
-          setVerifyResult({
-            valid: true,
-            type: 'Declaração de Atuação como Parecerista Ad-hoc',
-            title: 'Manuscrito Técnico-Científico Avaliado',
-            person: revPerson?.full_name || 'Parecerista Registrado',
-            date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR'),
-            role: 'Parecerista Ad-hoc',
-          })
-          setCheckingCode(false)
-          return
-        }
-      }
-
-      setVerifyResult({ valid: false })
-    } catch (e) {
-      setVerifyResult({ valid: false })
-    } finally {
-      setCheckingCode(false)
-    }
-  }
-
   // Submissão do Manuscrito
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -538,12 +459,23 @@ export default function Home() {
 
       if (insertError) throw insertError
 
+      // E-mail de confirmação ao Autor
       sendEmailNotification({
         to: session.user.email,
         subject: 'Confirmação de Submissão - Revista Saber Psicanalítico',
         title: 'Manuscrito Recebido com Sucesso!',
         message: `Olá, ${profile?.full_name || 'Autor(a)'}.\n\nConfirmamos com satisfação o recebimento do seu manuscrito intitulado "${newTitle}" na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSeu trabalho ingressou na etapa de Triagem Editorial. Você poderá acompanhar em tempo real todas as movimentações e pareceres diretamente pelo portal editorial.`,
         actionText: 'Acompanhar Minha Submissão',
+        actionUrl: 'https://revista-saber-portal.vercel.app',
+      })
+
+      // Aviso por e-mail para a Revista (Editoria)
+      sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: 'Novo Manuscrito Submetido - Revista Saber Psicanalítico',
+        title: 'Novo Artigo Recebido na Revista',
+        message: `Um novo manuscrito foi submetido no portal editorial:\n\n• Título: "${newTitle}"\n• Seção: ${newSection}\n• Autor Principal: ${profile?.full_name} (${session.user.email})\n\nAcesse a Sala Editorial para realizar a triagem inicial.`,
+        actionText: 'Acessar Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app',
       })
 
@@ -573,7 +505,7 @@ export default function Home() {
     }
   }
 
-  // Reenvio de Versão Corrigida
+  // Reenvio de Versão Corrigida pelo Autor
   const handleResubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!revisedFile || !reSubmitArticle) return
@@ -600,11 +532,12 @@ export default function Home() {
 
       if (updateError) throw updateError
 
+      // E-mail avisando o Editor sobre a revisão recebida (Item b)
       sendEmailNotification({
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: 'Nova Revisão de Artigo Enviada - Revista Saber Psicanalítico',
         title: 'Manuscrito Corrigido Recebido',
-        message: `O(A) autor(a) ${getAuthorName(reSubmitArticle.author_id)} acabou de enviar a versão corrigida do artigo "${reSubmitArticle.title}".\n\nO artigo está disponível na Sala Editorial aguardando a decisão final da comissão.`,
+        message: `O(A) autor(a) ${getAuthorName(reSubmitArticle.author_id)} acabou de enviar a versão corrigida do artigo "${reSubmitArticle.title}".\n\nO manuscrito está disponível na Sala Editorial aguardando a decisão final da comissão.`,
         actionText: 'Acessar Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app',
       })
@@ -814,6 +747,7 @@ export default function Home() {
     }
   }
 
+  // Parecerista envia o parecer (Avisa o Editor por e-mail - Item b)
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -846,6 +780,19 @@ export default function Home() {
         .eq('id', reviewModalData.id)
 
       if (error) throw error
+
+      const targetArt = allArticles.find((a) => a.id === reviewModalData.article_id)
+
+      // E-mail de aviso para a editoria sobre parecer emitido (Item b)
+      sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: 'Novo Parecer Concluído - Revista Saber Psicanalítico',
+        title: 'Parecer Técnico-Científico Emitido',
+        message: `O(A) parecerista ${profile?.full_name} concluiu a avaliação do artigo "${targetArt?.title}".\n\n• Recomendação: ${recommendation.toUpperCase()}\n\nAcesse a Sala Editorial para conferir o parecer e deliberar sobre os próximos passos.`,
+        actionText: 'Acessar Sala Editorial',
+        actionUrl: 'https://revista-saber-portal.vercel.app',
+      })
+
       alert('Parecer emitido com sucesso! Agradecemos muito a sua colaboração com a Revista Saber Psicanalítico.')
       setReviewModalData(null)
       setReviewFile(null)
@@ -886,6 +833,11 @@ export default function Home() {
 
     return matchesSearch && matchesStatus
   })
+
+  // Permissões: Editor Chefe/Adjunto tem poder total. Conselho tem leitura e acompanhamento (Item a)
+  const isFullEditor = profile?.role === 'editor'
+  const isCouncil = profile?.role === 'council'
+  const canAccessEditorialRoom = isFullEditor || isCouncil
 
   // MODAL DE VALIDAÇÃO PÚBLICA
   const renderVerificationModal = () => {
@@ -1259,7 +1211,8 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2.5">
-              {profile?.role === 'editor' && (
+              {/* Botões do Editor Geral */}
+              {isFullEditor && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button
                     onClick={() => setViewMode('editor')}
@@ -1267,7 +1220,7 @@ export default function Home() {
                       viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
                     }`}
                   >
-                    Painel Editor
+                    Sala Editorial
                   </button>
                   <button
                     onClick={() => setViewMode('reviewer')}
@@ -1276,6 +1229,28 @@ export default function Home() {
                     }`}
                   >
                     Visão Parecerista
+                  </button>
+                  <button
+                    onClick={() => setViewMode('author')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                      viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
+                    }`}
+                  >
+                    Visão Autor
+                  </button>
+                </div>
+              )}
+
+              {/* Botões do Conselho Editorial (Item a) */}
+              {isCouncil && (
+                <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
+                  <button
+                    onClick={() => setViewMode('council')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                      viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
+                    }`}
+                  >
+                    Conselho Editorial
                   </button>
                   <button
                     onClick={() => setViewMode('author')}
@@ -1627,31 +1602,39 @@ export default function Home() {
             </div>
           )}
 
-          {/* PAINEL DO EDITOR GERAL */}
-          {viewMode === 'editor' && (
+          {/* SALA EDITORIAL (Editor Geral e Conselho Editorial - Item a) */}
+          {canAccessEditorialRoom && (viewMode === 'editor' || viewMode === 'council') && (
             <div className="space-y-8">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-indigo-700 mb-1">
                     <ShieldCheck className="w-5 h-5" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Sala Editorial • ISSN 3086-8416</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                      {isFullEditor ? 'Sala Editorial' : 'Conselho Editorial'} • ISSN 3086-8416
+                    </span>
                   </div>
-                  <h2 className="text-xl font-bold text-slate-800">Gestão de Artigos, Pareceres e Expediente</h2>
+                  <h2 className="text-xl font-bold text-slate-800">
+                    {isFullEditor ? 'Gestão de Artigos, Pareceres e Expediente' : 'Acompanhamento do Fluxo Editorial'}
+                  </h2>
                   <p className="text-sm text-slate-500">
-                    Coordene a triagem, prazos, fluxo duplo-cego e emita relatórios da revista.
+                    {isFullEditor 
+                      ? 'Coordene a triagem, prazos, fluxo duplo-cego e emita relatórios da revista.'
+                      : 'Acompanhe as submissões, pareceres emitidos e o status dos manuscritos.'}
                   </p>
                 </div>
                 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={handleExportBackup}
-                    className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1.5 border border-emerald-200 shadow-sm"
-                    title="Baixar planilha Excel com todos os artigos e pareceres"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                    Exportar Backup (Excel)
-                  </button>
+                  {isFullEditor && (
+                    <button
+                      type="button"
+                      onClick={handleExportBackup}
+                      className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1.5 border border-emerald-200 shadow-sm"
+                      title="Baixar planilha Excel com todos os artigos e pareceres"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                      Exportar Backup (Excel)
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -1831,7 +1814,8 @@ export default function Home() {
                                 </button>
                               )}
 
-                              {!isOwnArticle ? (
+                              {/* Apenas o Editor Chefe/Adjunto tem poderes de decisão e atribuição (Item a) */}
+                              {isFullEditor && !isOwnArticle && (
                                 <>
                                   <button
                                     type="button"
@@ -1864,7 +1848,9 @@ export default function Home() {
                                     </select>
                                   </div>
                                 </>
-                              ) : (
+                              )}
+
+                              {isOwnArticle && (
                                 <span className="px-3 py-1.5 text-[11px] font-medium bg-slate-100 text-slate-500 rounded-lg border border-slate-200 italic">
                                   Gerenciado por outro Editor (COPE)
                                 </span>
@@ -1872,7 +1858,7 @@ export default function Home() {
                             </div>
                           </div>
 
-                          {isAccepted && !isOwnArticle && (
+                          {isAccepted && isFullEditor && !isOwnArticle && (
                             <div className="flex items-center gap-2 p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-lg text-xs">
                               <span className="font-semibold text-emerald-950">Fascículo Programado:</span>
                               <input
@@ -1942,7 +1928,7 @@ export default function Home() {
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                      {r.status === 'concluido' && (
+                                      {r.status === 'concluido' && isFullEditor && (
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -1989,83 +1975,89 @@ export default function Home() {
                 )}
               </div>
 
-              {/* QUADRO DE USUÁRIOS */}
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                <div>
-                  <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-indigo-600" />
-                    Quadro de Usuários Cadastrados ({allProfiles.length})
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Defina quem são os Pareceristas ou outros Editores da Revista. Exclua cadastros duplicados com o botão vermelho.
-                  </p>
-                </div>
+              {/* QUADRO DE USUÁRIOS (Apenas Editor Chefe/Adjunto gerencia - Item a) */}
+              {isFullEditor && (
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-indigo-600" />
+                      Quadro de Usuários Cadastrados ({allProfiles.length})
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Defina quem são os Pareceristas, Conselho Editorial ou Editores da Revista.
+                    </p>
+                  </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-600">
-                    <thead className="bg-slate-50 text-slate-700 uppercase font-semibold">
-                      <tr>
-                        <th className="p-3">Nome</th>
-                        <th className="p-3">E-mail</th>
-                        <th className="p-3">Instituição</th>
-                        <th className="p-3">Lattes / ORCID</th>
-                        <th className="p-3">Função Atual</th>
-                        <th className="p-3 text-right">Alterar Função / Excluir</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {allProfiles.map((p) => (
-                        <tr key={p.id}>
-                          <td className="p-3 font-semibold text-slate-900">{p.full_name}</td>
-                          <td className="p-3">{p.email}</td>
-                          <td className="p-3">{p.institution || '-'}</td>
-                          <td className="p-3">
-                            <div className="space-y-0.5">
-                              {p.lattes_url ? (
-                                <a href={p.lattes_url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline block">Lattes</a>
-                              ) : <span className="text-slate-300">-</span>}
-                              {p.orcid && <span className="text-emerald-700 block text-[10px]">ORCID: {p.orcid}</span>}
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                              p.role === 'editor' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                              p.role === 'reviewer' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                              'bg-slate-100 text-slate-700'
-                            }`}>
-                              {p.role === 'editor' ? 'EDITOR' : p.role === 'reviewer' ? 'PARECERISTA' : 'AUTOR'}
-                            </span>
-                          </td>
-                          <td className="p-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <select
-                                value={p.role}
-                                onChange={(e) => handleUpdateRole(p.id, e.target.value)}
-                                className="p-1 border border-slate-200 rounded bg-white text-xs font-medium focus:ring-2 focus:ring-indigo-500"
-                              >
-                                <option value="author">Autor</option>
-                                <option value="reviewer">Parecerista</option>
-                                <option value="editor">Editor</option>
-                              </select>
-
-                              {p.id !== session?.user?.id && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteUser(p)}
-                                  className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded"
-                                  title="Excluir cadastro"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-600">
+                      <thead className="bg-slate-50 text-slate-700 uppercase font-semibold">
+                        <tr>
+                          <th className="p-3">Nome</th>
+                          <th className="p-3">E-mail</th>
+                          <th className="p-3">Instituição</th>
+                          <th className="p-3">Lattes / ORCID</th>
+                          <th className="p-3">Função Atual</th>
+                          <th className="p-3 text-right">Alterar Função / Excluir</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {allProfiles.map((p) => (
+                          <tr key={p.id}>
+                            <td className="p-3 font-semibold text-slate-900">{p.full_name}</td>
+                            <td className="p-3">{p.email}</td>
+                            <td className="p-3">{p.institution || '-'}</td>
+                            <td className="p-3">
+                              <div className="space-y-0.5">
+                                {p.lattes_url ? (
+                                  <a href={p.lattes_url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline block">Lattes</a>
+                                ) : <span className="text-slate-300">-</span>}
+                                {p.orcid && <span className="text-emerald-700 block text-[10px]">ORCID: {p.orcid}</span>}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                p.role === 'editor' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                                p.role === 'council' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
+                                p.role === 'reviewer' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                'bg-slate-100 text-slate-700'
+                              }`}>
+                                {p.role === 'editor' ? 'EDITOR' : 
+                                 p.role === 'council' ? 'CONSELHO EDITORIAL' : 
+                                 p.role === 'reviewer' ? 'PARECERISTA' : 'AUTOR'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <select
+                                  value={p.role}
+                                  onChange={(e) => handleUpdateRole(p.id, e.target.value)}
+                                  className="p-1 border border-slate-200 rounded bg-white text-xs font-medium focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="author">Autor</option>
+                                  <option value="reviewer">Parecerista</option>
+                                  <option value="council">Conselho Editorial</option>
+                                  <option value="editor">Editor</option>
+                                </select>
+
+                                {p.id !== session?.user?.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteUser(p)}
+                                    className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded"
+                                    title="Excluir cadastro"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </main>
@@ -2102,7 +2094,7 @@ export default function Home() {
 
       {renderVerificationModal()}
 
-      {/* MODAL EXTERNO DE SUBMISSÃO (Chamado do Modals.tsx) */}
+      {/* MODAL EXTERNO DE SUBMISSÃO (Do Modals.tsx) */}
       <SubmitModal
         show={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
@@ -2147,7 +2139,7 @@ export default function Home() {
         submitting={submitting}
       />
 
-      {/* MODAL EXTERNO DE REENVIO (Chamado do Modals.tsx) */}
+      {/* MODAL EXTERNO DE REENVIO (Do Modals.tsx) */}
       <ResubmitModal
         article={reSubmitArticle}
         onClose={() => setReSubmitArticle(null)}
