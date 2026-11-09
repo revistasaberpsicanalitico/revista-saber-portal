@@ -6,10 +6,9 @@ import {
   User, Lock, Mail, Building, Phone, ArrowRight, Upload, FileText, 
   LogOut, ShieldCheck, Users, UserCheck, Download, MessageSquare, 
   Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2, ShieldAlert,
-  Award, Printer, Copy, Check, Edit3, Link as LinkIcon, Search, X, 
-  AlertCircle, KeyRound, Ban, Calendar, Clock, FileSpreadsheet
+  Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, Edit3
 } from 'lucide-react'
-import { SubmitModal, ResubmitModal } from './Modals'
+import { SubmitModal, ResubmitModal, OfficialDocModal } from './Modals'
 
 export default function Home() {
   const [session, setSession] = useState<any>(null)
@@ -104,8 +103,8 @@ export default function Home() {
   const [reviewFile, setReviewFile] = useState<File | null>(null)
   const [submittingReview, setSubmittingReview] = useState(false)
 
-  // Documento Timbrado A4 Unificado (Aceite, Não Aceite ou Lattes)
-  const [activeOfficialDoc, setActiveOfficialDoc] = useState<{ type: 'aceite' | 'recusa' | 'lattes'; article?: any; review?: any; reviewer?: any } | null>(null)
+  // Documento Timbrado A4 Unificado
+  const [activeOfficialDoc, setActiveOfficialDoc] = useState<any>(null)
   const [showReviewerThankModal, setShowReviewerThankModal] = useState(false)
   const [copiedThanks, setCopiedThanks] = useState(false)
 
@@ -182,7 +181,7 @@ export default function Home() {
     }
   }
 
-  // Declaração Antecipada da Verificação de Autenticidade (Corrige o erro da Vercel)
+  // Declaração antecipada da função de verificação
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
     if (!code) return
@@ -379,7 +378,7 @@ export default function Home() {
       setShowForgotModal(false)
       setForgotEmail('')
     } catch (err: any) {
-      alert(`Erro: ${err.message}`)
+      alert(`Erro ao solicitar: ${err.message}`)
     } finally {
       setForgotLoading(false)
     }
@@ -837,7 +836,7 @@ export default function Home() {
                   to: email,
                   subject: 'Bem-vindo(a) à Revista Saber Psicanalítico',
                   title: 'Cadastro Realizado com Sucesso!',
-                  message: `Prezado(a) ${fullName},\n\nConfirmamos a criação da sua conta no Portal de Submissão e Avaliação da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nVocê já pode acessar o sistema com seu e-mail e senha.`,
+                  message: `Prezado(a) ${fullName},\n\nConfirmamos a criação da sua conta no Portal da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nVocê já pode acessar o sistema com seu e-mail e senha.`,
                   actionText: 'Acessar o Portal',
                   actionUrl: 'https://revista-saber-portal.vercel.app',
                 })
@@ -893,7 +892,7 @@ export default function Home() {
             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
               <div className="flex justify-between items-start border-b border-slate-100 pb-3">
                 <h3 className="text-base font-bold text-slate-900">Validar Documento</h3>
-                <button onClick={() => setShowVerifyModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                <button type="button" onClick={() => setShowVerifyModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
               </div>
               <input type="text" value={verifyCodeInput} onChange={(e) => setVerifyCodeInput(e.target.value)} placeholder="ASP-ACE-... ou ASP-PAR-..." className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono uppercase focus:ring-2 focus:ring-indigo-500" />
               <button type="button" disabled={checkingCode || !verifyCodeInput.trim()} onClick={handleVerifyCode} className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold">Consultar Autenticidade</button>
@@ -953,29 +952,29 @@ export default function Home() {
             <div className="flex items-center gap-2.5">
               {isFullEditor && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
-                  <button onClick={() => setViewMode('editor')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Sala Editorial</button>
-                  <button onClick={() => setViewMode('reviewer')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'reviewer' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Visão Parecerista</button>
-                  <button onClick={() => setViewMode('author')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Visão Autor</button>
+                  <button type="button" onClick={() => setViewMode('editor')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Sala Editorial</button>
+                  <button type="button" onClick={() => setViewMode('reviewer')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'reviewer' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Visão Parecerista</button>
+                  <button type="button" onClick={() => setViewMode('author')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Visão Autor</button>
                 </div>
               )}
 
               {isCouncil && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
-                  <button onClick={() => setViewMode('council')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Conselho Editorial</button>
-                  <button onClick={() => setViewMode('author')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Visão Autor</button>
+                  <button type="button" onClick={() => setViewMode('council')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Conselho Editorial</button>
+                  <button type="button" onClick={() => setViewMode('author')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Visão Autor</button>
                 </div>
               )}
 
               {profile?.role === 'reviewer' && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
-                  <button onClick={() => setViewMode('reviewer')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'reviewer' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Avaliações (Parecerista)</button>
-                  <button onClick={() => setViewMode('author')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Meus Trabalhos (Autor)</button>
+                  <button type="button" onClick={() => setViewMode('reviewer')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'reviewer' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Avaliações (Parecerista)</button>
+                  <button type="button" onClick={() => setViewMode('author')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'author' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Meus Trabalhos (Autor)</button>
                 </div>
               )}
 
               <span className="text-xs text-slate-700 font-medium">Olá, <strong>{profile?.full_name || 'Usuário'}</strong></span>
-              <button onClick={handleOpenProfileModal} className="px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg font-medium flex items-center gap-1.5"><Edit3 className="w-3.5 h-3.5 text-indigo-600" /><span>Meu Perfil</span></button>
-              <button onClick={() => supabase.auth.signOut()} className="px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg font-medium flex items-center gap-1"><LogOut className="w-3.5 h-3.5" />Sair</button>
+              <button type="button" onClick={handleOpenProfileModal} className="px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg font-medium flex items-center gap-1.5"><Edit3 className="w-3.5 h-3.5 text-indigo-600" /><span>Meu Perfil</span></button>
+              <button type="button" onClick={() => supabase.auth.signOut()} className="px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg font-medium flex items-center gap-1"><LogOut className="w-3.5 h-3.5" />Sair</button>
             </div>
           </div>
         </header>
@@ -1096,7 +1095,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* SALA EDITORIAL (Editor Geral e Conselho Editorial) */}
+          {/* SALA EDITORIAL */}
           {canAccessEditorialRoom && (viewMode === 'editor' || viewMode === 'council') && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1105,7 +1104,7 @@ export default function Home() {
                   <h2 className="text-xl font-bold text-slate-800">{isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento do Fluxo'}</h2>
                 </div>
                 <div className="flex gap-2">
-                  {isFullEditor && <button type="button" onClick={handleExportBackup} className="px-3 py-2 bg-emerald-50 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1 border border-emerald-200"><FileSpreadsheet className="w-3.5 h-3.5" /> Exportar Backup (Excel)</button>}
+                  {isFullEditor && <button type="button" onClick={handleExportBackup} className="px-3 py-2 bg-emerald-50 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1 border border-emerald-200"><FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Exportar Backup (Excel)</button>}
                   <button type="button" onClick={() => setShowReviewerThankModal(true)} className="px-3 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg text-xs flex items-center gap-1 border border-slate-200"><Award className="w-3.5 h-3.5" /> Quadro de Pareceristas</button>
                   <button type="button" onClick={() => setShowSubmitModal(true)} className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg text-xs flex items-center gap-1.5"><Upload className="w-4 h-4" /> + Submeter Artigo</button>
                 </div>
@@ -1194,7 +1193,7 @@ export default function Home() {
                 })}
               </div>
 
-              {/* Quadro de Usuários (Apenas Editor) */}
+              {/* Quadro de Usuários */}
               {isFullEditor && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                   <h3 className="text-base font-bold text-slate-800">Quadro de Usuários Cadastrados ({allProfiles.length})</h3>
@@ -1296,86 +1295,37 @@ export default function Home() {
         submitting={submittingRevision}
       />
 
-      {/* MODAL UNIFICADO TIMBRADO A4 (Carta de Aceite, Recusa ou Lattes) */}
-      {activeOfficialDoc && (() => {
-        const { type, article: art, review: rev, reviewer: rPerson } = activeOfficialDoc
-        const isAceite = type === 'aceite'
-        const isRecusa = type === 'recusa'
-        const isLattes = type === 'lattes'
+      {/* MODAL UNIFICADO TIMBRADO A4 (Do Modals.tsx) */}
+      <OfficialDocModal
+        data={activeOfficialDoc}
+        onClose={() => setActiveOfficialDoc(null)}
+        getAuthorName={getAuthorName}
+        getAuthorInst={getAuthorInst}
+        getArticleIssue={getArticleIssue}
+      />
 
-        const authorName = art ? getAuthorName(art.author_id) : ''
-        const authorInst = art ? (art.author_institution || getAuthorInst(art.author_id)) : ''
-        const coauthorsList = (art?.coauthors || []).filter((c: any) => c.name && c.name.trim() !== '')
-        const validationCode = isAceite ? `ASP-ACE-${art.id.slice(0, 8).toUpperCase()}` : isRecusa ? `ASP-REC-${art.id.slice(0, 8).toUpperCase()}` : `ASP-PAR-${rev.id.slice(0, 8).toUpperCase()}`
-
-        return (
-          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[80] overflow-y-auto">
-            <div className="bg-white max-w-[210mm] w-full shadow-2xl border border-slate-200 my-6 flex flex-col justify-between p-8 sm:p-14 text-slate-900 min-h-[297mm]">
-              <div>
-                <div className="flex justify-between items-center border-b-2 border-indigo-950 pb-6 gap-6">
-                  <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-32 md:h-36 object-contain max-w-[280px]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                  <div className="text-right space-y-1">
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Revista Saber Psicanalítico</h2>
-                    <p className="text-xs font-bold text-indigo-700 tracking-wider">ISSN 3086-8416</p>
-                    <p className="text-[11px] text-slate-600">Associação Saber Psicanalítico (ASP)</p>
-                  </div>
-                </div>
-
-                <div className="text-center my-8">
-                  <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 inline-block pb-1">
-                    {isAceite ? 'DECLARAÇÃO DE ACEITE PARA PUBLICAÇÃO' : isRecusa ? 'COMUNICADO EDITORIAL DE NÃO ACEITAÇÃO' : 'DECLARAÇÃO DE ATUAÇÃO COMO PARECERISTA AD-HOC'}
-                  </h3>
-                </div>
-
-                <div className="space-y-6 text-sm leading-relaxed text-justify text-slate-800">
-                  {isAceite && (
-                    <>
-                      <p>Declaramos que o trabalho <strong>&ldquo;{art.title}&rdquo;</strong>, seção <strong>{art.section || 'Artigo Científico'}</strong>, de autoria de <strong>{authorName}</strong>{authorInst !== '-' ? ` (${authorInst})` : ''}{coauthorsList.length > 0 && <span> e coautoria de {coauthorsList.map((c: any, i: number) => <span key={i}><strong>{c.name}</strong>{c.institution ? ` (${c.institution})` : ''}{i < coauthorsList.length - 1 ? ', ' : ''}</span>)}</span>}, foi avaliado sob sistema duplo-cego (*double-blind peer review*) pela <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong> e oficialmente <strong>ACEITO PARA PUBLICAÇÃO</strong> no <strong>{getArticleIssue(art)}</strong>.</p>
-                      <p className="text-xs text-slate-500 italic">Válido perante programas de pós-graduação, CAPES/CNPq e concursos.</p>
-                    </>
-                  )}
-
-                  {isRecusa && (
-                    <>
-                      <p>Declaramos que o manuscrito <strong>&ldquo;{art.title}&rdquo;</strong>, submetido por <strong>{authorName}</strong>, foi avaliado pela Revista Saber Psicanalítico (ISSN 3086-8416) e deliberou-se pela <strong>NÃO ACEITAÇÃO</strong> para publicação.</p>
-                      {art.rejection_reason && <div className="p-3 bg-slate-50 border border-slate-200 rounded text-xs"><p className="font-bold">Síntese Editorial:</p><p className="whitespace-pre-line">{art.rejection_reason}</p></div>}
-                    </>
-                  )}
-
-                  {isLattes && (
-                    <>
-                      <p>Declaramos, para comprovação junto ao <strong>CNPq / Plataforma Lattes</strong>, que <strong>{rPerson?.full_name || 'Parecerista'}</strong>{rPerson?.institution ? ` (${rPerson.institution})` : ''} atuou formalmente como <strong>PARECERISTA AD-HOC</strong> para a <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, emitindo parecer duplo-cego concluído em <strong>{new Date(rev.updated_at || rev.created_at).toLocaleDateString('pt-BR')}</strong>.</p>
-                      <p className="text-xs text-slate-500 italic">Documento comprobatório emitido pelo sistema de editoração eletrônica.</p>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-8 text-center space-y-4">
-                <p className="text-xs text-slate-600">Caruaru/PE, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.</p>
-                <div>
-                  <p className="font-bold text-slate-900 text-base">Dr. Edson Leandro de Almeida</p>
-                  <p className="text-xs text-indigo-900 font-semibold uppercase tracking-wider">Editor-Chefe</p>
-                  <p className="text-xs text-slate-500">Revista Saber Psicanalítico • ASP</p>
-                </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 max-w-md mx-auto text-[10px] text-slate-600 text-left">
-                  <p className="font-bold text-indigo-950 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> AUTENTICAÇÃO DIGITAL OFICIAL</p>
-                  <p>Chancela: <span className="font-mono font-bold text-slate-900">{validationCode}</span></p>
-                </div>
-                <div className="border-t border-slate-200 pt-4 flex justify-between items-center text-[10px] text-slate-500">
-                  <img src="/logo-asp.png" alt="ASP" className="h-8 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                  <p>Verifique em: <strong>revista-saber-portal.vercel.app</strong></p>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 no-print">
-                <button type="button" onClick={() => setActiveOfficialDoc(null)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Fechar</button>
-                <button type="button" onClick={() => window.print()} className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm"><Printer className="w-3.5 h-3.5" /> Imprimir / Salvar em PDF (A4)</button>
-              </div>
+      {/* MODAL: MEU PERFIL */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="border-b border-slate-100 pb-3 flex justify-between items-start">
+              <h3 className="text-base font-bold text-slate-900">Meu Perfil Acadêmico</h3>
+              <button type="button" onClick={() => setShowProfileModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
+            <form onSubmit={handleSaveProfile} className="space-y-3">
+              <input type="text" required value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Nome Completo *" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="text" required value={profileInst} onChange={(e) => setProfileInst(e.target.value)} placeholder="Filiação Institucional *" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="url" value={profileLattes} onChange={(e) => setProfileLattes(e.target.value)} placeholder="Link do Currículo Lattes" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="text" value={profileOrcid} onChange={(e) => setProfileOrcid(e.target.value)} placeholder="Identificador ORCID" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="Telefone / WhatsApp" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onClick={() => setShowProfileModal(false)} className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                <button type="submit" disabled={savingProfile} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg disabled:opacity-50">{savingProfile ? 'Salvando...' : 'Salvar Alterações'}</button>
+              </div>
+            </form>
           </div>
-        )
-      })()}
+        </div>
+      )}
 
       {/* MODAL ATRIBUIR PARECERISTA */}
       {assignModalArticle && (
@@ -1416,4 +1366,40 @@ export default function Home() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-900">Parecer Editorial</h3>
-            <select value={recommendation} onChange={(e) => setRecommendation(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-l
+            <select value={recommendation} onChange={(e) => setRecommendation(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">
+              <option value="aceitar">Aceitar sem restrições</option>
+              <option value="correcoes_obrigatorias">Aceitar com correções</option>
+              <option value="rejeitar">Recusar manuscrito</option>
+            </select>
+            <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Parecer para o autor..." className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+            <input type="file" accept=".docx,.doc" onChange={(e) => setReviewFile(e.target.files?.[0] || null)} className="w-full text-xs text-slate-500" />
+            <div className="flex justify-end gap-3 pt-3">
+              <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600">Voltar</button>
+              <button type="button" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{submittingReview ? 'Enviando...' : 'Concluir Parecer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AGRADECIMENTO PARECERISTAS */}
+      {showReviewerThankModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <h3 className="text-lg font-bold text-slate-900">Agradecimento aos Pareceristas</h3>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-60 overflow-y-auto space-y-2 text-xs">
+              {completedReviewers.map((rev) => (
+                <div key={rev.id} className="bg-white p-2.5 rounded border border-slate-200">
+                  <p className="font-bold text-slate-900">{rev.full_name} ({rev.institution || 'ASP'})</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setShowReviewerThankModal(false)} className="px-4 py-2 text-xs text-slate-600">Fechar</button>
+              <button type="button" onClick={handleCopyReviewers} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{copiedThanks ? 'Copiado!' : 'Copiar Dados'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
