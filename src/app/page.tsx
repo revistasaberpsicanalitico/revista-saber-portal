@@ -1192,4 +1192,211 @@ export default function Home() {
 
               {/* Quadro de Usuários */}
               {isFullEditor && (
-                <div className="bg-white p-6 rounded-xl border border-slate-2
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                  <h3 className="text-base font-bold text-slate-800">Quadro de Usuários Cadastrados ({allProfiles.length})</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-600">
+                      <thead className="bg-slate-50 text-slate-700 uppercase font-semibold">
+                        <tr><th className="p-3">Nome</th><th className="p-3">E-mail</th><th className="p-3">Instituição</th><th className="p-3">Função</th><th className="p-3 text-right">Ação</th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {allProfiles.map((p) => (
+                          <tr key={p.id}>
+                            <td className="p-3 font-semibold text-slate-900">{p.full_name}</td>
+                            <td className="p-3">{p.email}</td>
+                            <td className="p-3">{p.institution || '-'}</td>
+                            <td className="p-3 capitalize font-bold text-indigo-700">{p.role}</td>
+                            <td className="p-3 text-right">
+                              <select value={p.role} onChange={(e) => handleUpdateRole(p.id, e.target.value)} className="p-1 border border-slate-200 rounded bg-white text-xs">
+                                <option value="author">Autor</option>
+                                <option value="reviewer">Parecerista</option>
+                                <option value="council">Conselho Editorial</option>
+                                <option value="editor">Editor</option>
+                              </select>
+                              {p.id !== session?.user?.id && <button type="button" onClick={() => handleDeleteUser(p)} className="ml-2 text-rose-500 hover:text-rose-700"><Trash2 className="w-3.5 h-3.5 inline" /></button>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* RODAPÉ */}
+      <footer className="bg-white border-t border-slate-200 py-6 mt-12 no-print">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-3">
+            <img src="/logo-asp.png" alt="ASP" className="h-10 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <div><p className="font-bold text-slate-800">Associação Saber Psicanalítico (ASP)</p><p className="text-[11px]">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p></div>
+          </div>
+          <div className="text-center md:text-right text-[11px]"><p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p><p>revistasaberpsicanalitico@gmail.com</p></div>
+        </div>
+      </footer>
+
+      {/* MODAL EXTERNO DE SUBMISSÃO (Do Modals.tsx) */}
+      <SubmitModal
+        show={showSubmitModal}
+        onClose={() => setShowSubmitModal(false)}
+        onSubmit={handleSubmitArticle}
+        newSection={newSection}
+        setNewSection={setNewSection}
+        newTitle={newTitle}
+        setNewTitle={setNewTitle}
+        newTitleEn={newTitleEn}
+        setNewTitleEn={setNewTitleEn}
+        newAbstract={newAbstract}
+        setNewAbstract={setNewAbstract}
+        newAbstractEn={newAbstractEn}
+        setNewAbstractEn={setNewAbstractEn}
+        newKeywords={newKeywords}
+        setNewKeywords={setNewKeywords}
+        newKeywordsEn={newKeywordsEn}
+        setNewKeywordsEn={setNewKeywordsEn}
+        authorInstitution={authorInstitution}
+        setAuthorInstitution={setAuthorInstitution}
+        authorLattes={authorLattes}
+        setAuthorLattes={setAuthorLattes}
+        authorOrcid={authorOrcid}
+        setAuthorOrcid={setAuthorOrcid}
+        authorBio={authorBio}
+        setAuthorBio={setAuthorBio}
+        coauthors={coauthors}
+        onAddCoauthor={handleAddCoauthor}
+        onUpdateCoauthor={handleUpdateCoauthor}
+        onRemoveCoauthor={handleRemoveCoauthor}
+        onFileChange={(e: any) => setSelectedFile(e.target.files?.[0] || null)}
+        termOriginal={termOriginal}
+        setTermOriginal={setTermOriginal}
+        termEthics={termEthics}
+        setTermEthics={setTermEthics}
+        termAnonymous={termAnonymous}
+        setTermAnonymous={setTermAnonymous}
+        termCC={termCC}
+        setTermCC={setTermCC}
+        termAI={termAI}
+        setTermAI={setTermAI}
+        submitting={submitting}
+      />
+
+      {/* MODAL EXTERNO DE REENVIO (Do Modals.tsx) */}
+      <ResubmitModal
+        article={reSubmitArticle}
+        onClose={() => setReSubmitArticle(null)}
+        onSubmit={handleResubmitArticle}
+        onFileChange={(e: any) => setRevisedFile(e.target.files?.[0] || null)}
+        submitting={submittingRevision}
+      />
+
+      {/* MODAL UNIFICADO TIMBRADO A4 (Do Modals.tsx) */}
+      <OfficialDocModal
+        data={activeOfficialDoc}
+        onClose={() => setActiveOfficialDoc(null)}
+        getAuthorName={getAuthorName}
+        getAuthorInst={getAuthorInst}
+        getArticleIssue={getArticleIssue}
+      />
+
+      {/* MODAL: MEU PERFIL */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="border-b border-slate-100 pb-3 flex justify-between items-start">
+              <h3 className="text-base font-bold text-slate-900">Meu Perfil Acadêmico</h3>
+              <button type="button" onClick={() => setShowProfileModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSaveProfile} className="space-y-3">
+              <input type="text" required value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Nome Completo *" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="text" required value={profileInst} onChange={(e) => setProfileInst(e.target.value)} placeholder="Filiação Institucional *" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="url" value={profileLattes} onChange={(e) => setProfileLattes(e.target.value)} placeholder="Link do Currículo Lattes" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="text" value={profileOrcid} onChange={(e) => setProfileOrcid(e.target.value)} placeholder="Identificador ORCID" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="Telefone / WhatsApp" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onClick={() => setShowProfileModal(false)} className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                <button type="submit" disabled={savingProfile} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg disabled:opacity-50">{savingProfile ? 'Salvando...' : 'Salvar Alterações'} </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ATRIBUIR PARECERISTA */}
+      {assignModalArticle && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Designar Parecerista</h3>
+            <select value={selectedReviewerId} onChange={(e) => setSelectedReviewerId(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white">
+              <option value="">-- Escolha um parecerista --</option>
+              {allProfiles.filter((p) => (p.role === 'reviewer' || p.role === 'editor') && p.id !== assignModalArticle.author_id).map((rev) => (
+                <option key={rev.id} value={rev.id}>{rev.full_name} ({rev.role}) - {rev.institution || 'ASP'}</option>
+              ))}
+            </select>
+            <input type="date" required value={assignDeadline} onChange={(e) => setAssignDeadline(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white" />
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setAssignModalArticle(null)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+              <button type="button" disabled={!selectedReviewerId || !assignDeadline} onClick={handleAssignReviewer} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg disabled:opacity-50">Confirmar e Enviar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RECUSA COM JUSTIFICATIVA */}
+      {rejectionModalArticle && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Justificativa da Não Aceitação</h3>
+            <textarea required rows={5} value={rejectionReasonText} onChange={(e) => setRejectionReasonText(e.target.value)} placeholder="Descreva os fundamentos para a recusa..." className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500" />
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setRejectionModalArticle(null)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+              <button type="button" disabled={savingRejection || !rejectionReasonText.trim()} onClick={handleConfirmRejection} className="px-4 py-2 text-xs font-semibold bg-rose-600 text-white rounded-lg disabled:opacity-50">{savingRejection ? 'Gravando...' : 'Confirmar Recusa'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARECERISTA */}
+      {reviewModalData && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-slate-900">Parecer Editorial</h3>
+            <select value={recommendation} onChange={(e) => setRecommendation(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">
+              <option value="aceitar">Aceitar sem restrições</option>
+              <option value="correcoes_obrigatorias">Aceitar com correções</option>
+              <option value="rejeitar">Recusar manuscrito</option>
+            </select>
+            <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Parecer para o autor..." className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+            <input type="file" accept=".docx,.doc" onChange={(e) => setReviewFile(e.target.files?.[0] || null)} className="w-full text-xs text-slate-500" />
+            <div className="flex justify-end gap-3 pt-3">
+              <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600">Voltar</button>
+              <button type="button" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{submittingReview ? 'Enviando...' : 'Concluir Parecer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AGRADECIMENTO PARECERISTAS */}
+      {showReviewerThankModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <h3 className="text-lg font-bold text-slate-900">Agradecimento aos Pareceristas</h3>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-60 overflow-y-auto space-y-2 text-xs">
+              {completedReviewers.map((rev) => (
+                <div key={rev.id} className="bg-white p-2.5 rounded border border-slate-200">
+                  <p className="font-bold text-slate-900">{rev.full_name} ({rev.institution || 'ASP'})</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setShowReviewerThankModal(false)} className="px-4 py-2 text-xs text-slate-600">Fechar</button>
+              <button type="button" onClick={handleCopyReviewers} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{copiedThanks ? 'Copiado!' : 'Copiar Dados'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
