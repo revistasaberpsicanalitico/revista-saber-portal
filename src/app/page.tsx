@@ -9,9 +9,291 @@ import {
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, Edit3, Plus, Printer
 } from 'lucide-react'
 
-// Importações dos modais externos que estavam faltando e causavam o erro de build na Vercel:
-import { SubmitModal, ResubmitModal, OfficialDocModal } from '@/components/Modals'
+// ============================================================================
+// COMPONENTE 1: MODAL DE SUBMISSÃO DE ARTIGO (Integrado)
+// ============================================================================
+function SubmitModal({
+  show, onClose, onSubmit, newSection, setNewSection,
+  newTitle, setNewTitle, newTitleEn, setNewTitleEn,
+  newAbstract, setNewAbstract, newAbstractEn, setNewAbstractEn,
+  newKeywords, setNewKeywords, newKeywordsEn, setNewKeywordsEn,
+  authorInstitution, setAuthorInstitution,
+  authorLattes, setAuthorLattes, authorOrcid, setAuthorOrcid,
+  authorBio, setAuthorBio, coauthors, onAddCoauthor,
+  onUpdateCoauthor, onRemoveCoauthor, onFileChange,
+  termOriginal, setTermOriginal, termEthics, setTermEthics,
+  termAnonymous, setTermAnonymous, termCC, setTermCC,
+  termAI, setTermAI, submitting
+}: any) {
+  if (!show) return null
 
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto my-8">
+        <div className="flex justify-between items-center border-b pb-3">
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">Submeter Novo Manuscrito</h3>
+            <p className="text-xs text-slate-500">Revista Saber Psicanalítico • Avaliação Duplo-Cega</p>
+          </div>
+          <button type="button" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-5">
+          {/* Seção */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Seção do Manuscrito *</label>
+            <select value={newSection} onChange={(e) => setNewSection(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white">
+              <option value="Artigo Científico">Artigo Científico (Original / Teórico)</option>
+              <option value="Ensaio Teórico">Ensaio Teórico / Psicanalítico</option>
+              <option value="Relato de Experiência Clínica">Relato de Experiência Clínica</option>
+              <option value="Resenha de Obra">Resenha Crítica de Obra</option>
+            </select>
+          </div>
+
+          {/* Título PT e EN */}
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Título em Português *</label>
+              <input type="text" required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Título principal do artigo" className="w-full px-3 py-2 text-xs border rounded-lg" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Título em Inglês (Title) *</label>
+              <input type="text" required value={newTitleEn} onChange={(e) => setNewTitleEn(e.target.value)} placeholder="Title in English" className="w-full px-3 py-2 text-xs border rounded-lg" />
+            </div>
+          </div>
+
+          {/* Resumo PT e EN */}
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Resumo (150 a 250 palavras) *</label>
+              <textarea required rows={4} value={newAbstract} onChange={(e) => setNewAbstract(e.target.value)} placeholder="Resumo em português..." className="w-full px-3 py-2 text-xs border rounded-lg" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Abstract *</label>
+              <textarea required rows={4} value={newAbstractEn} onChange={(e) => setNewAbstractEn(e.target.value)} placeholder="Abstract in English..." className="w-full px-3 py-2 text-xs border rounded-lg" />
+            </div>
+          </div>
+
+          {/* Palavras-chave PT e EN */}
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Palavras-chave (separadas por ponto e vírgula) *</label>
+              <input type="text" required value={newKeywords} onChange={(e) => setNewKeywords(e.target.value)} placeholder="Ex: Psicanálise; Transferência; Inconsciente." className="w-full px-3 py-2 text-xs border rounded-lg" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Keywords *</label>
+              <input type="text" required value={newKeywordsEn} onChange={(e) => setNewKeywordsEn(e.target.value)} placeholder="Ex: Psychoanalysis; Transference; Unconscious." className="w-full px-3 py-2 text-xs border rounded-lg" />
+            </div>
+          </div>
+
+          {/* Dados acadêmicos do Autor */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <h4 className="text-xs font-bold text-slate-800">Dados do Autor Principal</h4>
+            <div className="grid md:grid-cols-3 gap-2">
+              <input type="text" required value={authorInstitution} onChange={(e) => setAuthorInstitution(e.target.value)} placeholder="Filiação Institucional *" className="px-3 py-2 text-xs border rounded-lg bg-white" />
+              <input type="url" value={authorLattes} onChange={(e) => setAuthorLattes(e.target.value)} placeholder="Link do Currículo Lattes" className="px-3 py-2 text-xs border rounded-lg bg-white" />
+              <input type="text" value={authorOrcid} onChange={(e) => setAuthorOrcid(e.target.value)} placeholder="ORCID (0000-0000-0000-0000)" className="px-3 py-2 text-xs border rounded-lg bg-white" />
+            </div>
+            <textarea rows={2} value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Breve biografia acadêmica (titulação, vínculo atual)..." className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
+          </div>
+
+          {/* Coautores */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <div className="flex justify-between items-center">
+              <h4 className="text-xs font-bold text-slate-800">Coautores ({coauthors.length})</h4>
+              <button type="button" onClick={onAddCoauthor} className="px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg flex items-center gap-1 hover:bg-indigo-100">
+                <Plus className="w-3.5 h-3.5" /> Adicionar Coautor
+              </button>
+            </div>
+            {coauthors.map((co: any, idx: number) => (
+              <div key={idx} className="bg-white p-3 rounded-lg border space-y-2 relative">
+                <button type="button" onClick={() => onRemoveCoauthor(idx)} className="absolute top-2 right-2 text-rose-500 hover:text-rose-700 text-xs">
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="grid md:grid-cols-3 gap-2 pr-6">
+                  <input type="text" required value={co.name} onChange={(e) => onUpdateCoauthor(idx, 'name', e.target.value)} placeholder="Nome completo *" className="px-2.5 py-1.5 text-xs border rounded" />
+                  <input type="email" required value={co.email} onChange={(e) => onUpdateCoauthor(idx, 'email', e.target.value)} placeholder="E-mail *" className="px-2.5 py-1.5 text-xs border rounded" />
+                  <input type="text" required value={co.institution} onChange={(e) => onUpdateCoauthor(idx, 'institution', e.target.value)} placeholder="Instituição *" className="px-2.5 py-1.5 text-xs border rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Upload do Arquivo */}
+          <div className="border-2 border-dashed border-slate-300 p-4 rounded-xl text-center space-y-2 bg-slate-50/50">
+            <FileText className="w-8 h-8 mx-auto text-indigo-600" />
+            <label className="block text-xs font-semibold text-slate-700 cursor-pointer">
+              Selecione o arquivo do Manuscrito (.doc, .docx ou .pdf)
+              <input type="file" required accept=".doc,.docx,.pdf" onChange={onFileChange} className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mt-2" />
+            </label>
+            <p className="text-[11px] text-amber-700">Atenção: O arquivo deve estar sem nomes de autores para garantir a avaliação duplo-cega.</p>
+          </div>
+
+          {/* 5 Declarações Éticas Obrigatórias */}
+          <div className="space-y-2 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 text-xs text-slate-700">
+            <h5 className="font-bold text-indigo-950 mb-1">Declarações e Compromissos Éticos (COPE / CC-BY 4.0):</h5>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" required checked={termOriginal} onChange={(e) => setTermOriginal(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
+              <span>Declaro que este trabalho é <strong>original, inédito</strong> e não está sob avaliação em outro periódico.</span>
+            </label>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" required checked={termEthics} onChange={(e) => setTermEthics(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
+              <span>Declaro conformidade com as normas éticas internacionais (COPE) e comitês de ética em pesquisa (se aplicável).</span>
+            </label>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" required checked={termAnonymous} onChange={(e) => setTermAnonymous(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
+              <span>Confirmo que o documento anexado foi totalmente <strong>anonimizado</strong> (sem identificação de autoria nas páginas e propriedades do arquivo).</span>
+            </label>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" required checked={termCC} onChange={(e) => setTermCC(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
+              <span>Concordo com a cessão sob a licença de <strong>Acesso Aberto Creative Commons CC-BY 4.0</strong> em caso de publicação.</span>
+            </label>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" required checked={termAI} onChange={(e) => setTermAI(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
+              <span>Declaro que ferramentas de Inteligência Artificial generativa, se utilizadas, foram devidamente creditadas na metodologia conforme diretrizes editoriais.</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+            <button type="submit" disabled={submitting} className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">
+              {submitting ? 'Enviando Manuscrito...' : 'Concluir Submissão'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// COMPONENTE 2: MODAL DE REENVIO / REVISÃO (Integrado)
+// ============================================================================
+function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }: any) {
+  if (!article) return null
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="flex justify-between items-start border-b pb-2">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Enviar Versão Corrigida</h3>
+            <p className="text-xs text-slate-500 line-clamp-1">{article.title}</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4" /></button>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          <p className="text-xs text-slate-600">
+            Anexe o arquivo corrigido conforme as solicitações dos pareceristas e da editoria. Certifique-se de manter o anonimato caso ainda vá para nova rodada de avaliação.
+          </p>
+
+          <input type="file" required accept=".doc,.docx,.pdf" onChange={onFileChange} className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50">
+              {submitting ? 'Enviando...' : 'Confirmar Reenvio'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// COMPONENTE 3: MODAL DE DOCUMENTO TIMBRADO A4 (Integrado)
+// ============================================================================
+function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArticleIssue }: any) {
+  if (!data) return null
+
+  const isAceite = data.type === 'aceite'
+  const isRecusa = data.type === 'recusa'
+  const isLattes = data.type === 'lattes'
+
+  const article = data.article
+  const review = data.review
+  const reviewer = data.reviewer
+
+  const authName = article ? getAuthorName(article.author_id) : ''
+  const authInst = article ? getAuthorInst(article.author_id) : ''
+  const issueName = article ? getArticleIssue(article) : ''
+  const docCode = isAceite ? `ASP-ACE-${(article?.id || '').slice(0, 8).toUpperCase()}` :
+                  isRecusa ? `ASP-REC-${(article?.id || '').slice(0, 8).toUpperCase()}` :
+                  `ASP-PAR-${(review?.id || '').slice(0, 8).toUpperCase()}`
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[90] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-3xl w-full p-8 shadow-2xl border space-y-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center border-b pb-3 no-print">
+          <span className="text-xs font-bold text-indigo-700 uppercase">Documento Oficial Timbrado</span>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => window.print()} className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg flex items-center gap-1.5">
+              <Printer className="w-3.5 h-3.5" /> Imprimir / PDF
+            </button>
+            <button type="button" onClick={onClose} className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Timbrado A4 */}
+        <div className="border border-slate-200 p-8 rounded-xl space-y-6 text-slate-800 bg-white">
+          <div className="flex justify-between items-center border-b pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Revista Saber Psicanalítico</h2>
+              <p className="text-xs text-indigo-700 font-semibold">ISSN 3086-8416 • Publicação Científica Semestral</p>
+              <p className="text-[11px] text-slate-500">Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85</p>
+            </div>
+            <img src="/logo-revista.png" alt="ASP" className="h-16 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          </div>
+
+          <div className="text-center py-2">
+            <h3 className="text-base font-bold text-slate-900 uppercase tracking-wide">
+              {isAceite && 'Declaração de Aceite para Publicação'}
+              {isRecusa && 'Comunicação Editorial de Parecer'}
+              {isLattes && 'Declaração de Atuação como Parecerista Ad-hoc'}
+            </h3>
+            <p className="text-[11px] font-mono text-slate-500 mt-1">CÓDIGO DE AUTENTICIDADE: {docCode}</p>
+          </div>
+
+          <div className="text-sm leading-relaxed text-justify space-y-4">
+            {isAceite && (
+              <p>
+                Declaramos para os devidos fins que o artigo científico intitulado <strong>"{article?.title}"</strong>, de autoria de <strong>{authName}</strong> ({authInst}), foi submetido, avaliado pelo sistema de avaliação duplo-cega por pares (<em>blind peer review</em>) e <strong>ACEITO PARA PUBLICAÇÃO</strong> na Revista Saber Psicanalítico (ISSN 3086-8416), com previsão de veiculação no <strong>{issueName}</strong>.
+              </p>
+            )}
+
+            {isRecusa && (
+              <p>
+                Comunicamos que o manuscrito <strong>"{article?.title}"</strong>, de autoria de <strong>{authName}</strong>, teve seu processo de avaliação concluído pela Comissão Editorial. Em virtude das considerações emitidas pelos pareceristas e do escopo atual da revista, o trabalho não foi aceito nesta oportunidade.
+              </p>
+            )}
+
+            {isLattes && (
+              <p>
+                Declaramos para fins de comprovação curricular junto à Plataforma Lattes / CNPq que o(a) Prof.(a) <strong>{reviewer?.full_name || 'Parecerista'}</strong> ({reviewer?.institution || 'ASP'}) atuou como <strong>Parecerista Ad-hoc</strong> da Revista Saber Psicanalítico (ISSN 3086-8416), emitindo parecer técnico-científico com base no método duplo-cego de avaliação por pares.
+              </p>
+            )}
+          </div>
+
+          <div className="pt-8 text-center border-t text-xs space-y-1">
+            <p className="font-bold text-slate-900">Comissão Editorial — Revista Saber Psicanalítico</p>
+            <p className="text-slate-500">Associação Saber Psicanalítico (ASP)</p>
+            <p className="text-[11px] text-slate-400">Verificação online disponível na página inicial do portal com o código acima.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// COMPONENTE PRINCIPAL
+// ============================================================================
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
@@ -613,7 +895,7 @@ export default function Home() {
       if (revProfile?.email) {
         sendEmailNotification({ to: revProfile.email, subject: 'Convite para Avaliação - Revista Saber Psicanalítico', title: 'Parecer Técnico-Científico', message: `Você foi designado(a) para avaliar "${assignModalArticle.title}". Prazo: ${new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')}.`, actionText: 'Área do Parecerista', actionUrl: 'https://revista-saber-portal.vercel.app' })
       }
-      alert('Parecerista atribuído!')
+      alert('Parecerista atribuído com sucesso!')
       setAssignModalArticle(null)
       fetchAllData()
     } catch (err: any) {
@@ -891,7 +1173,7 @@ export default function Home() {
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos</h2>
-                <p className="text-sm text-slate-500">Avaliação Duplo-Cega (*Blind Peer Review*).</p>
+                <p className="text-sm text-slate-500">Avaliação Duplo-Cega (<em>Blind Peer Review</em>).</p>
               </div>
 
               {myReviewAssignments.length === 0 ? (
@@ -977,7 +1259,18 @@ export default function Home() {
 
                           {isFullEditor && !isOwnArticle && (
                             <>
-                              <button type="button" onClick={() => { setAssignModalArticle(art); setSelectedReviewerId(''); setAssignDeadline(new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); }} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg">+ Parecerista</button>
+                              <button 
+                                type="button" 
+                                onClick={() => { 
+                                  setAssignModalArticle(art); 
+                                  setSelectedReviewerId(''); 
+                                  setAssignDeadline(new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); 
+                                }} 
+                                className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center gap-1"
+                              >
+                                <UserCheck className="w-3.5 h-3.5" /> Atribuir Parecerista
+                              </button>
+
                               <select value={art.status} onChange={(e) => handleUpdateStatus(art.id, e.target.value)} className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white">
                                 <option value="submetido">Triagem</option>
                                 <option value="ajustes_iniciais">Ajuste Anonimização</option>
@@ -1082,7 +1375,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* MODAL EXTERNO DE SUBMISSÃO (Do Modals.tsx) */}
+      {/* MODAL DE SUBMISSÃO */}
       <SubmitModal
         show={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
@@ -1127,7 +1420,7 @@ export default function Home() {
         submitting={submitting}
       />
 
-      {/* MODAL EXTERNO DE REENVIO (Do Modals.tsx) */}
+      {/* MODAL DE REENVIO */}
       <ResubmitModal
         article={reSubmitArticle}
         onClose={() => setReSubmitArticle(null)}
@@ -1136,7 +1429,7 @@ export default function Home() {
         submitting={submittingRevision}
       />
 
-      {/* MODAL UNIFICADO TIMBRADO A4 (Do Modals.tsx) */}
+      {/* MODAL UNIFICADO TIMBRADO A4 */}
       <OfficialDocModal
         data={activeOfficialDoc}
         onClose={() => setActiveOfficialDoc(null)}
