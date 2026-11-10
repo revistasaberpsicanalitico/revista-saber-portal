@@ -267,9 +267,9 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (REVISTA + ASP, SEM LINHA, CÓDIGO ABAIXO)
+// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (DIAGRAMAÇÃO E ASSINATURA AJUSTADAS)
 // ============================================================================
-function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArticleIssue }: any) {
+function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any) {
   if (!data) return null
 
   const isAceite = data.type === 'aceite'
@@ -281,7 +281,6 @@ function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArti
   const reviewer = data.reviewer
 
   const authName = article ? getAuthorName(article.author_id) : ''
-  const authInst = article ? getAuthorInst(article.author_id) : ''
   const issueName = article ? getArticleIssue(article) : ''
   const docDate = new Date(article?.updated_at || review?.updated_at || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
   
@@ -313,37 +312,31 @@ function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArti
       </div>
 
       {/* Folha A4 Timbrada Institucional */}
-      <div className="bg-white w-full max-w-[800px] min-h-[1050px] p-10 sm:p-14 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-10 print:w-full print:min-h-screen border border-slate-200">
+      <div className="bg-white w-full max-w-[800px] min-h-[1080px] p-12 sm:p-16 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-12 print:w-full print:min-h-screen border border-slate-200">
         
-        {/* CABEÇALHO COM LOGO DA REVISTA E LOGO DA ASP */}
+        {/* CABEÇALHO EXCLUSIVO DA REVISTA COM LOGO AMPLIADA */}
         <div>
-          <div className="flex justify-between items-center pb-6 border-b-2 border-slate-800 gap-4">
+          <div className="flex items-center justify-between pb-6 border-b border-slate-200 gap-6">
             <img 
               src="/logo-revista.png" 
               alt="Revista Saber Psicanalítico" 
-              className="h-20 sm:h-24 object-contain" 
+              className="h-24 sm:h-28 object-contain" 
               onError={(e) => { e.currentTarget.style.display = 'none'; }} 
             />
-            <div className="text-center flex-1 space-y-1">
+            <div className="text-right space-y-1">
               <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-tight">
-                REVISTA SABER PSICANALÍTICO
+                Revista Saber Psicanalítico
               </h2>
-              <p className="text-xs font-bold text-indigo-900 tracking-wider uppercase">
-                ISSN 3086-8416 • Publicação Científica Semestral
+              <p className="text-xs font-semibold text-indigo-900 tracking-wide uppercase">
+                ISSN 3086-8416
               </p>
-              <p className="text-[11px] text-slate-600 font-medium">
-                Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85
+              <p className="text-xs text-slate-500">
+                Publicação Científica Semestral
               </p>
-              <p className="text-[10px] text-slate-500">
-                Caruaru – PE | Brasil • www.revistasaberpsicanalitico.com.br
+              <p className="text-[11px] text-slate-400">
+                revistasaberpsicanalitico@gmail.com
               </p>
             </div>
-            <img 
-              src="/logo-asp.png" 
-              alt="Associação Saber Psicanalítico" 
-              className="h-16 sm:h-20 object-contain" 
-              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-            />
           </div>
 
           {/* TÍTULO DO DOCUMENTO */}
@@ -355,15 +348,24 @@ function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArti
             </h3>
           </div>
 
-          {/* TEXTO CERTIFICADO DO DOCUMENTO */}
-          <div className="text-sm leading-relaxed text-justify space-y-6 text-slate-800 font-serif">
+          {/* TEXTO CERTIFICADO DO DOCUMENTO (SEM FILIAÇÃO DO AUTOR E COAUTORES EM NEGRITO) */}
+          <div className="text-[13px] sm:text-[14px] leading-relaxed text-justify space-y-5 text-slate-800 font-serif">
             {isAceite && (
               <>
                 <p>
-                  Declaramos, para os devidos fins e efeitos de comprovação acadêmica e curricular, que o artigo científico intitulado <strong>"{article?.title}"</strong>, de autoria de <strong>{authName}</strong>, com filiação institucional vinculada a <strong>{authInst}</strong>{(article?.coauthors && article.coauthors.length > 0) ? ` e coautoria de ${article.coauthors.map((c: any) => c.name).join(', ')}` : ''}, foi submetido, avaliado e <strong>ACEITO PARA PUBLICAÇÃO</strong> na <strong>Revista Saber Psicanalítico (ISSN: 3086-8416)</strong>.
+                  Declaramos, para os devidos fins e efeitos de comprovação acadêmica e curricular, que o trabalho científico intitulado <strong>“{article?.title}”</strong>, de autoria de <strong>{authName}</strong>
+                  {article?.coauthors && article.coauthors.length > 0 && (
+                    <> e pelos coautores {article.coauthors.map((c: any, i: number) => (
+                      <React.Fragment key={i}>
+                        {i > 0 && (i === article.coauthors.length - 1 ? ' e ' : ', ')}
+                        <strong>{c.name}</strong>
+                      </React.Fragment>
+                    ))}</>
+                  )}
+                  , foi submetido, avaliado pelo sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>) e <strong>APROVADO PARA PUBLICAÇÃO</strong> na <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>.
                 </p>
                 <p>
-                  O manuscrito obteve parecer favorável da Comissão Editorial após ter sido criteriosamente submetido ao sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), atendendo plenamente aos critérios de originalidade, consistência teórico-clínica metapsicológica e padrões éticos de publicação científica (COPE).
+                  O manuscrito obteve parecer favorável da Comissão Editorial, atendendo plenamente aos critérios de originalidade, consistência teórico-clínica metapsicológica e conformidade com os padrões éticos internacionais de publicação científica (COPE).
                 </p>
                 <p>
                   A publicação oficial do referido trabalho está programada para integrar o <strong>{issueName}</strong> deste periódico.
@@ -374,14 +376,23 @@ function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArti
             {isRecusa && (
               <>
                 <p>
-                  Comunicamos, para os devidos fins, que o manuscrito intitulado <strong>"{article?.title}"</strong>, de autoria de <strong>{authName}</strong> ({authInst}), submetido à apreciação da <strong>Revista Saber Psicanalítico (ISSN: 3086-8416)</strong>, concluiu todas as etapas regimentais de triagem e avaliação por pares (<em>peer review</em>).
+                  Comunicamos, para os devidos fins, que o manuscrito intitulado <strong>“{article?.title}”</strong>, de autoria de <strong>{authName}</strong>
+                  {article?.coauthors && article.coauthors.length > 0 && (
+                    <> e pelos coautores {article.coauthors.map((c: any, i: number) => (
+                      <React.Fragment key={i}>
+                        {i > 0 && (i === article.coauthors.length - 1 ? ' e ' : ', ')}
+                        <strong>{c.name}</strong>
+                      </React.Fragment>
+                    ))}</>
+                  )}
+                  , submetido à apreciação da <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, concluiu todas as etapas regimentais de triagem e avaliação por pares (<em>peer review</em>).
                 </p>
                 <p>
-                  Após a análise dos pareceres emitidos pelo corpo de avaliadores ad-hoc e as deliberações da Comissão Editorial, informamos que o trabalho <strong>NÃO FOI ACEITO PARA PUBLICAÇÃO</strong> no presente ciclo editorial deste periódico.
+                  Após a análise dos pareceres emitidos pelo corpo de pareceristas ad-hoc e as deliberações da Comissão Editorial, informamos que o trabalho <strong>NÃO FOI ACEITO PARA PUBLICAÇÃO</strong> no presente ciclo editorial deste periódico.
                 </p>
                 {article?.rejection_reason && (
                   <p className="bg-slate-50 p-4 rounded border border-slate-200 text-xs italic font-sans text-slate-700">
-                    <strong>Parecer / Justificativa Editorial:</strong> {article.rejection_reason}
+                    <strong>Considerações da Editoria:</strong> {article.rejection_reason}
                   </p>
                 )}
                 <p>
@@ -393,50 +404,60 @@ function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArti
             {isLattes && (
               <>
                 <p>
-                  Declaramos, para fins de comprovação curricular e acadêmica, em especial perante a <strong>Plataforma Lattes do CNPq</strong>, que o(a) <strong>Prof.(a) {reviewer?.full_name || 'Parecerista'}</strong>, com filiação institucional vinculada a <strong>{reviewer?.institution || 'Associação Saber Psicanalítico'}</strong>, atuou formalmente como <strong>PARECERISTA AD-HOC</strong> da <strong>Revista Saber Psicanalítico (ISSN: 3086-8416)</strong>, periódico científico semestral mantido pela Associação Saber Psicanalítico (ASP).
+                  Declaramos, para fins de comprovação curricular e acadêmica, em especial junto à <strong>Plataforma Lattes do CNPq</strong>, que <strong>{reviewer?.full_name || 'Parecerista'}</strong> atuou formalmente como <strong>Parecerista Ad-hoc</strong> da <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, periódico científico semestral mantido pela Associação Saber Psicanalítico (ASP).
                 </p>
                 <p>
-                  O(A) pesquisador(a) emitiu parecer avaliativo de mérito técnico-científico circunstanciado no âmbito do sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), analisando os critérios de rigor metodológico, pertinência conceitual psicanalítica e relevância clínica da produção acadêmica designada.
+                  O processo avaliativo ocorreu no âmbito do sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), mediante a emissão de parecer circunstanciado de mérito técnico-científico que apreciou o rigor metodológico, a pertinência metapsicológica e a relevância psicanalítica da produção acadêmica designada.
                 </p>
                 <p>
-                  Por ser a mais pura expressão da verdade e reconhecendo a fundamental colaboração dispensada à preservação da excelência científica desta revista, firmamos a presente declaração.
+                  Reconhecemos e agradecemos a inestimável colaboração prestada a esta publicação científica e à difusão do saber psicanalítico.
                 </p>
               </>
             )}
 
             <p className="text-right text-xs pt-4 font-sans text-slate-700">
-              Caruaru – PE, {docDate}.
+              Caruaru/PE, {docDate}.
             </p>
           </div>
         </div>
 
-        {/* ASSINATURA SEM LINHA E CÓDIGO VERIFICADOR EXCLUSIVAMENTE ABAIXO */}
-        <div className="pt-10">
+        {/* ASSINATURA ELEGANTE ÚNICA COM DECLARAÇÃO DIGITAL E CÓDIGO DISCRETO */}
+        <div className="pt-8">
           <div className="text-center flex flex-col items-center justify-center my-6">
-            <p className="font-serif italic text-lg sm:text-xl text-slate-800 tracking-wide">
+            <p className="font-serif font-bold text-slate-900 text-sm sm:text-base">
               Dr. Edson Leandro de Almeida
             </p>
-            <p className="font-bold text-slate-900 text-xs sm:text-sm mt-1">
-              Dr. Edson Leandro de Almeida
-            </p>
-            <p className="text-xs text-indigo-900 font-semibold">
+            <p className="text-xs text-indigo-900 font-semibold mt-0.5">
               Editor-Chefe • Revista Saber Psicanalítico
             </p>
-            <p className="text-[11px] text-slate-600">
-              Associação Saber Psicanalítico (ASP)
+
+            <p className="text-[11px] text-slate-500 max-w-lg mt-3 italic font-sans">
+              Documento assinado digitalmente em conformidade com as diretrizes da Infraestrutura de Chaves Públicas e padrões de validação eletrônica da Revista Saber Psicanalítico.
             </p>
+
+            <div className="mt-3 px-3 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] font-mono text-slate-700">
+              Código de verificação: <strong>{docCode}</strong>
+            </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-200 text-center space-y-1.5 text-[10px] text-slate-500 font-sans">
-            <p className="font-mono text-slate-800 font-bold tracking-wider">
-              Código de Autenticação Digital: {docCode}
-            </p>
-            <p className="text-slate-400">
-              A autenticidade deste documento timbrado pode ser validada eletronicamente no portal oficial (https://revista-saber-portal.vercel.app) utilizando o código verificador acima.
-            </p>
-            <p className="text-slate-400">
-              Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85 • Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE
-            </p>
+          {/* RODAPÉ EXCLUSIVO DA ASP COM LOGO DISCRETA */}
+          <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500 font-sans">
+            <div className="flex items-center gap-3">
+              <img 
+                src="/logo-asp.png" 
+                alt="ASP" 
+                className="h-9 sm:h-10 object-contain opacity-85" 
+                onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+              />
+              <div>
+                <p className="font-semibold text-slate-700">Associação Saber Psicanalítico (ASP)</p>
+                <p className="text-[10px] text-slate-500">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
+              </div>
+            </div>
+            <div className="text-center sm:text-right text-[10px] text-slate-400">
+              <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
+              <p>Validação online em: revista-saber-portal.vercel.app</p>
+            </div>
           </div>
         </div>
 
@@ -717,7 +738,6 @@ export default function Home() {
 
   const getAuthorName = (authorId: string) => allProfiles.find((x) => x.id === authorId)?.full_name || 'Autor da Revista'
   const getAuthorEmail = (authorId: string) => allProfiles.find((x) => x.id === authorId)?.email || ''
-  const getAuthorInst = (authorId: string) => allProfiles.find((x) => x.id === authorId)?.institution || '-'
   const getArticleReviews = (articleId: string) => allReviews.filter((r) => r.article_id === articleId)
   const getReviewerName = (reviewerId: string) => allProfiles.find((x) => x.id === reviewerId)?.full_name || 'Parecerista Designado'
 
@@ -831,7 +851,7 @@ export default function Home() {
       `"${art.target_issue || getArticleIssue(art)}"`,
       `"${getAuthorName(art.author_id).replace(/"/g, '""')}"`,
       `"${getAuthorEmail(art.author_id)}"`,
-      `"${(art.author_institution || getAuthorInst(art.author_id)).replace(/"/g, '""')}"`,
+      `"${(art.author_institution || '').replace(/"/g, '""')}"`,
       `"${art.author_orcid || ''}"`,
       `"${art.author_lattes || ''}"`,
       `"${(art.coauthors || []).map((c: any) => `${c.name} (${c.institution || ''})`).join('; ').replace(/"/g, '""')}"`,
@@ -1427,7 +1447,7 @@ export default function Home() {
                           <span className="ml-2 text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
                           {isOwnArticle && <span className="ml-2 text-xs font-bold text-purple-700">[Seu Manuscrito - COPE]</span>}
                           <h4 className="text-lg font-bold text-slate-900 mt-1">{art.title}</h4>
-                          <p className="text-xs text-slate-500">Autor: <strong>{getAuthorName(art.author_id)}</strong> ({getAuthorEmail(art.author_id)}) • {art.author_institution || getAuthorInst(art.author_id)}</p>
+                          <p className="text-xs text-slate-500">Autor: <strong>{getAuthorName(art.author_id)}</strong> ({getAuthorEmail(art.author_id)})</p>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
@@ -1612,7 +1632,6 @@ export default function Home() {
         data={activeOfficialDoc}
         onClose={() => setActiveOfficialDoc(null)}
         getAuthorName={getAuthorName}
-        getAuthorInst={getAuthorInst}
         getArticleIssue={getArticleIssue}
       />
 
