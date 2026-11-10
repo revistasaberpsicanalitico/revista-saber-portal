@@ -41,27 +41,15 @@ function SubmitModal({
           </button>
         </div>
 
-        <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 space-y-2">
-          <p className="font-bold flex items-center gap-1.5 text-amber-900">
-            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-            Orientações obrigatórias para submissão inicial:
-          </p>
-          <ul className="list-disc list-inside space-y-1 text-[11px] text-amber-900/90 pl-1">
-            <li>O manuscrito deve ser enviado em formato editável <strong>.DOC ou .DOCX</strong> (Microsoft Word).</li>
-            <li><strong>Anonimização rigorosa:</strong> Não inclua nome dos autores, filiação ou referências autobiográficas no corpo do texto.</li>
-            <li>Remova as propriedades do autor no Word: vá em <em>Arquivo &gt; Informações &gt; Inspecionar Documento &gt; Remover Propriedades do Documento e Informações Pessoais</em>.</li>
-            <li>O resumo e as palavras-chave devem constar obrigatoriamente em Português e Inglês.</li>
-          </ul>
-        </div>
-
         <form onSubmit={onSubmit} className="space-y-5">
+          {/* Seção Editorial - As 4 opções oficiais */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Seção Editorial Pretendida *</label>
             <select value={newSection} onChange={(e) => setNewSection(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white">
-              <option value="Artigo Científico">Artigo Científico (Investigação Teórica ou Empírica)</option>
-              <option value="Ensaio Teórico">Ensaio Teórico / Metapsicologia Psicanalítica</option>
-              <option value="Relato de Experiência Clínica">Relato de Experiência Clínica / Estudo de Caso</option>
-              <option value="Resenha de Obra">Resenha Crítica de Livro ou Obra Relevante</option>
+              <option value="Artigos Científicos">Artigos Científicos</option>
+              <option value="Ensaios Teóricos">Ensaios Teóricos</option>
+              <option value="Relatos de Experiência Clínica">Relatos de Experiência Clínica</option>
+              <option value="Resenhas">Resenhas</option>
             </select>
           </div>
 
@@ -98,10 +86,11 @@ function SubmitModal({
             </div>
           </div>
 
+          {/* Autor Principal */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <div>
               <h4 className="text-xs font-bold text-slate-800">Identificação Acadêmica do(a) Autor(a) Principal</h4>
-              <p className="text-[11px] text-slate-500">Dados sigilosos de controle editorial (não divulgados aos pareceristas durante a avaliação).</p>
+              <p className="text-[11px] text-slate-500">Dados confidenciais de controle editorial (não divulgados aos pareceristas durante a avaliação).</p>
             </div>
             <div className="grid md:grid-cols-3 gap-2.5">
               <div>
@@ -118,16 +107,17 @@ function SubmitModal({
               </div>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Mini-biografia acadêmica (titulação e área de atuação)</label>
-              <textarea rows={2} value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Ex: Psicanalista, Especialista em Teoria e Clínica Psicanalítica..." className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
+              <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Mini-biografia acadêmica (titulação e área de atuação) *</label>
+              <textarea rows={2} required value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Ex: Psicanalista, Especialista em Teoria e Clínica Psicanalítica..." className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
             </div>
           </div>
 
+          {/* Coautores com mini-biografia acadêmica */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <div className="flex justify-between items-center">
               <div>
                 <h4 className="text-xs font-bold text-slate-800">Coautores ({coauthors.length})</h4>
-                <p className="text-[11px] text-slate-500">Adicione os coautores que participaram da pesquisa.</p>
+                <p className="text-[11px] text-slate-500">Adicione os coautores que participaram da pesquisa com sua titulação.</p>
               </div>
               <button type="button" onClick={onAddCoauthor} className="px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg flex items-center gap-1 hover:bg-indigo-100">
                 <Plus className="w-3.5 h-3.5" /> Adicionar Coautor
@@ -137,7 +127,7 @@ function SubmitModal({
               <p className="text-center text-xs text-slate-400 py-1">Nenhum coautor adicionado (autoria individual).</p>
             ) : (
               coauthors.map((co: any, idx: number) => (
-                <div key={idx} className="bg-white p-3 rounded-lg border space-y-2 relative shadow-sm">
+                <div key={idx} className="bg-white p-3 rounded-lg border space-y-2.5 relative shadow-sm">
                   <button type="button" onClick={() => onRemoveCoauthor(idx)} className="absolute top-2.5 right-2.5 text-rose-500 hover:text-rose-700 text-xs">
                     <X className="w-4 h-4" />
                   </button>
@@ -151,18 +141,34 @@ function SubmitModal({
                     <input type="url" value={co.lattes || ''} onChange={(e) => onUpdateCoauthor(idx, 'lattes', e.target.value)} placeholder="Link do Lattes (opcional)" className="px-2.5 py-1.5 text-xs border rounded" />
                     <input type="text" value={co.orcid || ''} onChange={(e) => onUpdateCoauthor(idx, 'orcid', e.target.value)} placeholder="ORCID (opcional)" className="px-2.5 py-1.5 text-xs border rounded" />
                   </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Mini-biografia acadêmica (titulação e área de atuação)</label>
+                    <textarea rows={2} value={co.bio || ''} onChange={(e) => onUpdateCoauthor(idx, 'bio', e.target.value)} placeholder="Ex: Psicanalista, Mestre em Psicologia Clínica, pesquisador(a)..." className="w-full px-2.5 py-1.5 text-xs border rounded bg-white" />
+                  </div>
                 </div>
               ))
             )}
           </div>
 
+          {/* Anexo de Manuscrito Integral com explicação ampliada */}
           <div className="border-2 border-dashed border-slate-300 p-5 rounded-xl text-center space-y-2 bg-slate-50/50">
-            <FileText className="w-9 h-9 mx-auto text-indigo-600" />
+            <FileText className="w-10 h-10 mx-auto text-indigo-600" />
             <label className="block text-xs font-semibold text-slate-700 cursor-pointer">
-              Clique para selecionar o Manuscrito Anonimizado (.doc ou .docx)
+              Clique para selecionar o Manuscrito Integral Anonimizado (.doc ou .docx)
               <input type="file" required accept=".doc,.docx,.pdf" onChange={onFileChange} className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mt-2" />
             </label>
-            <p className="text-[11px] text-amber-700 font-medium">Atenção: Garanta que o documento não possua marcas de identificação autoral.</p>
+            <div className="text-[11px] text-slate-600 max-w-xl mx-auto space-y-1.5 text-left bg-white p-3.5 rounded-lg border border-slate-200 mt-2">
+              <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" /> Estrutura obrigatória do arquivo a enviar:
+              </p>
+              <p>
+                O arquivo deve conter o trabalho em sua <strong>forma integral e completa</strong>: Título em Português e Inglês, Resumo, Abstract, Palavras-chave, Keywords, Introdução, Desenvolvimento teórico/clínico e Referências bibliográficas completas.
+              </p>
+              <p className="text-amber-800 font-semibold pt-1 border-t border-slate-100 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                Regra de Anonimização Estrita: o texto não deve conter nomes, filiações, agradecimentos nominais ou menções de autoria em notas de rodapé e propriedades do Word.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-2.5 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 text-xs text-slate-700">
@@ -267,7 +273,7 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (DIAGRAMAÇÃO E ASSINATURA AJUSTADAS)
+// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (AJUSTE DA LOGO, ASSINATURA E RODAPÉ)
 // ============================================================================
 function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any) {
   if (!data) return null
@@ -314,13 +320,13 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
       {/* Folha A4 Timbrada Institucional */}
       <div className="bg-white w-full max-w-[800px] min-h-[1080px] p-12 sm:p-16 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-12 print:w-full print:min-h-screen border border-slate-200">
         
-        {/* CABEÇALHO EXCLUSIVO DA REVISTA COM LOGO AMPLIADA */}
+        {/* CABEÇALHO: LOGO DA REVISTA AMPLIADA COM DESTAQUE */}
         <div>
           <div className="flex items-center justify-between pb-6 border-b border-slate-200 gap-6">
             <img 
               src="/logo-revista.png" 
               alt="Revista Saber Psicanalítico" 
-              className="h-24 sm:h-28 object-contain" 
+              className="h-28 sm:h-32 max-h-36 w-auto object-contain" 
               onError={(e) => { e.currentTarget.style.display = 'none'; }} 
             />
             <div className="text-right space-y-1">
@@ -340,7 +346,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
           </div>
 
           {/* TÍTULO DO DOCUMENTO */}
-          <div className="text-center my-10">
+          <div className="text-center my-8">
             <h3 className="text-base sm:text-lg font-serif font-bold text-slate-900 tracking-wider uppercase">
               {isAceite && 'DECLARAÇÃO DE ACEITE PARA PUBLICAÇÃO'}
               {isRecusa && 'COMUNICAÇÃO EDITORIAL / PARECER FINAL'}
@@ -348,8 +354,8 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </h3>
           </div>
 
-          {/* TEXTO CERTIFICADO DO DOCUMENTO (SEM FILIAÇÃO DO AUTOR E COAUTORES EM NEGRITO) */}
-          <div className="text-[13px] sm:text-[14px] leading-relaxed text-justify space-y-5 text-slate-800 font-serif">
+          {/* TEXTO CERTIFICADO */}
+          <div className="text-[13px] sm:text-[14px] leading-relaxed text-justify space-y-4 text-slate-800 font-serif">
             {isAceite && (
               <>
                 <p>
@@ -415,15 +421,13 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
               </>
             )}
 
-            <p className="text-right text-xs pt-4 font-sans text-slate-700">
+            <p className="text-right text-xs pt-2 font-sans text-slate-700">
               Caruaru/PE, {docDate}.
             </p>
           </div>
-        </div>
 
-        {/* ASSINATURA ELEGANTE ÚNICA COM DECLARAÇÃO DIGITAL E CÓDIGO DISCRETO */}
-        <div className="pt-8">
-          <div className="text-center flex flex-col items-center justify-center my-6">
+          {/* ASSINATURA POSICIONADA MAIS ACIMA COM EXPLICAÇÃO DO CÓDIGO */}
+          <div className="mt-8 text-center flex flex-col items-center justify-center">
             <p className="font-serif font-bold text-slate-900 text-sm sm:text-base">
               Dr. Edson Leandro de Almeida
             </p>
@@ -431,33 +435,43 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
               Editor-Chefe • Revista Saber Psicanalítico
             </p>
 
-            <p className="text-[11px] text-slate-500 max-w-lg mt-3 italic font-sans">
-              Documento assinado digitalmente em conformidade com as diretrizes da Infraestrutura de Chaves Públicas e padrões de validação eletrônica da Revista Saber Psicanalítico.
-            </p>
-
-            <div className="mt-3 px-3 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] font-mono text-slate-700">
-              Código de verificação: <strong>{docCode}</strong>
+            <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg max-w-lg mx-auto text-center font-sans space-y-1">
+              <p className="text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                Documento Assinado Digitalmente
+              </p>
+              <p className="text-[10px] text-slate-500 leading-tight">
+                Assinado eletronicamente pelo Editor-Chefe em conformidade com as diretrizes e padrões de validação eletrônica da Revista Saber Psicanalítico.
+              </p>
+              <p className="text-[11px] font-mono text-slate-800 font-bold tracking-wide pt-0.5">
+                Código de Verificação: {docCode}
+              </p>
+              <p className="text-[9.5px] text-slate-400">
+                A autenticidade deste documento pode ser verificada em: <span className="text-indigo-600 font-semibold">https://revista-saber-portal.vercel.app</span> informando o código acima.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* RODAPÉ EXCLUSIVO DA ASP COM LOGO DISCRETA */}
-          <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500 font-sans">
-            <div className="flex items-center gap-3">
-              <img 
-                src="/logo-asp.png" 
-                alt="ASP" 
-                className="h-9 sm:h-10 object-contain opacity-85" 
-                onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-              />
-              <div>
-                <p className="font-semibold text-slate-700">Associação Saber Psicanalítico (ASP)</p>
-                <p className="text-[10px] text-slate-500">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
-              </div>
+        {/* RODAPÉ COMPLETO DA ASP COM LOGO DISCRETA, SITE E EMAIL */}
+        <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-sans">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo-asp.png" 
+              alt="ASP" 
+              className="h-8 sm:h-9 object-contain opacity-80" 
+              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+            />
+            <div>
+              <p className="font-bold text-slate-700 text-[11px]">Associação Saber Psicanalítico (ASP)</p>
+              <p className="text-slate-500">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
             </div>
-            <div className="text-center sm:text-right text-[10px] text-slate-400">
-              <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-              <p>Validação online em: revista-saber-portal.vercel.app</p>
-            </div>
+          </div>
+          <div className="text-center sm:text-right space-y-0.5 text-slate-500">
+            <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
+            <p>
+              <span>www.saberpsicanalitico.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span>
+            </p>
           </div>
         </div>
 
@@ -518,7 +532,7 @@ export default function Home() {
 
   // Submissão do Autor
   const [showSubmitModal, setShowSubmitModal] = useState(false)
-  const [newSection, setNewSection] = useState('Artigo Científico')
+  const [newSection, setNewSection] = useState('Artigos Científicos')
   const [newTitle, setNewTitle] = useState('')
   const [newTitleEn, setNewTitleEn] = useState('')
   const [newAbstract, setNewAbstract] = useState('')
@@ -773,7 +787,7 @@ export default function Home() {
     }
   }
 
-  const handleAddCoauthor = () => setCoauthors([...coauthors, { name: '', email: '', institution: '', lattes: '', orcid: '' }])
+  const handleAddCoauthor = () => setCoauthors([...coauthors, { name: '', email: '', institution: '', lattes: '', orcid: '', bio: '' }])
   const handleUpdateCoauthor = (index: number, field: string, value: string) => {
     const updated = [...coauthors]
     updated[index][field] = value
@@ -801,6 +815,17 @@ export default function Home() {
       alert(`Erro: ${err.message}`)
     } finally {
       setSavingProfile(false)
+    }
+  }
+
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId)
+      if (error) throw error
+      alert('Função do usuário atualizada com sucesso!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao alterar função: ${err.message}\n\nNota: Caso mencione violação de restrição (constraint), verifique se o Supabase permite o valor 'council'.`)
     }
   }
 
@@ -841,17 +866,16 @@ export default function Home() {
 
   const handleExportBackup = () => {
     if (allArticles.length === 0) return alert('Sem dados para exportação.')
-    const headers = ['ID', 'Titulo', 'Secao', 'Status', 'Data', 'Fasciculo', 'Autor', 'Email', 'Filiacao', 'ORCID', 'Lattes', 'Coautores', 'Pareceres', 'Justificativa']
+    const headers = ['ID', 'Titulo', 'Secao', 'Status', 'Data', 'Fasciculo', 'Autor', 'Email', 'ORCID', 'Lattes', 'Coautores', 'Pareceres', 'Justificativa']
     const rows = allArticles.map((art) => [
       art.id,
       `"${art.title.replace(/"/g, '""')}"`,
-      `"${art.section || 'Artigo Científico'}"`,
+      `"${art.section || 'Artigos Científicos'}"`,
       `"${art.status}"`,
       `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`,
       `"${art.target_issue || getArticleIssue(art)}"`,
       `"${getAuthorName(art.author_id).replace(/"/g, '""')}"`,
       `"${getAuthorEmail(art.author_id)}"`,
-      `"${(art.author_institution || '').replace(/"/g, '""')}"`,
       `"${art.author_orcid || ''}"`,
       `"${art.author_lattes || ''}"`,
       `"${(art.coauthors || []).map((c: any) => `${c.name} (${c.institution || ''})`).join('; ').replace(/"/g, '""')}"`,
@@ -1443,7 +1467,7 @@ export default function Home() {
                     <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700">{art.section || 'Artigo Científico'}</span>
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700">{art.section || 'Artigos Científicos'}</span>
                           <span className="ml-2 text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
                           {isOwnArticle && <span className="ml-2 text-xs font-bold text-purple-700">[Seu Manuscrito - COPE]</span>}
                           <h4 className="text-lg font-bold text-slate-900 mt-1">{art.title}</h4>
@@ -1529,7 +1553,11 @@ export default function Home() {
                             <td className="p-3">{p.email}</td>
                             <td className="p-3 capitalize font-bold text-indigo-700">{p.role}</td>
                             <td className="p-3 text-right">
-                              <select value={p.role} onChange={(e) => supabase.from('profiles').update({ role: e.target.value }).eq('id', p.id).then(() => fetchAllData())} className="p-1 border border-slate-200 rounded bg-white text-xs">
+                              <select 
+                                value={p.role} 
+                                onChange={(e) => handleUpdateUserRole(p.id, e.target.value)} 
+                                className="p-1 border border-slate-200 rounded bg-white text-xs font-medium"
+                              >
                                 <option value="author">Autor</option>
                                 <option value="reviewer">Parecerista</option>
                                 <option value="council">Conselho Editorial</option>
