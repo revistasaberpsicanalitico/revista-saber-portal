@@ -9,6 +9,9 @@ import {
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, Edit3, Plus, Printer
 } from 'lucide-react'
 
+// Importações dos modais externos que estavam faltando e causavam o erro de build na Vercel:
+import { SubmitModal, ResubmitModal, OfficialDocModal } from '@/components/Modals'
+
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
@@ -1058,9 +1061,24 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-3">
             <img src="/logo-asp.png" alt="ASP" className="h-10 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            <div><p className="font-bold text-slate-800">Associação Saber Psicanalítico (ASP)</p><p className="text-[11px]">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p></div>
+            <div>
+              <p className="font-bold text-slate-800">Associação Saber Psicanalítico (ASP)</p>
+              <p className="text-[11px]">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
+            </div>
           </div>
-          <div className="text-center md:text-right text-[11px]"><p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p><p>revistasaberpsicanalitico@gmail.com</p></div>
+          <div className="text-center md:text-right text-[11px]">
+            <p>
+              <a 
+                href="https://maps.google.com/?q=Rua+Visconde+Inhauma+1361" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="underline hover:text-indigo-600"
+              >
+                Rua Visconde Inhaúma, 1361
+              </a>, sala 408 — Caruaru/PE
+            </p>
+            <p>revistasaberpsicanalitico@gmail.com</p>
+          </div>
         </div>
       </footer>
 
