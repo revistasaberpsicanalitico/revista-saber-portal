@@ -9,6 +9,17 @@ import {
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, Edit3, Plus, Printer, Info, CheckSquare
 } from 'lucide-react'
 
+// Helper para tradução das funções dos usuários
+const formatRole = (role: string) => {
+  switch (role) {
+    case 'author': return 'Autor'
+    case 'reviewer': return 'Parecerista'
+    case 'council': return 'Conselho Editorial'
+    case 'editor': return 'Editor-Chefe / Editor'
+    default: return role
+  }
+}
+
 // ============================================================================
 // MODAL 1: SUBMISSÃO COMPLETA DE MANUSCRITO
 // ============================================================================
@@ -150,7 +161,7 @@ function SubmitModal({
             )}
           </div>
 
-          {/* Anexo de Manuscrito Integral com explicação ampliada */}
+          {/* Anexo de Manuscrito Integral com explicação */}
           <div className="border-2 border-dashed border-slate-300 p-5 rounded-xl text-center space-y-2 bg-slate-50/50">
             <FileText className="w-10 h-10 mx-auto text-indigo-600" />
             <label className="block text-xs font-semibold text-slate-700 cursor-pointer">
@@ -249,7 +260,7 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
               Orientações para o Reenvio com Correções
             </p>
             <p className="text-[11px] leading-relaxed">
-              Incorpore as alterações recomendadas nos pareceres dos avaliadores. Se o artigo for submetido a uma nova rodada de avaliação cega, mantenha o anonimato do texto.
+              Incorpore as alterações recomendadas nos pareceres dos avaliadores e nas considerações da editoria. Se o artigo for submetido a uma nova rodada de avaliação cega, mantenha o anonimato do texto.
             </p>
           </div>
         )}
@@ -273,7 +284,7 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (LOGO AMPLIADA, SEM FILIAÇÃO, RODAPÉ COMPLETO)
+// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4
 // ============================================================================
 function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any) {
   if (!data) return null
@@ -354,7 +365,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </h3>
           </div>
 
-          {/* TEXTO CERTIFICADO (SEM FILIAÇÃO DO AUTOR E COAUTORES EM NEGRITO) */}
+          {/* TEXTO CERTIFICADO */}
           <div className="text-[13px] sm:text-[14px] leading-relaxed text-justify space-y-4 text-slate-800 font-serif">
             {isAceite && (
               <>
@@ -562,6 +573,11 @@ export default function Home() {
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
   const [assignDeadline, setAssignDeadline] = useState('')
 
+  // Solicitar Correções (Modal do Editor)
+  const [requestChangesModalArticle, setRequestChangesModalArticle] = useState<any>(null)
+  const [changesReasonText, setChangesReasonText] = useState('')
+  const [savingChanges, setSavingChanges] = useState(false)
+
   // Recusa
   const [rejectionModalArticle, setRejectionModalArticle] = useState<any>(null)
   const [rejectionReasonText, setRejectionReasonText] = useState('')
@@ -717,7 +733,7 @@ export default function Home() {
     }
   }
 
-  // Validador oficial de documentos
+  // Validador oficial de documentos com busca abrangente
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
     if (!code) return
@@ -725,6 +741,9 @@ export default function Home() {
     setVerifyResult(null)
 
     try {
+      const cleanCode = code.replace(/^ASP-(ACE|REC|PAR)-/, '').replace(/[^A-Z0-9]/g, '')
+
+      // 1. Tenta RPC verify_document caso exista no banco
       const { data: rpcData, error: rpcError } = await supabase.rpc('verify_document', { code })
       if (!rpcError && rpcData && rpcData.valid) {
         setVerifyResult(rpcData)
@@ -732,23 +751,21 @@ export default function Home() {
         return
       }
 
-      // Verificação direta no banco (Carta de Aceite)
-      if (code.includes('ASP-ACE-')) {
-        const prefix = code.split('-')[2] || ''
-        const { data: art } = await supabase
-          .from('articles')
-          .select('*, author:author_id(full_name)')
-          .ilike('id', `${prefix}%`)
-          .eq('status', 'aceito')
-          .maybeSingle()
+      // 2. Verificação de Carta de Aceite (ASP-ACE-...)
+      if (code.includes('ASP-ACE')) {
+        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (a.id || '').toUpperCase().startsWith(cleanCode))
+        if (!found) {
+          const { data: arts } = await supabase.from('articles').select('*, author:author_id(full_name)')
+          if (arts) found = arts.find((a: any) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (a.id || '').toUpperCase().startsWith(cleanCode))
+        }
 
-        if (art) {
+        if (found) {
           setVerifyResult({
             valid: true,
             type: 'Declaração Oficial de Aceite para Publicação',
-            title: art.title,
-            person: art.author?.full_name || getAuthorName(art.author_id, art),
-            date: new Date(art.updated_at || art.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
+            title: found.title,
+            person: getAuthorName(found.author_id, found),
+            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
             role: 'Autor(a) do Manuscrito',
           })
           setCheckingCode(false)
@@ -756,23 +773,21 @@ export default function Home() {
         }
       }
 
-      // Verificação direta no banco (Carta de Não Aceite)
-      if (code.includes('ASP-REC-')) {
-        const prefix = code.split('-')[2] || ''
-        const { data: art } = await supabase
-          .from('articles')
-          .select('*, author:author_id(full_name)')
-          .ilike('id', `${prefix}%`)
-          .eq('status', 'recusado')
-          .maybeSingle()
+      // 3. Verificação de Carta de Não Aceite (ASP-REC-...)
+      if (code.includes('ASP-REC')) {
+        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (a.id || '').toUpperCase().startsWith(cleanCode))
+        if (!found) {
+          const { data: arts } = await supabase.from('articles').select('*, author:author_id(full_name)')
+          if (arts) found = arts.find((a: any) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (a.id || '').toUpperCase().startsWith(cleanCode))
+        }
 
-        if (art) {
+        if (found) {
           setVerifyResult({
             valid: true,
             type: 'Comunicação Editorial de Não Aceite',
-            title: art.title,
-            person: art.author?.full_name || getAuthorName(art.author_id, art),
-            date: new Date(art.updated_at || art.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
+            title: found.title,
+            person: getAuthorName(found.author_id, found),
+            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
             role: 'Autor(a) do Manuscrito',
           })
           setCheckingCode(false)
@@ -780,23 +795,22 @@ export default function Home() {
         }
       }
 
-      // Verificação direta no banco (Certificado de Parecerista)
-      if (code.includes('ASP-PAR-')) {
-        const prefix = code.split('-')[2] || ''
-        const { data: rev } = await supabase
-          .from('reviews')
-          .select('*, reviewer:reviewer_id(full_name), article:article_id(title)')
-          .ilike('id', `${prefix}%`)
-          .eq('status', 'concluido')
-          .maybeSingle()
+      // 4. Verificação de Certificado de Parecerista (ASP-PAR-...)
+      if (code.includes('ASP-PAR')) {
+        let foundRev = allReviews.find((r) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (r.id || '').toUpperCase().startsWith(cleanCode))
+        if (!foundRev) {
+          const { data: revs } = await supabase.from('reviews').select('*, reviewer:reviewer_id(full_name), article:article_id(title)')
+          if (revs) foundRev = revs.find((r: any) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (r.id || '').toUpperCase().startsWith(cleanCode))
+        }
 
-        if (rev) {
+        if (foundRev) {
+          const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
           setVerifyResult({
             valid: true,
             type: 'Declaração de Atuação como Parecerista Ad-hoc',
-            title: rev.article?.title || 'Avaliação por Pares',
-            person: rev.reviewer?.full_name || 'Parecerista Registrado',
-            date: new Date(rev.updated_at || rev.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
+            title: foundRev.article?.title || 'Avaliação por Pares',
+            person: foundRev.reviewer?.full_name || revPerson?.full_name || 'Parecerista Registrado',
+            date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
             role: 'Parecerista Ad-hoc',
           })
           setCheckingCode(false)
@@ -868,7 +882,7 @@ export default function Home() {
     try {
       const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId)
       if (error) throw error
-      alert('Função do usuário atualizada com sucesso!')
+      alert(`Função do usuário atualizada para ${formatRole(newRole)} com sucesso!`)
       fetchAllData()
     } catch (err: any) {
       alert(`Erro ao alterar função: ${err.message}\n\nNota: Caso mencione restrição (constraint), atualize a regra da tabela no Supabase.`)
@@ -900,7 +914,7 @@ export default function Home() {
         redirectTo: 'https://revista-saber-portal.vercel.app/redefinir-senha',
       })
       if (error) throw error
-      alert('Link oficial de redefinição enviado!')
+      alert('Link oficial de redefinição enviado para o seu e-mail!')
       setShowForgotModal(false)
       setForgotEmail('')
     } catch (err: any) {
@@ -939,6 +953,7 @@ export default function Home() {
     document.body.removeChild(link)
   }
 
+  // SUBMISSÃO COM E-MAIL DETALHADO AO AUTOR E EDITORES
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -977,25 +992,27 @@ export default function Home() {
       })
       if (insertError) throw insertError
 
+      // E-mail detalhado e explicativo ao autor
       sendEmailNotification({
         to: session.user.email,
         subject: 'Confirmação de Submissão - Revista Saber Psicanalítico',
-        title: 'Manuscrito Recebido!',
-        message: `Confirmamos o recebimento do trabalho "${newTitle}" na Revista Saber Psicanalítico (ISSN 3086-8416).`,
+        title: 'Manuscrito Recebido com Sucesso',
+        message: `Prezado(a) ${profile?.full_name},\n\nConfirmamos com satisfação o recebimento do trabalho "${newTitle}" na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nPróximas etapas do fluxo editorial:\n1. Triagem Inicial (Desk Review): O manuscrito passará pela conferência regimental de adequação ao escopo e verificação de anonimização estrita.\n2. Avaliação por Pares: Sendo aprovado na triagem inicial, o texto será encaminhado para a avaliação duplo-cega por pareceristas ad-hoc especialistas.\n3. Acompanhamento: Solicitamos que acompanhe periodicamente o status de avaliação e eventuais solicitações editoriais diretamente pelo nosso portal.\n\nAgradecemos a confiança em submeter sua produção acadêmica à Revista Saber Psicanalítico.`,
         actionText: 'Acompanhar no Portal',
         actionUrl: 'https://revista-saber-portal.vercel.app',
       })
 
+      // Notificação detalhada à editoria
       sendEmailNotification({
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: 'Novo Manuscrito Submetido - Revista Saber Psicanalítico',
-        title: 'Novo Artigo Recebido',
-        message: `Novo artigo recebido:\n\n• Título: "${newTitle}"\n• Autor: ${profile?.full_name}`,
+        title: 'Novo Artigo Recebido para Triagem',
+        message: `Novo artigo cadastrado no sistema:\n\n• Título: "${newTitle}"\n• Seção: ${newSection}\n• Autor Principal: ${profile?.full_name} (${session.user.email})\n• Filiação: ${authorInstitution}\n• Coautores: ${coauthors.length}\n\nAcesse a Sala Editorial para realizar a triagem inicial e designação de pareceristas.`,
         actionText: 'Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app',
       })
 
-      alert('Artigo submetido com sucesso!')
+      alert('Artigo submetido com sucesso! Você receberá os detalhes e confirmação em seu e-mail.')
       setShowSubmitModal(false)
       setNewTitle('')
       setNewTitleEn('')
@@ -1032,14 +1049,14 @@ export default function Home() {
 
       sendEmailNotification({
         to: 'revistasaberpsicanalitico@gmail.com',
-        subject: 'Revisão Enviada - Revista Saber Psicanalítico',
-        title: 'Revisão de Artigo Recebida',
-        message: `O(A) autor(a) ${getAuthorName(reSubmitArticle.author_id, reSubmitArticle)} enviou a versão corrigida de "${reSubmitArticle.title}".`,
+        subject: 'Revisão Enviada pelo Autor - Revista Saber Psicanalítico',
+        title: 'Versão Corrigida Recebida',
+        message: `O(A) autor(a) ${getAuthorName(reSubmitArticle.author_id, reSubmitArticle)} enviou a versão revisada/corrigida de "${reSubmitArticle.title}".\n\nAcesse a Sala Editorial para conferir o novo arquivo e dar prosseguimento ao fluxo.`,
         actionText: 'Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app',
       })
 
-      alert('Versão corrigida enviada!')
+      alert('Versão corrigida enviada com sucesso!')
       setReSubmitArticle(null)
       setRevisedFile(null)
       fetchAllData()
@@ -1071,10 +1088,17 @@ export default function Home() {
     }
   }
 
+  // ATUALIZAÇÃO DE STATUS COM CAIXAS DE EXPLICAÇÃO DEDICADAS
   const handleUpdateStatus = async (articleId: string, status: string) => {
     if (status === 'recusado') {
       setRejectionModalArticle(allArticles.find((a) => a.id === articleId))
       setRejectionReasonText('')
+      return
+    }
+
+    if (status === 'correcoes_pendentes') {
+      setRequestChangesModalArticle(allArticles.find((a) => a.id === articleId))
+      setChangesReasonText('')
       return
     }
 
@@ -1089,33 +1113,88 @@ export default function Home() {
 
       if (authorEmail) {
         if (status === 'ajustes_iniciais') {
-          sendEmailNotification({ to: authorEmail, subject: 'Ajuste Solicitado - Revista Saber Psicanalítico', title: 'Ajuste de Anonimização', message: `Prezado(a) ${authorName}, reenvie o arquivo "${title}" sem marcas de identificação para avaliação por pares.`, actionText: 'Reenviar Arquivo', actionUrl: 'https://revista-saber-portal.vercel.app' })
-        } else if (status === 'correcoes_pendentes') {
-          sendEmailNotification({ to: authorEmail, subject: 'Correções Solicitadas - Revista Saber Psicanalítico', title: 'Parecer Disponível', message: `Prezado(a) ${authorName}, foram solicitadas correções em "${title}". Veja as orientações no portal.`, actionText: 'Ver Pareceres', actionUrl: 'https://revista-saber-portal.vercel.app' })
+          sendEmailNotification({
+            to: authorEmail,
+            subject: 'Ajuste de Anonimização Solicitado - Revista Saber Psicanalítico',
+            title: 'Ajuste Inicial Necessário',
+            message: `Prezado(a) ${authorName},\n\nDurante a triagem do trabalho "${title}", identificamos marcas que comprometem o sigilo da avaliação duplo-cega (como nomes, filiações ou propriedades do arquivo).\n\nPor favor, acesse o portal, baixe o arquivo, remova qualquer identificação do texto e propriedades do documento, e anexe a versão anonimizada no botão "Enviar Arquivo Corrigido".`,
+            actionText: 'Reenviar Arquivo no Portal',
+            actionUrl: 'https://revista-saber-portal.vercel.app'
+          })
         } else if (status === 'aceito') {
-          sendEmailNotification({ to: authorEmail, subject: 'Artigo Aceito! - Revista Saber Psicanalítico', title: 'Artigo Aceito para Publicação', message: `Parabéns, ${authorName}! O trabalho "${title}" foi aceito. Emita sua Carta de Aceite no portal.`, actionText: 'Emitir Carta de Aceite', actionUrl: 'https://revista-saber-portal.vercel.app' })
+          sendEmailNotification({
+            to: authorEmail,
+            subject: 'Parabéns! Artigo Aceito para Publicação - Revista Saber Psicanalítico',
+            title: 'Artigo Aceito para Publicação',
+            message: `Prezado(a) ${authorName},\n\nTemos a satisfação de comunicar que o trabalho "${title}" concluiu o processo de avaliação por pares e foi OFICIALMENTE APROVADO para publicação na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua Declaração Oficial de Aceite timbrada com código digital já se encontra disponível para emissão no portal.`,
+            actionText: 'Emitir Carta de Aceite',
+            actionUrl: 'https://revista-saber-portal.vercel.app'
+          })
         }
       }
 
-      alert('Status atualizado!')
+      alert('Status atualizado com sucesso!')
       fetchAllData()
     } catch (err: any) {
       alert(err.message)
     }
   }
 
+  // CONFIRMAR SOLICITAÇÃO DE CORREÇÕES COM TEXTO EXPLICATIVO DO EDITOR
+  const handleConfirmRequestChanges = async () => {
+    if (!requestChangesModalArticle || !changesReasonText.trim()) return alert('Por favor, informe as orientações de correção para o autor.')
+    setSavingChanges(true)
+    try {
+      const emailAut = getAuthorEmail(requestChangesModalArticle.author_id, requestChangesModalArticle)
+      const authorName = getAuthorName(requestChangesModalArticle.author_id, requestChangesModalArticle)
+      const { error } = await supabase.from('articles').update({
+        status: 'correcoes_pendentes',
+        rejection_reason: changesReasonText // Armazena a orientação do editor
+      }).eq('id', requestChangesModalArticle.id)
+      if (error) throw error
+
+      if (emailAut) {
+        sendEmailNotification({
+          to: emailAut,
+          subject: 'Correções Solicitadas no Manuscrito - Revista Saber Psicanalítico',
+          title: 'Parecer Editorial Disponível com Solicitação de Ajustes',
+          message: `Prezado(a) ${authorName},\n\nInformamos que a rodada de avaliação do artigo "${requestChangesModalArticle.title}" foi concluída.\n\nPara que o manuscrito possa prosseguir para publicação, solicitamos a realização de ajustes com base nas recomendações editoriais e pareceres:\n\n--- ORIENTAÇÕES DA COMISSÃO EDITORIAL ---\n${changesReasonText}\n\nPor favor, acesse o portal da revista para consultar a íntegra dos pareceres técnicos e enviar a versão revisada no prazo regimental.`,
+          actionText: 'Ver Pareceres e Enviar Correções',
+          actionUrl: 'https://revista-saber-portal.vercel.app'
+        })
+      }
+
+      alert('Correções solicitadas com sucesso! O autor foi notificado com suas orientações.')
+      setRequestChangesModalArticle(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSavingChanges(false)
+    }
+  }
+
+  // CONFIRMAR RECUSA COM FUNDAMENTAÇÃO
   const handleConfirmRejection = async () => {
-    if (!rejectionModalArticle || !rejectionReasonText.trim()) return alert('Informe a justificativa.')
+    if (!rejectionModalArticle || !rejectionReasonText.trim()) return alert('Informe a justificativa editorial.')
     setSavingRejection(true)
     try {
       const emailAut = getAuthorEmail(rejectionModalArticle.author_id, rejectionModalArticle)
+      const authorName = getAuthorName(rejectionModalArticle.author_id, rejectionModalArticle)
       const { error } = await supabase.from('articles').update({ status: 'recusado', rejection_reason: rejectionReasonText }).eq('id', rejectionModalArticle.id)
       if (error) throw error
 
       if (emailAut) {
-        sendEmailNotification({ to: emailAut, subject: 'Parecer Editorial - Revista Saber Psicanalítico', title: 'Decisão do Manuscrito', message: `O processo do artigo "${rejectionModalArticle.title}" foi concluído. A Carta de Não Aceite está disponível no portal.`, actionText: 'Acessar Portal', actionUrl: 'https://revista-saber-portal.vercel.app' })
+        sendEmailNotification({
+          to: emailAut,
+          subject: 'Comunicação Editorial sobre Manuscrito - Revista Saber Psicanalítico',
+          title: 'Decisão Editorial',
+          message: `Prezado(a) ${authorName},\n\nO processo de avaliação do manuscrito "${rejectionModalArticle.title}" foi finalizado pela Comissão Editorial.\n\nEm face dos pareceres emitidos e das deliberações regimentais, comunicamos que o trabalho não foi aceito para publicação neste ciclo.\n\nSua Comunicação Editorial com parecer circunstanciado está disponível no portal. Agradecemos o envio do seu trabalho à Revista Saber Psicanalítico.`,
+          actionText: 'Acessar Comunicação no Portal',
+          actionUrl: 'https://revista-saber-portal.vercel.app'
+        })
       }
-      alert('Manuscrito Recusado!')
+      alert('Manuscrito Recusado com sucesso!')
       setRejectionModalArticle(null)
       fetchAllData()
     } catch (err: any) {
@@ -1139,7 +1218,14 @@ export default function Home() {
       await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
 
       if (revProfile?.email) {
-        sendEmailNotification({ to: revProfile.email, subject: 'Convite para Avaliação - Revista Saber Psicanalítico', title: 'Parecer Técnico-Científico', message: `Você foi designado(a) para avaliar "${assignModalArticle.title}". Prazo: ${new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')}.`, actionText: 'Área do Parecerista', actionUrl: 'https://revista-saber-portal.vercel.app' })
+        sendEmailNotification({
+          to: revProfile.email,
+          subject: 'Convite para Avaliação Técnico-Científica - Revista Saber Psicanalítico',
+          title: 'Designação de Manuscrito para Avaliação',
+          message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a atuar como Parecerista Ad-hoc avaliando o manuscrito "${assignModalArticle.title}" submetido à Revista Saber Psicanalítico (ISSN 3086-8416).\n\nPrazo para devolução do parecer: ${new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\nO manuscrito encontra-se devidamente anonimizado para avaliação duplo-cega. Acesse a área do parecerista no portal para aceitar o convite e registrar suas considerações.`,
+          actionText: 'Acessar Área do Parecerista',
+          actionUrl: 'https://revista-saber-portal.vercel.app'
+        })
       }
       alert('Parecerista atribuído com sucesso!')
       setAssignModalArticle(null)
@@ -1149,6 +1235,7 @@ export default function Home() {
     }
   }
 
+  // PARECERISTA EMITE PARECER (NOTIFICA APENAS A EDITORIA - O AUTOR NÃO RECEBE DIRETO)
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -1167,8 +1254,17 @@ export default function Home() {
         status: 'concluido',
       }).eq('id', reviewModalData.id)
 
-      sendEmailNotification({ to: 'revistasaberpsicanalitico@gmail.com', subject: 'Parecer Concluído - Revista Saber Psicanalítico', title: 'Novo Parecer Emitido', message: `O(A) parecerista ${profile?.full_name} concluiu o parecer de "${allArticles.find(a => a.id === reviewModalData.article_id)?.title}".`, actionText: 'Sala Editorial', actionUrl: 'https://revista-saber-portal.vercel.app' })
-      alert('Parecer enviado com sucesso!')
+      // Notifica EXCLUSIVAMENTE os editores para que analisem o parecer antes de liberar ao autor
+      sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: 'Parecer Concluído por Avaliador - Revista Saber Psicanalítico',
+        title: 'Novo Parecer Emitido',
+        message: `O(A) parecerista ${profile?.full_name} concluiu a avaliação do artigo "${allArticles.find(a => a.id === reviewModalData.article_id)?.title}".\n\n• Recomendação: ${recommendation.toUpperCase()}\n\nAcesse a Sala Editorial para conferir o parecer e deliberar sobre a solicitação de correções ou aceite do manuscrito.`,
+        actionText: 'Sala Editorial',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
+      alert('Parecer enviado com sucesso à Comissão Editorial!')
       setReviewModalData(null)
       fetchAllData()
     } catch (err: any) {
@@ -1202,7 +1298,7 @@ export default function Home() {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Carregando Revista Saber Psicanalítico...</div>
   }
 
-  // TELA DE LOGIN / CADASTRO
+  // TELA DE LOGIN / CADASTRO COM TRADUÇÃO DE MENSAGENS EM PORTUGUÊS
   if (!session) {
     return (
       <main className="min-h-screen flex flex-col justify-center items-center p-4 bg-slate-50">
@@ -1236,11 +1332,20 @@ export default function Home() {
               } else {
                 const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName, role: 'author', institution, phone } } })
                 if (error) throw error
-                setAuthMessage({ type: 'success', text: 'Conta criada! Faça login com seu e-mail e senha.' })
+                setAuthMessage({ type: 'success', text: 'Conta criada com sucesso! Faça login com seu e-mail e senha.' })
                 setIsLogin(true)
               }
             } catch (err: any) {
-              setAuthMessage({ type: 'error', text: err.message || 'Erro ao processar.' })
+              let msg = err.message || 'Erro ao processar a autenticação.'
+              // Tradução amigável dos erros do Supabase em português
+              if (msg.includes('Invalid login credentials')) {
+                msg = 'E-mail ou senha incorretos. Por favor, confira os dados digitados e tente novamente.'
+              } else if (msg.includes('Email not confirmed')) {
+                msg = 'Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada.'
+              } else if (msg.includes('User already registered')) {
+                msg = 'Este e-mail já está cadastrado no sistema. Faça login ou recupere sua senha.'
+              }
+              setAuthMessage({ type: 'error', text: msg })
             } finally {
               setAuthLoading(false)
             }
@@ -1294,7 +1399,7 @@ export default function Home() {
                   type="text" 
                   value={verifyCodeInput} 
                   onChange={(e) => setVerifyCodeInput(e.target.value)} 
-                  placeholder="Ex: ASP-ACE-1A2B3C4D" 
+                  placeholder="Ex: ASP-ACE-1A2B3C4D ou ASP-REC-1A2B3C4D" 
                   className="w-full px-3 py-2 text-xs border rounded-lg font-mono uppercase text-center tracking-wider font-bold" 
                 />
                 <button 
@@ -1340,7 +1445,7 @@ export default function Home() {
                       <span>Documento Não Localizado</span>
                     </div>
                     <p className="text-[11px] text-rose-700 leading-relaxed">
-                      O código informado não corresponde a nenhum documento emitido oficialmente pela Revista Saber Psicanalítico. Certifique-se de digitar todos os caracteres corretamente (ex: ASP-ACE-XXXXXXXX).
+                      O código informado não corresponde a nenhum documento emitido oficialmente pela Revista Saber Psicanalítico. Certifique-se de digitar todos os caracteres corretamente (ex: ASP-ACE-XXXXXXXX ou ASP-REC-XXXXXXXX).
                     </p>
                   </div>
                 )
@@ -1452,7 +1557,9 @@ export default function Home() {
               ) : (
                 <div className="grid gap-4">
                   {myAuthorArticles.map((art) => {
-                    const revs = getArticleReviews(art.id).filter((r) => r.status === 'concluido')
+                    // O autor só visualiza pareceres liberados se a editoria solicitou correções, aceitou ou recusou
+                    const isReleasedToAuthor = ['correcoes_pendentes', 'aceito', 'recusado'].includes(art.status)
+                    const revs = isReleasedToAuthor ? getArticleReviews(art.id).filter((r) => r.status === 'concluido') : []
                     const canResubmit = ['correcoes_pendentes', 'ajustes_iniciais', 'revisao_submetida'].includes(art.status)
 
                     return (
@@ -1471,13 +1578,25 @@ export default function Home() {
                           </div>
                         </div>
 
+                        {/* CAIXA DE ORIENTAÇÕES QUANDO O EDITOR SOLICITA CORREÇÕES */}
+                        {art.status === 'correcoes_pendentes' && art.rejection_reason && (
+                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-1.5">
+                            <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                              Orientações da Comissão Editorial para as Correções:
+                            </p>
+                            <p className="whitespace-pre-line text-slate-700 leading-relaxed">{art.rejection_reason}</p>
+                          </div>
+                        )}
+
                         {art.status === 'recusado' && art.rejection_reason && (
                           <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-900"><strong>Considerações do Editor:</strong> {art.rejection_reason}</div>
                         )}
 
+                        {/* PARECERES LIBERADOS SOMENTE APÓS AVALIAÇÃO DA EDITORIA */}
                         {revs.length > 0 && (
                           <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-xs">
-                            <h5 className="font-bold text-slate-700">Pareceres Liberados:</h5>
+                            <h5 className="font-bold text-slate-700">Pareceres dos Avaliadores Liberados pela Editoria:</h5>
                             {revs.map((rev, idx) => (
                               <div key={rev.id} className="bg-white p-3 rounded border border-slate-200 space-y-1">
                                 <span className="font-bold text-indigo-700">Parecer {idx + 1} ({rev.recommendation?.toUpperCase()}):</span>
@@ -1644,20 +1763,21 @@ export default function Home() {
                 })}
               </div>
 
+              {/* TABELA DE USUÁRIOS COM FUNÇÕES TRADUZIDAS EM PORTUGUÊS */}
               {isFullEditor && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                  <h3 className="text-base font-bold text-slate-800">Quadro de Usuários ({allProfiles.length})</h3>
+                  <h3 className="text-base font-bold text-slate-800">Quadro de Usuários Cadastrados ({allProfiles.length})</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs text-slate-600">
                       <thead className="bg-slate-50 text-slate-700 uppercase font-semibold">
-                        <tr><th className="p-3">Nome</th><th className="p-3">E-mail</th><th className="p-3">Função</th><th className="p-3 text-right">Ação</th></tr>
+                        <tr><th className="p-3">Nome Completo</th><th className="p-3">E-mail</th><th className="p-3">Função no Sistema</th><th className="p-3 text-right">Alterar Função</th></tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {allProfiles.map((p) => (
                           <tr key={p.id}>
                             <td className="p-3 font-semibold text-slate-900">{p.full_name}</td>
                             <td className="p-3">{p.email}</td>
-                            <td className="p-3 capitalize font-bold text-indigo-700">{p.role}</td>
+                            <td className="p-3 font-bold text-indigo-700">{formatRole(p.role)}</td>
                             <td className="p-3 text-right">
                               <select 
                                 value={p.role} 
@@ -1711,7 +1831,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* MODAIS INTEGRADOS */}
+      {/* MODAL DE SUBMISSÃO */}
       <SubmitModal
         show={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
@@ -1756,6 +1876,7 @@ export default function Home() {
         submitting={submitting}
       />
 
+      {/* MODAL DE REENVIO */}
       <ResubmitModal
         article={reSubmitArticle}
         onClose={() => setReSubmitArticle(null)}
@@ -1764,12 +1885,51 @@ export default function Home() {
         submitting={submittingRevision}
       />
 
+      {/* MODAL DE DOCUMENTO TIMBRADO A4 */}
       <OfficialDocModal
         data={activeOfficialDoc}
         onClose={() => setActiveOfficialDoc(null)}
         getAuthorName={getAuthorName}
         getArticleIssue={getArticleIssue}
       />
+
+      {/* MODAL: SOLICITAR CORREÇÕES COM CAIXA DE TEXTO DEDICADA */}
+      {requestChangesModalArticle && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[75]">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
+            <div>
+              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded uppercase">Decisão Editorial</span>
+              <h3 className="text-base font-bold text-slate-900 mt-1">Solicitar Correções ao Autor</h3>
+              <p className="text-xs text-slate-500 line-clamp-1">{requestChangesModalArticle.title}</p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Orientações da Comissão Editorial e Síntese dos Pareceres *:
+              </label>
+              <textarea 
+                required 
+                rows={6} 
+                value={changesReasonText} 
+                onChange={(e) => setChangesReasonText(e.target.value)} 
+                placeholder="Descreva detalhadamente as correções que o autor deve realizar no texto (ex: revisão da fundamentação teórica, ajuste metodológico, ampliação das referências psicanalíticas, etc.)..." 
+                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-amber-500" 
+              />
+              <p className="text-[11px] text-slate-400 mt-1">Este texto será enviado por e-mail ao autor e ficará em destaque no painel dele.</p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button type="button" onClick={() => setRequestChangesModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+              <button 
+                type="button" 
+                disabled={savingChanges || !changesReasonText.trim()} 
+                onClick={handleConfirmRequestChanges} 
+                className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50"
+              >
+                {savingChanges ? 'Enviando...' : 'Enviar Solicitação de Correções'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: MEU PERFIL */}
       {showProfileModal && (
@@ -1797,7 +1957,7 @@ export default function Home() {
             <select value={selectedReviewerId} onChange={(e) => setSelectedReviewerId(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white">
               <option value="">-- Escolha um parecerista --</option>
               {allProfiles.filter((p) => (p.role === 'reviewer' || p.role === 'editor') && p.id !== assignModalArticle.author_id).map((rev) => (
-                <option key={rev.id} value={rev.id}>{rev.full_name} ({rev.role}) - {rev.institution || 'ASP'}</option>
+                <option key={rev.id} value={rev.id}>{rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'}</option>
               ))}
             </select>
             <div>
@@ -1876,7 +2036,7 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Parecer Circunstanciado (enviado ao autor) *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Parecer Circunstanciado *</label>
               <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Detalhe as fundamentações teóricas, pontos fortes e recomendações de aprimoramento..." className="w-full px-3 py-2 text-xs border rounded-lg" />
             </div>
 
@@ -1893,7 +2053,7 @@ export default function Home() {
             <div className="flex justify-end gap-3 pt-3 border-t">
               <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Voltar</button>
               <button type="button" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">
-                {submittingReview ? 'Enviando Parecer...' : 'Concluir e Enviar Parecer'}
+                {submittingReview ? 'Enviando Parecer...' : 'Concluir e Enviar Parecer à Editoria'}
               </button>
             </div>
           </div>
