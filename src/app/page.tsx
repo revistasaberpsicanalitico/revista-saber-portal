@@ -273,7 +273,7 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (AJUSTE DA LOGO, ASSINATURA E RODAPÉ)
+// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (LOGO AMPLIADA, SEM FILIAÇÃO, RODAPÉ COMPLETO)
 // ============================================================================
 function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any) {
   if (!data) return null
@@ -286,7 +286,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
   const review = data.review
   const reviewer = data.reviewer
 
-  const authName = article ? getAuthorName(article.author_id) : ''
+  const authName = article ? getAuthorName(article.author_id, article) : ''
   const issueName = article ? getArticleIssue(article) : ''
   const docDate = new Date(article?.updated_at || review?.updated_at || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
   
@@ -320,13 +320,13 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
       {/* Folha A4 Timbrada Institucional */}
       <div className="bg-white w-full max-w-[800px] min-h-[1080px] p-12 sm:p-16 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-12 print:w-full print:min-h-screen border border-slate-200">
         
-        {/* CABEÇALHO: LOGO DA REVISTA AMPLIADA COM DESTAQUE */}
+        {/* CABEÇALHO: LOGO DA REVISTA AUMENTADA COM DESTAQUE */}
         <div>
           <div className="flex items-center justify-between pb-6 border-b border-slate-200 gap-6">
             <img 
               src="/logo-revista.png" 
               alt="Revista Saber Psicanalítico" 
-              className="h-28 sm:h-32 max-h-36 w-auto object-contain" 
+              className="h-36 sm:h-44 max-h-48 w-auto object-contain drop-shadow-sm" 
               onError={(e) => { e.currentTarget.style.display = 'none'; }} 
             />
             <div className="text-right space-y-1">
@@ -354,7 +354,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </h3>
           </div>
 
-          {/* TEXTO CERTIFICADO */}
+          {/* TEXTO CERTIFICADO (SEM FILIAÇÃO DO AUTOR E COAUTORES EM NEGRITO) */}
           <div className="text-[13px] sm:text-[14px] leading-relaxed text-justify space-y-4 text-slate-800 font-serif">
             {isAceite && (
               <>
@@ -426,7 +426,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </p>
           </div>
 
-          {/* ASSINATURA POSICIONADA MAIS ACIMA COM EXPLICAÇÃO DO CÓDIGO */}
+          {/* ASSINATURA ELEGANTE E VALIDAÇÃO DIGITAL */}
           <div className="mt-8 text-center flex flex-col items-center justify-center">
             <p className="font-serif font-bold text-slate-900 text-sm sm:text-base">
               Dr. Edson Leandro de Almeida
@@ -453,7 +453,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
           </div>
         </div>
 
-        {/* RODAPÉ COMPLETO DA ASP COM LOGO DISCRETA, SITE E EMAIL */}
+        {/* RODAPÉ COMPLETO DA ASP COM CNPJ EM LINHA ÚNICA, SITE E E-MAIL */}
         <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-sans">
           <div className="flex items-center gap-3">
             <img 
@@ -463,14 +463,14 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
               onError={(e) => { e.currentTarget.style.display = 'none'; }} 
             />
             <div>
-              <p className="font-bold text-slate-700 text-[11px]">Associação Saber Psicanalítico (ASP)</p>
-              <p className="text-slate-500">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
+              <p className="font-bold text-slate-700 text-[11px] whitespace-nowrap">Associação Saber Psicanalítico (ASP)</p>
+              <p className="text-slate-500 whitespace-nowrap">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
             </div>
           </div>
           <div className="text-center sm:text-right space-y-0.5 text-slate-500">
             <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
             <p>
-              <span>www.saberpsicanalitico.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span>
+              <span>www.asppsicanalise.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span>
             </p>
           </div>
         </div>
@@ -645,7 +645,11 @@ export default function Home() {
       const { data: profiles } = await supabase.from('profiles').select('*').order('full_name')
       if (profiles) setAllProfiles(profiles)
 
-      const { data: articles } = await supabase.from('articles').select('*').order('created_at', { ascending: false })
+      // Busca os artigos unindo o perfil do autor para garantir acesso a nome e email por qualquer categoria
+      const { data: articles } = await supabase
+        .from('articles')
+        .select('*, author:author_id(id, full_name, email, institution)')
+        .order('created_at', { ascending: false })
       if (articles) setAllArticles(articles)
 
       const { data: reviews } = await supabase.from('reviews').select('*')
@@ -655,6 +659,65 @@ export default function Home() {
     }
   }
 
+  // Identificação universal do autor para Editores, Conselho e Autores
+  const getAuthorName = (authorId: string, art?: any) => {
+    if (art?.author?.full_name) return art.author.full_name
+    const p = allProfiles.find((x) => x.id === authorId)
+    if (p?.full_name) return p.full_name
+    if (authorId === session?.user?.id && profile?.full_name) return profile.full_name
+    return 'Autor do Manuscrito'
+  }
+
+  const getAuthorEmail = (authorId: string, art?: any) => {
+    if (art?.author?.email) return art.author.email
+    const p = allProfiles.find((x) => x.id === authorId)
+    if (p?.email) return p.email
+    if (authorId === session?.user?.id && profile?.email) return profile.email
+    return ''
+  }
+
+  const getAuthorInst = (authorId: string, art?: any) => {
+    if (art?.author?.institution) return art.author.institution
+    const p = allProfiles.find((x) => x.id === authorId)
+    return p?.institution || '-'
+  }
+
+  const getArticleReviews = (articleId: string) => allReviews.filter((r) => r.article_id === articleId)
+  const getReviewerName = (reviewerId: string) => allProfiles.find((x) => x.id === reviewerId)?.full_name || 'Parecerista Designado'
+
+  const getArticleIssue = (art: any) => {
+    if (art?.target_issue) return art.target_issue
+    const d = new Date(art?.created_at || Date.now())
+    return (d.getMonth() + 1) <= 5 ? `Fascículo de Junho de ${d.getFullYear()}` : `Fascículo de Dezembro de ${d.getFullYear()}`
+  }
+
+  const getDeadlineBadge = (deadlineStr: string | null) => {
+    if (!deadlineStr) return null
+    const diffDays = Math.ceil((new Date(deadlineStr + 'T23:59:59').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    const formatted = new Date(deadlineStr + 'T12:00:00').toLocaleDateString('pt-BR')
+
+    if (diffDays > 0) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Restam {diffDays} {diffDays === 1 ? 'dia' : 'dias'} ({formatted})
+        </span>
+      )
+    } else if (diffDays === 0) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" /> Vence hoje ({formatted})!
+        </span>
+      )
+    } else {
+      return (
+        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" /> Expirado há {Math.abs(diffDays)} dias ({formatted})
+        </span>
+      )
+    }
+  }
+
+  // Validador oficial de documentos
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
     if (!code) return
@@ -662,23 +725,30 @@ export default function Home() {
     setVerifyResult(null)
 
     try {
-      const { data, error } = await supabase.rpc('verify_document', { code })
-      if (!error && data && data.valid) {
-        setVerifyResult(data)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('verify_document', { code })
+      if (!rpcError && rpcData && rpcData.valid) {
+        setVerifyResult(rpcData)
         setCheckingCode(false)
         return
       }
 
+      // Verificação direta no banco (Carta de Aceite)
       if (code.includes('ASP-ACE-')) {
         const prefix = code.split('-')[2] || ''
-        const found = allArticles.find((a) => a.id.toUpperCase().startsWith(prefix) && a.status === 'aceito')
-        if (found) {
+        const { data: art } = await supabase
+          .from('articles')
+          .select('*, author:author_id(full_name)')
+          .ilike('id', `${prefix}%`)
+          .eq('status', 'aceito')
+          .maybeSingle()
+
+        if (art) {
           setVerifyResult({
             valid: true,
-            type: 'Declaração de Aceite para Publicação',
-            title: found.title,
-            person: getAuthorName(found.author_id),
-            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR'),
+            type: 'Declaração Oficial de Aceite para Publicação',
+            title: art.title,
+            person: art.author?.full_name || getAuthorName(art.author_id, art),
+            date: new Date(art.updated_at || art.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
             role: 'Autor(a) do Manuscrito',
           })
           setCheckingCode(false)
@@ -686,16 +756,23 @@ export default function Home() {
         }
       }
 
+      // Verificação direta no banco (Carta de Não Aceite)
       if (code.includes('ASP-REC-')) {
         const prefix = code.split('-')[2] || ''
-        const found = allArticles.find((a) => a.id.toUpperCase().startsWith(prefix) && a.status === 'recusado')
-        if (found) {
+        const { data: art } = await supabase
+          .from('articles')
+          .select('*, author:author_id(full_name)')
+          .ilike('id', `${prefix}%`)
+          .eq('status', 'recusado')
+          .maybeSingle()
+
+        if (art) {
           setVerifyResult({
             valid: true,
-            type: 'Comunicação de Não Aceite',
-            title: found.title,
-            person: getAuthorName(found.author_id),
-            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR'),
+            type: 'Comunicação Editorial de Não Aceite',
+            title: art.title,
+            person: art.author?.full_name || getAuthorName(art.author_id, art),
+            date: new Date(art.updated_at || art.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
             role: 'Autor(a) do Manuscrito',
           })
           setCheckingCode(false)
@@ -703,17 +780,23 @@ export default function Home() {
         }
       }
 
+      // Verificação direta no banco (Certificado de Parecerista)
       if (code.includes('ASP-PAR-')) {
         const prefix = code.split('-')[2] || ''
-        const foundRev = allReviews.find((r) => r.id.toUpperCase().startsWith(prefix) && r.status === 'concluido')
-        if (foundRev) {
-          const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
+        const { data: rev } = await supabase
+          .from('reviews')
+          .select('*, reviewer:reviewer_id(full_name), article:article_id(title)')
+          .ilike('id', `${prefix}%`)
+          .eq('status', 'concluido')
+          .maybeSingle()
+
+        if (rev) {
           setVerifyResult({
             valid: true,
             type: 'Declaração de Atuação como Parecerista Ad-hoc',
-            title: 'Manuscrito Avaliado',
-            person: revPerson?.full_name || 'Parecerista Registrado',
-            date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR'),
+            title: rev.article?.title || 'Avaliação por Pares',
+            person: rev.reviewer?.full_name || 'Parecerista Registrado',
+            date: new Date(rev.updated_at || rev.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
             role: 'Parecerista Ad-hoc',
           })
           setCheckingCode(false)
@@ -747,43 +830,6 @@ export default function Home() {
       })
     } catch (e) {
       console.warn('Falha silenciosa de e-mail:', e)
-    }
-  }
-
-  const getAuthorName = (authorId: string) => allProfiles.find((x) => x.id === authorId)?.full_name || 'Autor da Revista'
-  const getAuthorEmail = (authorId: string) => allProfiles.find((x) => x.id === authorId)?.email || ''
-  const getArticleReviews = (articleId: string) => allReviews.filter((r) => r.article_id === articleId)
-  const getReviewerName = (reviewerId: string) => allProfiles.find((x) => x.id === reviewerId)?.full_name || 'Parecerista Designado'
-
-  const getArticleIssue = (art: any) => {
-    if (art?.target_issue) return art.target_issue
-    const d = new Date(art?.created_at || Date.now())
-    return (d.getMonth() + 1) <= 5 ? `Fascículo de Junho de ${d.getFullYear()}` : `Fascículo de Dezembro de ${d.getFullYear()}`
-  }
-
-  const getDeadlineBadge = (deadlineStr: string | null) => {
-    if (!deadlineStr) return null
-    const diffDays = Math.ceil((new Date(deadlineStr + 'T23:59:59').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    const formatted = new Date(deadlineStr + 'T12:00:00').toLocaleDateString('pt-BR')
-
-    if (diffDays > 0) {
-      return (
-        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-          <Clock className="w-3 h-3" /> Restam {diffDays} {diffDays === 1 ? 'dia' : 'dias'} ({formatted})
-        </span>
-      )
-    } else if (diffDays === 0) {
-      return (
-        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
-          <AlertTriangle className="w-3 h-3" /> Vence hoje ({formatted})!
-        </span>
-      )
-    } else {
-      return (
-        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" /> Expirado há {Math.abs(diffDays)} dias ({formatted})
-        </span>
-      )
     }
   }
 
@@ -825,7 +871,7 @@ export default function Home() {
       alert('Função do usuário atualizada com sucesso!')
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro ao alterar função: ${err.message}\n\nNota: Caso mencione violação de restrição (constraint), verifique se o Supabase permite o valor 'council'.`)
+      alert(`Erro ao alterar função: ${err.message}\n\nNota: Caso mencione restrição (constraint), atualize a regra da tabela no Supabase.`)
     }
   }
 
@@ -874,8 +920,8 @@ export default function Home() {
       `"${art.status}"`,
       `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`,
       `"${art.target_issue || getArticleIssue(art)}"`,
-      `"${getAuthorName(art.author_id).replace(/"/g, '""')}"`,
-      `"${getAuthorEmail(art.author_id)}"`,
+      `"${getAuthorName(art.author_id, art).replace(/"/g, '""')}"`,
+      `"${getAuthorEmail(art.author_id, art)}"`,
       `"${art.author_orcid || ''}"`,
       `"${art.author_lattes || ''}"`,
       `"${(art.coauthors || []).map((c: any) => `${c.name} (${c.institution || ''})`).join('; ').replace(/"/g, '""')}"`,
@@ -988,7 +1034,7 @@ export default function Home() {
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: 'Revisão Enviada - Revista Saber Psicanalítico',
         title: 'Revisão de Artigo Recebida',
-        message: `O(A) autor(a) ${getAuthorName(reSubmitArticle.author_id)} enviou a versão corrigida de "${reSubmitArticle.title}".`,
+        message: `O(A) autor(a) ${getAuthorName(reSubmitArticle.author_id, reSubmitArticle)} enviou a versão corrigida de "${reSubmitArticle.title}".`,
         actionText: 'Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app',
       })
@@ -1034,8 +1080,8 @@ export default function Home() {
 
     try {
       const target = allArticles.find((a) => a.id === articleId)
-      const authorEmail = getAuthorEmail(target?.author_id)
-      const authorName = getAuthorName(target?.author_id)
+      const authorEmail = getAuthorEmail(target?.author_id, target)
+      const authorName = getAuthorName(target?.author_id, target)
       const title = target?.title || 'Seu Artigo'
 
       const { error } = await supabase.from('articles').update({ status }).eq('id', articleId)
@@ -1062,7 +1108,7 @@ export default function Home() {
     if (!rejectionModalArticle || !rejectionReasonText.trim()) return alert('Informe a justificativa.')
     setSavingRejection(true)
     try {
-      const emailAut = getAuthorEmail(rejectionModalArticle.author_id)
+      const emailAut = getAuthorEmail(rejectionModalArticle.author_id, rejectionModalArticle)
       const { error } = await supabase.from('articles').update({ status: 'recusado', rejection_reason: rejectionReasonText }).eq('id', rejectionModalArticle.id)
       if (error) throw error
 
@@ -1143,7 +1189,7 @@ export default function Home() {
 
   const filteredArticles = allArticles.filter((art) => {
     const q = editorSearch.toLowerCase()
-    const matchesSearch = art.title.toLowerCase().includes(q) || getAuthorName(art.author_id).toLowerCase().includes(q) || (art.section || '').toLowerCase().includes(q)
+    const matchesSearch = art.title.toLowerCase().includes(q) || getAuthorName(art.author_id, art).toLowerCase().includes(q) || (art.section || '').toLowerCase().includes(q)
     const matchesStatus = editorStatusFilter === 'todos' || art.status === editorStatusFilter
     return matchesSearch && matchesStatus
   })
@@ -1226,21 +1272,78 @@ export default function Home() {
             </button>
             <div className="flex flex-col items-center text-center space-y-1">
               <img src="/logo-asp.png" alt="ASP" className="h-10 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-              <p className="text-[10px] text-slate-400">Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85</p>
+              <p className="text-[10px] text-slate-400 whitespace-nowrap">Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85</p>
             </div>
           </div>
         </div>
 
+        {/* MODAL DE VALIDAÇÃO DIGITAL PROFISSIONAL */}
         {showVerifyModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-              <div className="flex justify-between items-start border-b pb-2"><h3 className="text-base font-bold text-slate-900">Validar Documento</h3><button onClick={() => setShowVerifyModal(false)}><X className="w-4 h-4" /></button></div>
-              <input type="text" value={verifyCodeInput} onChange={(e) => setVerifyCodeInput(e.target.value)} placeholder="Código verificador..." className="w-full px-3 py-2 text-xs border rounded-lg font-mono uppercase" />
-              <button type="button" disabled={checkingCode || !verifyCodeInput.trim()} onClick={handleVerifyCode} className="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Consultar</button>
-              {verifyResult && (
-                <div className={`p-3 rounded-lg text-xs ${verifyResult.valid ? 'bg-emerald-50 text-emerald-950' : 'bg-rose-50 text-rose-900'}`}>
-                  {verifyResult.valid ? <p className="font-bold">✔ Autêntico: {verifyResult.type} ({verifyResult.person})</p> : <p className="font-bold">Código não encontrado.</p>}
+              <div className="flex justify-between items-start border-b pb-2">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Validar Autenticidade de Documento</h3>
+                  <p className="text-[11px] text-slate-500">Consulta oficial de autenticidade documental da Revista Saber Psicanalítico</p>
                 </div>
+                <button onClick={() => setShowVerifyModal(false)}><X className="w-4 h-4" /></button>
+              </div>
+
+              <div className="space-y-2">
+                <input 
+                  type="text" 
+                  value={verifyCodeInput} 
+                  onChange={(e) => setVerifyCodeInput(e.target.value)} 
+                  placeholder="Ex: ASP-ACE-1A2B3C4D" 
+                  className="w-full px-3 py-2 text-xs border rounded-lg font-mono uppercase text-center tracking-wider font-bold" 
+                />
+                <button 
+                  type="button" 
+                  disabled={checkingCode || !verifyCodeInput.trim()} 
+                  onClick={handleVerifyCode} 
+                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition"
+                >
+                  {checkingCode ? 'Consultando Registro Oficial...' : 'Verificar Autenticidade'}
+                </button>
+              </div>
+
+              {/* CARD OFICIAL DE RESULTADO DA VERIFICAÇÃO */}
+              {verifyResult && (
+                verifyResult.valid ? (
+                  <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/70 text-slate-800 space-y-3 text-xs shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-emerald-200 pb-2.5">
+                      <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-bold text-emerald-900 text-sm">Documento Oficial Autêntico</h4>
+                        <p className="text-[10px] text-emerald-700">Verificação eletrônica confirmada nos registros da Revista Saber Psicanalítico</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1.5 text-[11px] leading-relaxed">
+                      <p><strong>Tipo de Documento:</strong> {verifyResult.type}</p>
+                      <p><strong>Titular / Beneficiário(a):</strong> {verifyResult.person}</p>
+                      {verifyResult.title && <p><strong>Trabalho:</strong> “{verifyResult.title}”</p>}
+                      <p><strong>Data de Emissão:</strong> {verifyResult.date}</p>
+                      <p><strong>Emissor:</strong> Revista Saber Psicanalítico (ISSN 3086-8416)</p>
+                      <p><strong>Editor-Chefe Responsável:</strong> Dr. Edson Leandro de Almeida</p>
+                    </div>
+
+                    <div className="pt-2 border-t border-emerald-200/80 flex items-center justify-between text-[10px] text-emerald-800 font-mono">
+                      <span>Código: <strong>{verifyCodeInput.toUpperCase()}</strong></span>
+                      <span className="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded font-semibold">Status: Válido</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/70 text-slate-800 space-y-2 text-xs">
+                    <div className="flex items-center gap-2 text-rose-800 font-bold">
+                      <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                      <span>Documento Não Localizado</span>
+                    </div>
+                    <p className="text-[11px] text-rose-700 leading-relaxed">
+                      O código informado não corresponde a nenhum documento emitido oficialmente pela Revista Saber Psicanalítico. Certifique-se de digitar todos os caracteres corretamente (ex: ASP-ACE-XXXXXXXX).
+                    </p>
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -1431,13 +1534,13 @@ export default function Home() {
             </div>
           )}
 
-          {/* SALA EDITORIAL */}
+          {/* SALA EDITORIAL / CONSELHO EDITORIAL */}
           {canAccessEditorialRoom && (viewMode === 'editor' || viewMode === 'council') && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">{isFullEditor ? 'Sala Editorial' : 'Conselho Editorial'}</span>
-                  <h2 className="text-xl font-bold text-slate-800">{isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento do Fluxo'}</h2>
+                  <h2 className="text-xl font-bold text-slate-800">{isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento do Fluxo Editorial'}</h2>
                 </div>
                 <div className="flex gap-2">
                   {isFullEditor && <button type="button" onClick={handleExportBackup} className="px-3 py-2 bg-emerald-50 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1 border border-emerald-200"><FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Exportar Backup (Excel)</button>}
@@ -1471,7 +1574,10 @@ export default function Home() {
                           <span className="ml-2 text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
                           {isOwnArticle && <span className="ml-2 text-xs font-bold text-purple-700">[Seu Manuscrito - COPE]</span>}
                           <h4 className="text-lg font-bold text-slate-900 mt-1">{art.title}</h4>
-                          <p className="text-xs text-slate-500">Autor: <strong>{getAuthorName(art.author_id)}</strong> ({getAuthorEmail(art.author_id)})</p>
+                          <p className="text-xs text-slate-500">
+                            Autor: <strong>{getAuthorName(art.author_id, art)}</strong>
+                            {getAuthorEmail(art.author_id, art) ? ` (${getAuthorEmail(art.author_id, art)})` : ''}
+                          </p>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
@@ -1584,7 +1690,7 @@ export default function Home() {
             <img src="/logo-asp.png" alt="ASP" className="h-10 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             <div>
               <p className="font-bold text-slate-800">Associação Saber Psicanalítico (ASP)</p>
-              <p className="text-[11px]">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
+              <p className="text-[11px] whitespace-nowrap">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
             </div>
           </div>
           <div className="text-center md:text-right text-[11px]">
@@ -1598,7 +1704,9 @@ export default function Home() {
                 Rua Visconde Inhaúma, 1361
               </a>, sala 408 — Caruaru/PE
             </p>
-            <p>revistasaberpsicanalitico@gmail.com</p>
+            <p>
+              <span>www.asppsicanalise.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span>
+            </p>
           </div>
         </div>
       </footer>
