@@ -284,7 +284,7 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4
+// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (TEXTO AMPLO E FORMAL DO PARECERISTA)
 // ============================================================================
 function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any) {
   if (!data) return null
@@ -418,10 +418,11 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
               </>
             )}
 
+            {/* TEXTO DA DECLARAÇÃO DO PARECERISTA AMPLO E OFICIAL */}
             {isLattes && (
               <>
                 <p>
-                  Declaramos, para fins de comprovação curricular e acadêmica, em especial junto à <strong>Plataforma Lattes do CNPq</strong>, que <strong>{reviewer?.full_name || 'Parecerista'}</strong> atuou formalmente como <strong>Parecerista Ad-hoc</strong> da <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, periódico científico semestral mantido pela Associação Saber Psicanalítico (ASP).
+                  Declaramos, para os devidos fins de direito, que <strong>{reviewer?.full_name || 'Parecerista'}</strong> atuou como <strong>Parecerista Ad-hoc</strong> da <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, periódico científico semestral publicado pela Associação Saber Psicanalítico (ASP).
                 </p>
                 <p>
                   O processo avaliativo ocorreu no âmbito do sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), mediante a emissão de parecer circunstanciado de mérito técnico-científico que apreciou o rigor metodológico, a pertinência metapsicológica e a relevância psicanalítica da produção acadêmica designada.
@@ -844,7 +845,7 @@ export default function Home() {
             valid: true,
             type: 'Declaração de Atuação como Parecerista Ad-hoc',
             title: foundRev.article?.title || 'Avaliação por Pares',
-            person: foundRev.reviewer?.full_name || revPerson?.full_name || 'Parecerista Registrado',
+            person: revPerson?.full_name || 'Parecerista Registrado',
             date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
             role: 'Parecerista Ad-hoc',
           })
@@ -1683,7 +1684,16 @@ export default function Home() {
                             <h3 className="text-lg font-bold text-slate-900 mt-2">{art?.title}</h3>
                           </div>
                           <div className="flex gap-2">
-                            {isCompleted && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'lattes', review: rev, article: art, reviewer: profile })} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg flex items-center gap-1.5"><Award className="w-3.5 h-3.5" /> Certificado Lattes</button>}
+                            {/* BOTÃO ATUALIZADO: DECLARAÇÃO DE PARECERISTA */}
+                            {isCompleted && (
+                              <button 
+                                type="button" 
+                                onClick={() => setActiveOfficialDoc({ type: 'lattes', review: rev, article: art, reviewer: profile })} 
+                                className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm transition"
+                              >
+                                <Award className="w-3.5 h-3.5" /> Declaração de Parecerista
+                              </button>
+                            )}
                             {art && <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito_Parecer')} className="px-3 py-1.5 text-xs font-medium border rounded-lg text-slate-700 flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> Baixar Word</button>}
                           </div>
                         </div>
@@ -1797,7 +1807,16 @@ export default function Home() {
                                 {r.status !== 'concluido' && <span className="ml-2">{getDeadlineBadge(r.deadline)}</span>}
                               </div>
                               <div className="flex gap-2">
-                                {r.status === 'concluido' && isFullEditor && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} className="text-emerald-700 hover:underline">Certificado Lattes</button>}
+                                {/* BOTÃO ATUALIZADO: DECLARAÇÃO DE PARECERISTA NA SALA EDITORIAL */}
+                                {r.status === 'concluido' && isFullEditor && (
+                                  <button 
+                                    type="button" 
+                                    onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} 
+                                    className="text-emerald-700 hover:underline font-semibold"
+                                  >
+                                    Declaração de Parecerista
+                                  </button>
+                                )}
                                 {r.status === 'concluido' && r.review_file_url && (
                                   <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline">Baixar Anexo</button>
                                 )}
@@ -1880,7 +1899,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* MODAIS INTEGRADOS */}
+      {/* MODAL DE SUBMISSÃO */}
       <SubmitModal
         show={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
