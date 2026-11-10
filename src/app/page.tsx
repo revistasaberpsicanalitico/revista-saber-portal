@@ -41,7 +41,6 @@ function SubmitModal({
           </button>
         </div>
 
-        {/* Orientações para autores */}
         <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 space-y-2">
           <p className="font-bold flex items-center gap-1.5 text-amber-900">
             <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
@@ -206,7 +205,7 @@ function SubmitModal({
 }
 
 // ============================================================================
-// MODAL 2: REENVIO DE ARQUIVO CORRIGIDO COM ORIENTAÇÕES
+// MODAL 2: REENVIO DE ARQUIVO CORRIGIDO
 // ============================================================================
 function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }: any) {
   if (!article) return null
@@ -268,7 +267,7 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: DOCUMENTOS OFICIAIS COM ASSINATURA DO DR. EDSON LEANDRO DE ALMEIDA
+// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (REVISTA + ASP, SEM LINHA, CÓDIGO ABAIXO)
 // ============================================================================
 function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArticleIssue }: any) {
   if (!data) return null
@@ -291,84 +290,156 @@ function OfficialDocModal({ data, onClose, getAuthorName, getAuthorInst, getArti
                   `ASP-PAR-${(review?.id || '').slice(0, 8).toUpperCase()}`
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[90] overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-3xl w-full p-8 shadow-2xl border space-y-6 max-h-[92vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b pb-3 no-print">
-          <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Documento Oficial Timbrado • Revista Saber Psicanalítico</span>
-          <div className="flex gap-2">
-            <button type="button" onClick={() => window.print()} className="px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg flex items-center gap-1.5 shadow-sm hover:bg-indigo-700">
-              <Printer className="w-3.5 h-3.5" /> Imprimir / Salvar em PDF
-            </button>
-            <button type="button" onClick={onClose} className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[90] overflow-y-auto flex flex-col items-center p-3 sm:p-6 print:p-0 print:bg-white">
+      {/* Barra superior de ações */}
+      <div className="w-full max-w-[800px] flex justify-between items-center mb-4 no-print bg-slate-800 text-white px-4 py-2.5 rounded-xl shadow-lg">
+        <span className="text-xs font-semibold text-slate-200">Documento Oficial Timbrado (Formato A4)</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow"
+          >
+            <Printer className="w-3.5 h-3.5" /> Imprimir / Salvar em PDF
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
+      </div>
 
-        {/* Timbrado Oficial */}
-        <div className="border border-slate-300 p-8 sm:p-10 rounded-xl space-y-8 text-slate-800 bg-white shadow-sm">
-          <div className="flex justify-between items-center border-b-2 border-slate-800 pb-5">
-            <div className="space-y-1">
-              <h2 className="text-xl font-serif font-bold text-slate-900 tracking-tight">Revista Saber Psicanalítico</h2>
-              <p className="text-xs text-indigo-800 font-bold uppercase tracking-wider">ISSN 3086-8416 • Publicação Científica Semestral</p>
-              <p className="text-[11px] text-slate-600">Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85</p>
-              <p className="text-[11px] text-slate-500">Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-            </div>
-            <img src="/logo-revista.png" alt="ASP" className="h-20 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-          </div>
-
-          <div className="text-center py-2 space-y-1">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-wide">
-              {isAceite && 'Declaração Oficial de Aceite para Publicação'}
-              {isRecusa && 'Comunicação Editorial de Parecer'}
-              {isLattes && 'Declaração de Atuação como Parecerista Ad-hoc'}
-            </h3>
-            <p className="text-xs font-mono text-slate-500">Identificador Digital de Autenticidade: <strong>{docCode}</strong></p>
-          </div>
-
-          <div className="text-sm leading-relaxed text-justify space-y-4 text-slate-800">
-            {isAceite && (
-              <p>
-                Declaramos para os devidos fins que o trabalho científico intitulado <strong>"{article?.title}"</strong>, de autoria de <strong>{authName}</strong> ({authInst}), foi submetido à Revista Saber Psicanalítico (ISSN 3086-8416), submetido ao processo formal de avaliação duplo-cega por pares (<em>double-blind peer review</em>) e <strong>APROVADO PARA PUBLICAÇÃO</strong>, com veiculação prevista no <strong>{issueName}</strong>.
+      {/* Folha A4 Timbrada Institucional */}
+      <div className="bg-white w-full max-w-[800px] min-h-[1050px] p-10 sm:p-14 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-10 print:w-full print:min-h-screen border border-slate-200">
+        
+        {/* CABEÇALHO COM LOGO DA REVISTA E LOGO DA ASP */}
+        <div>
+          <div className="flex justify-between items-center pb-6 border-b-2 border-slate-800 gap-4">
+            <img 
+              src="/logo-revista.png" 
+              alt="Revista Saber Psicanalítico" 
+              className="h-20 sm:h-24 object-contain" 
+              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+            />
+            <div className="text-center flex-1 space-y-1">
+              <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-tight">
+                REVISTA SABER PSICANALÍTICO
+              </h2>
+              <p className="text-xs font-bold text-indigo-900 tracking-wider uppercase">
+                ISSN 3086-8416 • Publicação Científica Semestral
               </p>
+              <p className="text-[11px] text-slate-600 font-medium">
+                Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85
+              </p>
+              <p className="text-[10px] text-slate-500">
+                Caruaru – PE | Brasil • www.revistasaberpsicanalitico.com.br
+              </p>
+            </div>
+            <img 
+              src="/logo-asp.png" 
+              alt="Associação Saber Psicanalítico" 
+              className="h-16 sm:h-20 object-contain" 
+              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+            />
+          </div>
+
+          {/* TÍTULO DO DOCUMENTO */}
+          <div className="text-center my-10">
+            <h3 className="text-base sm:text-lg font-serif font-bold text-slate-900 tracking-wider uppercase">
+              {isAceite && 'DECLARAÇÃO DE ACEITE PARA PUBLICAÇÃO'}
+              {isRecusa && 'COMUNICAÇÃO EDITORIAL / PARECER FINAL'}
+              {isLattes && 'DECLARAÇÃO DE ATUAÇÃO COMO PARECERISTA AD-HOC'}
+            </h3>
+          </div>
+
+          {/* TEXTO CERTIFICADO DO DOCUMENTO */}
+          <div className="text-sm leading-relaxed text-justify space-y-6 text-slate-800 font-serif">
+            {isAceite && (
+              <>
+                <p>
+                  Declaramos, para os devidos fins e efeitos de comprovação acadêmica e curricular, que o artigo científico intitulado <strong>"{article?.title}"</strong>, de autoria de <strong>{authName}</strong>, com filiação institucional vinculada a <strong>{authInst}</strong>{(article?.coauthors && article.coauthors.length > 0) ? ` e coautoria de ${article.coauthors.map((c: any) => c.name).join(', ')}` : ''}, foi submetido, avaliado e <strong>ACEITO PARA PUBLICAÇÃO</strong> na <strong>Revista Saber Psicanalítico (ISSN: 3086-8416)</strong>.
+                </p>
+                <p>
+                  O manuscrito obteve parecer favorável da Comissão Editorial após ter sido criteriosamente submetido ao sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), atendendo plenamente aos critérios de originalidade, consistência teórico-clínica metapsicológica e padrões éticos de publicação científica (COPE).
+                </p>
+                <p>
+                  A publicação oficial do referido trabalho está programada para integrar o <strong>{issueName}</strong> deste periódico.
+                </p>
+              </>
             )}
 
             {isRecusa && (
-              <p>
-                Comunicamos que o manuscrito intitulado <strong>"{article?.title}"</strong>, de autoria de <strong>{authName}</strong>, teve sua avaliação concluída pela Comissão Editorial. Em face dos pareceres técnico-científicos e dos critérios editoriais vigentes, o trabalho não foi aceito para publicação no presente ciclo editorial.
-              </p>
+              <>
+                <p>
+                  Comunicamos, para os devidos fins, que o manuscrito intitulado <strong>"{article?.title}"</strong>, de autoria de <strong>{authName}</strong> ({authInst}), submetido à apreciação da <strong>Revista Saber Psicanalítico (ISSN: 3086-8416)</strong>, concluiu todas as etapas regimentais de triagem e avaliação por pares (<em>peer review</em>).
+                </p>
+                <p>
+                  Após a análise dos pareceres emitidos pelo corpo de avaliadores ad-hoc e as deliberações da Comissão Editorial, informamos que o trabalho <strong>NÃO FOI ACEITO PARA PUBLICAÇÃO</strong> no presente ciclo editorial deste periódico.
+                </p>
+                {article?.rejection_reason && (
+                  <p className="bg-slate-50 p-4 rounded border border-slate-200 text-xs italic font-sans text-slate-700">
+                    <strong>Parecer / Justificativa Editorial:</strong> {article.rejection_reason}
+                  </p>
+                )}
+                <p>
+                  Agradecemos a valiosa contribuição ao submeter sua pesquisa à Revista Saber Psicanalítico e encorajamos a submissão de futuras investigações científicas.
+                </p>
+              </>
             )}
 
             {isLattes && (
-              <p>
-                Declaramos para fins de comprovação curricular junto ao CNPq / Plataforma Lattes que o(a) Prof.(a) <strong>{reviewer?.full_name || 'Parecerista'}</strong> ({reviewer?.institution || 'Associação Saber Psicanalítico'}) atuou como <strong>Parecerista Ad-hoc</strong> da Revista Saber Psicanalítico (ISSN 3086-8416), emitindo parecer avaliativo de mérito técnico-científico sob o sistema de avaliação duplo-cega.
-              </p>
+              <>
+                <p>
+                  Declaramos, para fins de comprovação curricular e acadêmica, em especial perante a <strong>Plataforma Lattes do CNPq</strong>, que o(a) <strong>Prof.(a) {reviewer?.full_name || 'Parecerista'}</strong>, com filiação institucional vinculada a <strong>{reviewer?.institution || 'Associação Saber Psicanalítico'}</strong>, atuou formalmente como <strong>PARECERISTA AD-HOC</strong> da <strong>Revista Saber Psicanalítico (ISSN: 3086-8416)</strong>, periódico científico semestral mantido pela Associação Saber Psicanalítico (ASP).
+                </p>
+                <p>
+                  O(A) pesquisador(a) emitiu parecer avaliativo de mérito técnico-científico circunstanciado no âmbito do sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), analisando os critérios de rigor metodológico, pertinência conceitual psicanalítica e relevância clínica da produção acadêmica designada.
+                </p>
+                <p>
+                  Por ser a mais pura expressão da verdade e reconhecendo a fundamental colaboração dispensada à preservação da excelência científica desta revista, firmamos a presente declaração.
+                </p>
+              </>
             )}
 
-            <p className="text-right text-xs text-slate-600 pt-4">
-              Caruaru/PE, {docDate}.
+            <p className="text-right text-xs pt-4 font-sans text-slate-700">
+              Caruaru – PE, {docDate}.
+            </p>
+          </div>
+        </div>
+
+        {/* ASSINATURA SEM LINHA E CÓDIGO VERIFICADOR EXCLUSIVAMENTE ABAIXO */}
+        <div className="pt-10">
+          <div className="text-center flex flex-col items-center justify-center my-6">
+            <p className="font-serif italic text-lg sm:text-xl text-slate-800 tracking-wide">
+              Dr. Edson Leandro de Almeida
+            </p>
+            <p className="font-bold text-slate-900 text-xs sm:text-sm mt-1">
+              Dr. Edson Leandro de Almeida
+            </p>
+            <p className="text-xs text-indigo-900 font-semibold">
+              Editor-Chefe • Revista Saber Psicanalítico
+            </p>
+            <p className="text-[11px] text-slate-600">
+              Associação Saber Psicanalítico (ASP)
             </p>
           </div>
 
-          <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center sm:items-end gap-6">
-            <div className="space-y-1.5 text-left">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-slate-100 text-slate-700 text-[11px] font-mono border border-slate-200">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Assinatura Eletrônica Verificada • Hash: {docCode}</span>
-              </div>
-              <p className="text-[10px] text-slate-400">Verificação de autenticidade acessível publicamente na página inicial do portal.</p>
-            </div>
-
-            <div className="text-center min-w-[260px]">
-              <div className="border-b border-slate-400 pb-1 mb-1 font-serif italic text-slate-800 text-base">
-                Edson Leandro de Almeida
-              </div>
-              <p className="font-bold text-slate-900 text-xs sm:text-sm">Dr. Edson Leandro de Almeida</p>
-              <p className="text-[11px] text-indigo-700 font-semibold">Editor-Chefe • Revista Saber Psicanalítico</p>
-              <p className="text-[10px] text-slate-500">Associação Saber Psicanalítico (ASP)</p>
-            </div>
+          <div className="pt-6 border-t border-slate-200 text-center space-y-1.5 text-[10px] text-slate-500 font-sans">
+            <p className="font-mono text-slate-800 font-bold tracking-wider">
+              Código de Autenticação Digital: {docCode}
+            </p>
+            <p className="text-slate-400">
+              A autenticidade deste documento timbrado pode ser validada eletronicamente no portal oficial (https://revista-saber-portal.vercel.app) utilizando o código verificador acima.
+            </p>
+            <p className="text-slate-400">
+              Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85 • Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE
+            </p>
           </div>
         </div>
+
       </div>
     </div>
   )
