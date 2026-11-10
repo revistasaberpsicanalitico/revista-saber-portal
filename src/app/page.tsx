@@ -1337,7 +1337,6 @@ export default function Home() {
               }
             } catch (err: any) {
               let msg = err.message || 'Erro ao processar a autenticação.'
-              // Tradução amigável dos erros do Supabase em português
               if (msg.includes('Invalid login credentials')) {
                 msg = 'E-mail ou senha incorretos. Por favor, confira os dados digitados e tente novamente.'
               } else if (msg.includes('Email not confirmed')) {
@@ -1557,7 +1556,6 @@ export default function Home() {
               ) : (
                 <div className="grid gap-4">
                   {myAuthorArticles.map((art) => {
-                    // O autor só visualiza pareceres liberados se a editoria solicitou correções, aceitou ou recusou
                     const isReleasedToAuthor = ['correcoes_pendentes', 'aceito', 'recusado'].includes(art.status)
                     const revs = isReleasedToAuthor ? getArticleReviews(art.id).filter((r) => r.status === 'concluido') : []
                     const canResubmit = ['correcoes_pendentes', 'ajustes_iniciais', 'revisao_submetida'].includes(art.status)
@@ -1593,14 +1591,28 @@ export default function Home() {
                           <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-900"><strong>Considerações do Editor:</strong> {art.rejection_reason}</div>
                         )}
 
-                        {/* PARECERES LIBERADOS SOMENTE APÓS AVALIAÇÃO DA EDITORIA */}
+                        {/* PARECERES LIBERADOS E ANEXO DO PARECERISTA PARA O AUTOR */}
                         {revs.length > 0 && (
-                          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-xs">
+                          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3 text-xs">
                             <h5 className="font-bold text-slate-700">Pareceres dos Avaliadores Liberados pela Editoria:</h5>
                             {revs.map((rev, idx) => (
-                              <div key={rev.id} className="bg-white p-3 rounded border border-slate-200 space-y-1">
+                              <div key={rev.id} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
                                 <span className="font-bold text-indigo-700">Parecer {idx + 1} ({rev.recommendation?.toUpperCase()}):</span>
-                                <p className="whitespace-pre-line text-slate-600">{rev.comments_for_author}</p>
+                                <p className="whitespace-pre-line text-slate-600 leading-relaxed">{rev.comments_for_author}</p>
+                                
+                                {/* BOTÃO PARA O AUTOR BAIXAR O ARQUIVO ANOTADO PELO PARECERISTA */}
+                                {rev.review_file_url && (
+                                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                                    <span className="text-[11px] text-slate-500 font-medium">O parecerista incluiu um arquivo com apontamentos:</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDownloadFile(rev.review_file_url, art.title, `Manuscrito_Anotado_Parecerista_${idx + 1}`)}
+                                      className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition"
+                                    >
+                                      <Download className="w-3.5 h-3.5" /> Baixar Manuscrito com Apontamentos do Parecerista {idx + 1}
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -1752,6 +1764,9 @@ export default function Home() {
                               </div>
                               <div className="flex gap-2">
                                 {r.status === 'concluido' && isFullEditor && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} className="text-emerald-700 hover:underline">Certificado Lattes</button>}
+                                {r.status === 'concluido' && r.review_file_url && (
+                                  <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline">Baixar Anexo</button>
+                                )}
                                 {r.status === 'concluido' && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
                               </div>
                             </div>
@@ -1981,7 +1996,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL COMPLETO DE PARECER TÉCNICO-CIENTÍFICO */}
+      {/* MODAL COMPLETO DE PARECER TÉCNICO-CIENTÍFICO COM ORIENTAÇÃO DE ANEXO */}
       {reviewModalData && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border space-y-5 max-h-[92vh] overflow-y-auto">
@@ -2045,9 +2060,29 @@ export default function Home() {
               <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Anexar documento com apontamentos/marcações (.docx ou .doc - opcional):</label>
-              <input type="file" accept=".docx,.doc" onChange={(e) => setReviewFile(e.target.files?.[0] || null)} className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:bg-indigo-50 file:text-indigo-700" />
+            {/* ANEXO DE MANUSCRITO COM APONTAMENTOS E ORIENTAÇÃO DETALHADA PARA O PARECERISTA */}
+            <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+              <label className="block text-xs font-bold text-slate-800">
+                Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):
+              </label>
+              <input 
+                type="file" 
+                accept=".docx,.doc" 
+                onChange={(e) => setReviewFile(e.target.files?.[0] || null)} 
+                className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-1 bg-white" 
+              />
+              
+              <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-3 text-[11px] text-amber-950 space-y-1.5 leading-relaxed">
+                <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  Orientações para Manutenção do Anonimato e Uso das Ferramentas do Word:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-amber-900/90 pl-1">
+                  <li><strong>Avaliação Duplo-Cega:</strong> Este arquivo poderá ser disponibilizado ao autor após a análise da editoria. Não se identifique no texto, cabeçalhos ou comentários.</li>
+                  <li><strong>Como inserir anotações no Word:</strong> Utilize a aba <em>Revisão &gt; Novo Comentário</em> para observações pontuais e <em>Revisão &gt; Controlar Alterações</em> para sugerir correções diretamente no texto.</li>
+                  <li><strong>Como anonimizar seu arquivo antes de salvar:</strong> No Microsoft Word, acesse <em>Arquivo &gt; Informações &gt; Inspecionar Documento &gt; Inspecionar &gt; Remover Tudo</em> em "Propriedades do Documento e Informações Pessoais". Alternativamente, em <em>Arquivo &gt; Opções &gt; Geral</em>, altere o "Nome do Usuário" para <strong>"Parecerista"</strong> ou <strong>"Avaliador"</strong>.</li>
+                </ul>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-3 border-t">
