@@ -741,9 +741,11 @@ export default function Home() {
     setVerifyResult(null)
 
     try {
-      const cleanCode = code.replace(/^ASP-(ACE|REC|PAR)-/, '').replace(/[^A-Z0-9]/g, '')
+      const parts = code.split('-')
+      const prefix = (parts.length >= 3 ? parts[2] : code.replace(/^ASP-(ACE|REC|PAR)-/i, '')).trim().toUpperCase()
+      const cleanCode = prefix.replace(/[^A-Z0-9]/g, '')
 
-      // 1. Tenta RPC verify_document caso exista no banco
+      // 1. Tenta RPC verify_document no banco de dados (abrangendo ACE, REC e PAR)
       const { data: rpcData, error: rpcError } = await supabase.rpc('verify_document', { code })
       if (!rpcError && rpcData && rpcData.valid) {
         setVerifyResult(rpcData)
@@ -753,10 +755,21 @@ export default function Home() {
 
       // 2. Verificação de Carta de Aceite (ASP-ACE-...)
       if (code.includes('ASP-ACE')) {
-        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (a.id || '').toUpperCase().startsWith(cleanCode))
+        let found = allArticles.find((a) => {
+          const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+          const idRaw = (a.id || '').toUpperCase()
+          return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
+        })
+
         if (!found) {
           const { data: arts } = await supabase.from('articles').select('*, author:author_id(full_name)')
-          if (arts) found = arts.find((a: any) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (a.id || '').toUpperCase().startsWith(cleanCode))
+          if (arts) {
+            found = arts.find((a: any) => {
+              const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+              const idRaw = (a.id || '').toUpperCase()
+              return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
+            })
+          }
         }
 
         if (found) {
@@ -775,10 +788,21 @@ export default function Home() {
 
       // 3. Verificação de Carta de Não Aceite (ASP-REC-...)
       if (code.includes('ASP-REC')) {
-        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (a.id || '').toUpperCase().startsWith(cleanCode))
+        let found = allArticles.find((a) => {
+          const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+          const idRaw = (a.id || '').toUpperCase()
+          return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
+        })
+
         if (!found) {
           const { data: arts } = await supabase.from('articles').select('*, author:author_id(full_name)')
-          if (arts) found = arts.find((a: any) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (a.id || '').toUpperCase().startsWith(cleanCode))
+          if (arts) {
+            found = arts.find((a: any) => {
+              const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+              const idRaw = (a.id || '').toUpperCase()
+              return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
+            })
+          }
         }
 
         if (found) {
@@ -797,10 +821,21 @@ export default function Home() {
 
       // 4. Verificação de Certificado de Parecerista (ASP-PAR-...)
       if (code.includes('ASP-PAR')) {
-        let foundRev = allReviews.find((r) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (r.id || '').toUpperCase().startsWith(cleanCode))
+        let foundRev = allReviews.find((r) => {
+          const idClean = (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+          const idRaw = (r.id || '').toUpperCase()
+          return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
+        })
+
         if (!foundRev) {
           const { data: revs } = await supabase.from('reviews').select('*, reviewer:reviewer_id(full_name), article:article_id(title)')
-          if (revs) foundRev = revs.find((r: any) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode) || (r.id || '').toUpperCase().startsWith(cleanCode))
+          if (revs) {
+            foundRev = revs.find((r: any) => {
+              const idClean = (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+              const idRaw = (r.id || '').toUpperCase()
+              return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
+            })
+          }
         }
 
         if (foundRev) {
@@ -1149,7 +1184,7 @@ export default function Home() {
       const authorName = getAuthorName(requestChangesModalArticle.author_id, requestChangesModalArticle)
       const { error } = await supabase.from('articles').update({
         status: 'correcoes_pendentes',
-        rejection_reason: changesReasonText // Armazena a orientação do editor
+        rejection_reason: changesReasonText
       }).eq('id', requestChangesModalArticle.id)
       if (error) throw error
 
@@ -1235,7 +1270,7 @@ export default function Home() {
     }
   }
 
-  // PARECERISTA EMITE PARECER (NOTIFICA APENAS A EDITORIA - O AUTOR NÃO RECEBE DIRETO)
+  // PARECERISTA EMITE PARECER (NOTIFICA APENAS A EDITORIA)
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -1254,7 +1289,6 @@ export default function Home() {
         status: 'concluido',
       }).eq('id', reviewModalData.id)
 
-      // Notifica EXCLUSIVAMENTE os editores para que analisem o parecer antes de liberar ao autor
       sendEmailNotification({
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: 'Parecer Concluído por Avaliador - Revista Saber Psicanalítico',
@@ -1846,7 +1880,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* MODAL DE SUBMISSÃO */}
+      {/* MODAIS INTEGRADOS */}
       <SubmitModal
         show={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
