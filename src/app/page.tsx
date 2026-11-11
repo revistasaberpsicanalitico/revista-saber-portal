@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { 
   User, Lock, Mail, Building, Phone, ArrowRight, Upload, FileText, 
   LogOut, ShieldCheck, Users, UserCheck, Download, MessageSquare, 
   Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2, ShieldAlert,
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, 
-  Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter, ExternalLink
+  Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter, ExternalLink,
+  Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, Code
 } from 'lucide-react'
 
 // Helper para tradução das funções dos usuários
@@ -300,7 +301,6 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
   const authName = article ? getAuthorName(article.author_id, article) : ''
   const issueName = article ? getArticleIssue(article) : ''
   
-  // Datas da Linha do Tempo
   const submitDateStr = new Date(article?.created_at || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
   const decisionDateStr = new Date(article?.updated_at || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
   const docDate = new Date(article?.updated_at || review?.updated_at || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -311,7 +311,6 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[90] overflow-y-auto flex flex-col items-center p-3 sm:p-6 print:p-0 print:bg-white">
-      {/* Barra superior de ações */}
       <div className="w-full max-w-[800px] flex justify-between items-center mb-4 no-print bg-slate-800 text-white px-4 py-2.5 rounded-xl shadow-lg">
         <span className="text-xs font-semibold text-slate-200">Documento Oficial Timbrado (Formato A4)</span>
         <div className="flex items-center gap-2">
@@ -332,10 +331,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
         </div>
       </div>
 
-      {/* Folha A4 Timbrada Institucional */}
       <div className="bg-white w-full max-w-[800px] min-h-[1080px] p-12 sm:p-16 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-12 print:w-full print:min-h-screen border border-slate-200">
-        
-        {/* CABEÇALHO */}
         <div>
           <div className="flex items-center justify-between pb-6 border-b border-slate-200 gap-6">
             <img 
@@ -360,7 +356,6 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </div>
           </div>
 
-          {/* TÍTULO DO DOCUMENTO */}
           <div className="text-center my-8">
             <h3 className="text-base sm:text-lg font-serif font-bold text-slate-900 tracking-wider uppercase">
               {isAceite && 'DECLARAÇÃO DE ACEITE PARA PUBLICAÇÃO'}
@@ -369,7 +364,6 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </h3>
           </div>
 
-          {/* TEXTO CERTIFICADO */}
           <div className="text-[13px] sm:text-[14px] leading-relaxed text-justify space-y-4 text-slate-800 font-serif">
             {isAceite && (
               <>
@@ -441,7 +435,6 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </p>
           </div>
 
-          {/* ASSINATURA ELEGANTE E VALIDAÇÃO DIGITAL */}
           <div className="mt-8 text-center flex flex-col items-center justify-center">
             <p className="font-serif font-bold text-slate-900 text-sm sm:text-base">
               Dr. Edson Leandro de Almeida
@@ -468,7 +461,6 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
           </div>
         </div>
 
-        {/* RODAPÉ COMPLETO DA ASP */}
         <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-sans">
           <div className="flex items-center gap-3">
             <img 
@@ -547,15 +539,18 @@ export default function Home() {
   const [editUserRole, setEditUserRole] = useState('')
   const [savingUserEdit, setSavingUserEdit] = useState(false)
 
-  // Central de Mailing / Comunicados
+  // Central de Mailing / Comunicados com Formatação Rica e Preview
   const [mailingTarget, setMailingTarget] = useState<'all' | 'author' | 'reviewer' | 'council'>('all')
   const [mailingSubject, setMailingSubject] = useState('')
   const [mailingTitle, setMailingTitle] = useState('')
   const [mailingBody, setMailingBody] = useState('')
   const [mailingActionText, setMailingActionText] = useState('Acessar a Revista')
   const [mailingActionUrl, setMailingActionUrl] = useState('https://www.asppsicanalise.com.br/revista')
+  const [mailingMode, setMailingMode] = useState<'editor' | 'preview'>('editor')
+  const [uploadingMailingImg, setUploadingMailingImg] = useState(false)
   const [sendingMailing, setSendingMailing] = useState(false)
   const [copiedMailingEmails, setCopiedMailingEmails] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Verificador Público
   const [showVerifyModal, setShowVerifyModal] = useState(false)
@@ -909,7 +904,6 @@ export default function Home() {
   }
   const handleRemoveCoauthor = (index: number) => setCoauthors(coauthors.filter((_, i) => i !== index))
 
-  // Salvar perfil do próprio usuário
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!session) return
@@ -933,7 +927,6 @@ export default function Home() {
     }
   }
 
-  // Editor abrindo o modal de edição de outro usuário
   const handleOpenEditUserModal = (targetUser: any) => {
     setEditingUserModal(targetUser)
     setEditUserName(targetUser.full_name || '')
@@ -944,7 +937,6 @@ export default function Home() {
     setEditUserRole(targetUser.role || 'author')
   }
 
-  // Editor salvando dados cadastrais de outro usuário
   const handleSaveUserByEditor = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingUserModal) return
@@ -1033,7 +1025,6 @@ export default function Home() {
     document.body.removeChild(link)
   }
 
-  // SUBMISSÃO COM E-MAIL DETALHADO AO AUTOR E EDITORES
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
@@ -1279,7 +1270,6 @@ export default function Home() {
     }
   }
 
-  // Atribuição de parecerista (Editores podem escolher Pareceristas, Conselho ou outros Editores)
   const handleAssignReviewer = async () => {
     if (!selectedReviewerId || !assignModalArticle || !assignDeadline) return alert('Selecione o parecerista e o prazo.')
     try {
@@ -1311,14 +1301,12 @@ export default function Home() {
     }
   }
 
-  // REMOVER / DESATRIBUIR PARECERISTA PELO EDITOR (Nova funcionalidade)
   const handleRemoveReviewerAssignment = async (reviewId: string, articleId: string) => {
     if (!window.confirm('Deseja realmente desatribuir este parecerista deste artigo?')) return
     try {
       const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
       if (error) throw error
 
-      // Se não restarem outros pareceristas para este artigo, volta o status para 'submetido'
       const remainingReviews = allReviews.filter((r) => r.article_id === articleId && r.id !== reviewId)
       if (remainingReviews.length === 0) {
         await supabase.from('articles').update({ status: 'submetido' }).eq('id', articleId)
@@ -1331,7 +1319,6 @@ export default function Home() {
     }
   }
 
-  // PARECERISTA EMITE PARECER
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -1382,17 +1369,76 @@ export default function Home() {
     setTimeout(() => setCopiedMailingEmails(false), 3000)
   }
 
+  // Inserção de formatação rica no texto do comunicado
+  const handleInsertTag = (openTag: string, closeTag: string, defaultText = '') => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const text = mailingBody
+    const selected = text.substring(start, end) || defaultText
+    const replacement = `${openTag}${selected}${closeTag}`
+    const newText = text.substring(0, start) + replacement + text.substring(end)
+    setMailingBody(newText)
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + openTag.length, start + openTag.length + selected.length)
+    }, 0)
+  }
+
+  // Inserir link com prompt
+  const handleInsertLinkPrompt = () => {
+    const url = window.prompt('Digite a URL do link (ex: https://...):', 'https://')
+    if (url && url !== 'https://') {
+      handleInsertTag(`<a href="${url.trim()}" style="color: #4f46e5; text-decoration: underline;" target="_blank">`, '</a>', 'clique aqui')
+    }
+  }
+
+  // Inserir imagem por URL
+  const handleInsertImagePrompt = () => {
+    const url = window.prompt('Digite o link público da imagem (URL da imagem):', 'https://')
+    if (url && url !== 'https://') {
+      const imgHtml = `\n<div style="text-align: center; margin: 16px 0;"><img src="${url.trim()}" alt="Imagem" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: inline-block;" /></div>\n`
+      setMailingBody((prev) => prev + imgHtml)
+    }
+  }
+
+  // Fazer upload de imagem do computador para o e-mail
+  const handleUploadMailingImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingMailingImg(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const filePath = `comunicados/img_${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage.from('manuscritos').upload(filePath, file)
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage.from('manuscritos').getPublicUrl(filePath)
+      if (data?.publicUrl) {
+        const imgHtml = `\n<div style="text-align: center; margin: 16px 0;"><img src="${data.publicUrl}" alt="Imagem do Comunicado" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: inline-block;" /></div>\n`
+        setMailingBody((prev) => prev + imgHtml)
+        alert('Imagem anexada com sucesso ao comunicado!')
+      }
+    } catch (err: any) {
+      alert(`Erro ao anexar imagem: ${err.message}`)
+    } finally {
+      setUploadingMailingImg(false)
+      e.target.value = ''
+    }
+  }
+
   const handleLoadMailingTemplate = (templateType: 'issue' | 'cfp' | 'clear') => {
     if (templateType === 'issue') {
       setMailingSubject('Publicação da Nova Edição - Revista Saber Psicanalítico')
       setMailingTitle('Nova Edição Disponível para Leitura e Download')
-      setMailingBody(`Prezados(as) pesquisadores(as) e leitores(as),\n\nTemos a satisfação de anunciar a publicação da nova edição da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nConvidamos toda a comunidade científica a conferir os artigos, ensaios e relatos clínicos que compõem este número, disponíveis de forma gratuita e aberta.\n\nAcesse e baixe os trabalhos pelo nosso site oficial.\n\nDesejamos uma excelente leitura!`)
+      setMailingBody(`Prezados(as) pesquisadores(as) e leitores(as),\n\nTemos a satisfação de anunciar a publicação da <strong>nova edição da Revista Saber Psicanalítico</strong> (ISSN 3086-8416).\n\nConvidamos toda a comunidade científica a conferir os artigos, ensaios e relatos clínicos que compõem este número, disponíveis de forma gratuita e aberta.\n\nAcesse e baixe os trabalhos pelo nosso site oficial.\n\n<em>Desejamos a todos uma excelente leitura!</em>`)
       setMailingActionText('Ler Nova Edição no Site')
       setMailingActionUrl('https://www.asppsicanalise.com.br/revista')
     } else if (templateType === 'cfp') {
       setMailingSubject('Chamada Aberta de Artigos (Call for Papers) - Revista Saber Psicanalítico')
       setMailingTitle('Submissões Abertas para o Próximo Fascículo')
-      setMailingBody(`Prezados(as) autores(as) e pesquisadores(as),\n\nA Revista Saber Psicanalítico (ISSN 3086-8416) está com a chamada aberta para submissão de manuscritos inéditos nas seguintes categorias:\n• Artigos Científicos\n• Ensaios Teóricos\n• Relatos de Experiência Clínica\n• Resenhas\n\nNosso periódico adota o sistema de avaliação duplo-cega por pares (blind peer review) e é 100% gratuito (sem cobrança de taxas de submissão ou publicação - APC Free).\n\nSubmeta seu trabalho diretamente pelo nosso portal editorial:`)
+      setMailingBody(`Prezados(as) autores(as) e pesquisadores(as),\n\nA <strong>Revista Saber Psicanalítico</strong> (ISSN 3086-8416) está com a chamada aberta para submissão de manuscritos inéditos nas seguintes categorias:\n\n• <strong>Artigos Científicos</strong>\n• <strong>Ensaios Teóricos</strong>\n• <strong>Relatos de Experiência Clínica</strong>\n• <strong>Resenhas</strong>\n\nNosso periódico adota o sistema de avaliação duplo-cega por pares (<em>blind peer review</em>) e é <strong>100% gratuito</strong> (sem cobrança de taxas de submissão ou publicação - APC Free).\n\nSubmeta seu trabalho diretamente pelo nosso portal editorial:`)
       setMailingActionText('Submeter Artigo no Portal')
       setMailingActionUrl('https://revista-saber-portal.vercel.app')
     } else {
@@ -1435,7 +1481,6 @@ export default function Home() {
     }
   }
 
-  // Lista de Pareceristas com Conclusão para o Expediente
   const completedReviewers = allProfiles.filter((p) => Array.from(new Set(allReviews.filter((r) => r.status === 'concluido').map((r) => r.reviewer_id))).includes(p.id))
 
   const handleCopyReviewers = () => {
@@ -1450,7 +1495,6 @@ export default function Home() {
     setTimeout(() => setCopiedThanks(false), 2500)
   }
 
-  // Filtros de Artigos
   const filteredArticles = allArticles.filter((art) => {
     const q = editorSearch.toLowerCase()
     const matchesSearch = art.title.toLowerCase().includes(q) || getAuthorName(art.author_id, art).toLowerCase().includes(q) || (art.section || '').toLowerCase().includes(q)
@@ -1458,7 +1502,6 @@ export default function Home() {
     return matchesSearch && matchesStatus
   })
 
-  // Filtros de Usuários (Aba de Usuários)
   const filteredUsersList = allProfiles.filter((p) => {
     const q = userSearch.toLowerCase()
     const matchesQuery = (p.full_name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q) || (p.institution || '').toLowerCase().includes(q)
@@ -1683,7 +1726,6 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2.5">
-              {/* Navegação de Funções: Editor */}
               {isFullEditor && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('editor')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Sala Editorial</button>
@@ -1692,7 +1734,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Navegação de Funções: Conselho Editorial (Com visão de Parecerista habilitada) */}
               {isCouncil && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('council')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Conselho Editorial</button>
@@ -1930,7 +1971,6 @@ export default function Home() {
                               <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-700">Baixar</button>
                               {hasRevision && <button type="button" onClick={() => handleDownloadFile(art.original_file_url, art.title, 'Versao_Original')} className="px-2.5 py-1.5 text-xs border border-slate-200 bg-slate-50 rounded-lg text-slate-600">Original</button>}
 
-                              {/* Apenas o Editor pode atribuir parecerista e alterar status */}
                               {isFullEditor && !isOwnArticle && (
                                 <>
                                   <button 
@@ -1966,7 +2006,6 @@ export default function Home() {
                             </div>
                           )}
 
-                          {/* PARECERISTAS DESIGNADOS (Com botão de REMOVER para o Editor) */}
                           {!isOwnArticle && revs.length > 0 && (
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-xs">
                               <p className="font-bold text-slate-700">Pareceristas Designados:</p>
@@ -1992,7 +2031,6 @@ export default function Home() {
                                     )}
                                     {r.status === 'concluido' && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
                                     
-                                    {/* BOTÃO EXCLUIR / REMOVER PARECERISTA DESIGNADO */}
                                     {isFullEditor && (
                                       <button 
                                         type="button" 
@@ -2102,12 +2140,12 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING COM LINK CUSTOMIZÁVEL */}
+              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING COM FORMATAÇÃO RICA E PREVIEW */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
                     <h3 className="text-base font-bold text-slate-800">Central de Disparos Editoriais (Mailing)</h3>
-                    <p className="text-xs text-slate-500">Envie chamadas de publicação, comunicados da ASP e avisos de lançamento de novos fascículos com botão e link personalizáveis.</p>
+                    <p className="text-xs text-slate-500">Envie chamadas de publicação, comunicados da ASP e avisos de lançamento com texto formatado, imagens e links personalizáveis.</p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -2116,7 +2154,7 @@ export default function Home() {
                       <select 
                         value={mailingTarget} 
                         onChange={(e: any) => setMailingTarget(e.target.value)} 
-                        className="w-full px-3 py-2 text-xs border rounded-lg bg-white"
+                        className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium"
                       >
                         <option value="all">Todos os Cadastrados ({allProfiles.length})</option>
                         <option value="author">Apenas Autores ({allProfiles.filter(p => p.role === 'author').length})</option>
@@ -2165,43 +2203,126 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* Formulário com Barra de Formatação Rica e Preview */}
                   <form onSubmit={handleSendMailing} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Assunto do E-mail *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={mailingSubject} 
-                        onChange={(e) => setMailingSubject(e.target.value)} 
-                        placeholder="Ex: Nova Edição Disponível - Revista Saber Psicanalítico" 
-                        className="w-full px-3 py-2 text-xs border rounded-lg" 
-                      />
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Assunto do E-mail *</label>
+                        <input 
+                          type="text" 
+                          required 
+                          value={mailingSubject} 
+                          onChange={(e) => setMailingSubject(e.target.value)} 
+                          placeholder="Ex: Nova Edição Disponível - Revista Saber Psicanalítico" 
+                          className="w-full px-3 py-2 text-xs border rounded-lg" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Título de Destaque no Topo do E-mail</label>
+                        <input 
+                          type="text" 
+                          value={mailingTitle} 
+                          onChange={(e) => setMailingTitle(e.target.value)} 
+                          placeholder="Ex: Lançamento do Fascículo de Junho de 2026" 
+                          className="w-full px-3 py-2 text-xs border rounded-lg" 
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Título de Destaque no Corpo do E-mail</label>
-                      <input 
-                        type="text" 
-                        value={mailingTitle} 
-                        onChange={(e) => setMailingTitle(e.target.value)} 
-                        placeholder="Ex: Lançamento do Fascículo de Junho de 2026" 
-                        className="w-full px-3 py-2 text-xs border rounded-lg" 
-                      />
+                    {/* Barra de Ferramentas / Alternância Editor e Pré-visualização */}
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-2">
+                        <div className="flex items-center gap-1">
+                          <button 
+                            type="button" 
+                            onClick={() => setMailingMode('editor')}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${mailingMode === 'editor' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                          >
+                            <Code className="w-3.5 h-3.5" /> Escrever / Editar
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => setMailingMode('preview')}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${mailingMode === 'preview' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Pré-visualizar E-mail
+                          </button>
+                        </div>
+
+                        {mailingMode === 'editor' && (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <button type="button" onClick={() => handleInsertTag('<strong>', '</strong>', 'texto em negrito')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Negrito">
+                              <Bold className="w-3.5 h-3.5" />
+                            </button>
+                            <button type="button" onClick={() => handleInsertTag('<em>', '</em>', 'texto em itálico')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Itálico">
+                              <Italic className="w-3.5 h-3.5" />
+                            </button>
+                            <button type="button" onClick={() => handleInsertTag('<u>', '</u>', 'texto sublinhado')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Sublinhado">
+                              <Underline className="w-3.5 h-3.5" />
+                            </button>
+                            <button type="button" onClick={handleInsertLinkPrompt} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold inline-flex items-center gap-1" title="Inserir Link">
+                              <LinkIcon className="w-3.5 h-3.5" /> Link
+                            </button>
+                            <button type="button" onClick={handleInsertImagePrompt} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold inline-flex items-center gap-1" title="Inserir Imagem por Link">
+                              <ImageIcon className="w-3.5 h-3.5" /> Imagem (URL)
+                            </button>
+                            <label className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-xs font-bold inline-flex items-center gap-1 cursor-pointer" title="Fazer upload de imagem do computador">
+                              <Upload className="w-3.5 h-3.5" /> {uploadingMailingImg ? 'Enviando Imagem...' : 'Anexar Imagem (Arquivo)'}
+                              <input type="file" accept="image/*" disabled={uploadingMailingImg} onChange={handleUploadMailingImage} className="hidden" />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Modo Editor */}
+                      {mailingMode === 'editor' ? (
+                        <div>
+                          <textarea 
+                            ref={textareaRef}
+                            required 
+                            rows={8} 
+                            value={mailingBody} 
+                            onChange={(e) => setMailingBody(e.target.value)} 
+                            placeholder="Escreva a mensagem oficial... Você pode usar os botões acima para aplicar negrito, itálico, links e imagens." 
+                            className="w-full px-3 py-2 text-xs border rounded-lg font-sans leading-relaxed focus:ring-2 focus:ring-indigo-500" 
+                          />
+                          <p className="text-[11px] text-slate-400">Dica: Selecione qualquer palavra e clique nos botões da barra para aplicar negrito, itálico ou links.</p>
+                        </div>
+                      ) : (
+                        /* Modo Pré-visualização Real do E-mail */
+                        <div className="border border-slate-200 rounded-xl bg-slate-50 p-6 space-y-4">
+                          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-xl mx-auto space-y-4">
+                            <div className="flex items-center justify-between border-b pb-4">
+                              <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-12 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                              <span className="text-[11px] font-bold text-indigo-700">ISSN 3086-8416</span>
+                            </div>
+
+                            {mailingTitle && (
+                              <h4 className="text-base font-bold text-slate-900 border-b pb-2">{mailingTitle}</h4>
+                            )}
+
+                            <div 
+                              className="text-xs text-slate-700 leading-relaxed space-y-2 whitespace-pre-line"
+                              dangerouslySetInnerHTML={{ __html: mailingBody || '<em>Sua mensagem aparecerá aqui formatada em tempo real...</em>' }}
+                            />
+
+                            {mailingActionText && (
+                              <div className="pt-3 text-center">
+                                <span className="inline-block px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm">
+                                  {mailingActionText}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="pt-4 border-t text-[10px] text-slate-400 text-center">
+                              Associação Saber Psicanalítico (ASP) • Rua Visconde de Inhaúma, 1361 — Caruaru/PE
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Mensagem do Comunicado *</label>
-                      <textarea 
-                        required 
-                        rows={7} 
-                        value={mailingBody} 
-                        onChange={(e) => setMailingBody(e.target.value)} 
-                        placeholder="Escreva aqui a mensagem oficial..." 
-                        className="w-full px-3 py-2 text-xs border rounded-lg font-sans" 
-                      />
-                    </div>
-
-                    {/* CAMPOS CUSTOMIZÁVEIS DE BOTÃO E LINK NO CORPO DO E-MAIL */}
+                    {/* Botão e Link customizáveis no e-mail */}
                     <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Texto do Botão no E-mail (Opcional):</label>
@@ -2229,7 +2350,7 @@ export default function Home() {
                       <button 
                         type="submit" 
                         disabled={sendingMailing || filteredMailingUsers.length === 0} 
-                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-2 shadow-sm transition"
                       >
                         {sendingMailing ? 'Disparando E-mails...' : <><Send className="w-3.5 h-3.5" /> Disparar para {filteredMailingUsers.length} Destinatários</>}
                       </button>
@@ -2542,7 +2663,6 @@ export default function Home() {
               <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
             </div>
 
-            {/* ANEXO DE MANUSCRITO COM APONTAMENTOS */}
             <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
               <label className="block text-xs font-bold text-slate-800">
                 Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):
@@ -2577,7 +2697,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL AGRADECIMENTO PARECERISTAS (Com Lattes e ORCID na tela e cópia) */}
+      {/* MODAL AGRADECIMENTO PARECERISTAS */}
       {showReviewerThankModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border space-y-4">
