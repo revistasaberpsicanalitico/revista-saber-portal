@@ -11,13 +11,14 @@ import {
   Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, Code
 } from 'lucide-react'
 
-// Helper para tradução das funções dos usuários
+// Helper para tradução e exibição das funções dos usuários
 const formatRole = (role: string) => {
   switch (role) {
     case 'author': return 'Autor'
     case 'reviewer': return 'Parecerista'
     case 'council': return 'Conselho Editorial'
-    case 'editor': return 'Editor-Chefe / Editor'
+    case 'editor_adjunto': return 'Editor-Adjunto'
+    case 'editor': return 'Editor-Chefe'
     default: return role
   }
 }
@@ -435,6 +436,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </p>
           </div>
 
+          {/* ASSINATURA ELEGANTE E VALIDAÇÃO DIGITAL */}
           <div className="mt-8 text-center flex flex-col items-center justify-center">
             <p className="font-serif font-bold text-slate-900 text-sm sm:text-base">
               Dr. Edson Leandro de Almeida
@@ -650,8 +652,9 @@ export default function Home() {
       if (data) {
         setProfile(data)
         if (isFirstLoad) {
+          const isEd = data.role === 'editor' || data.role === 'editor_adjunto'
           setViewMode(
-            data.role === 'editor' ? 'editor' : 
+            isEd ? 'editor' : 
             data.role === 'council' ? 'council' : 
             data.role === 'reviewer' ? 'reviewer' : 'author'
           )
@@ -1268,6 +1271,7 @@ export default function Home() {
     }
   }
 
+  // Atribuição de parecerista (Permite selecionar Pareceristas, Conselho ou outros Editores)
   const handleAssignReviewer = async () => {
     if (!selectedReviewerId || !assignModalArticle || !assignDeadline) return alert('Selecione o parecerista e o prazo.')
     try {
@@ -1389,7 +1393,6 @@ export default function Home() {
     }
   }
 
-  // Inserir imagem por Link direto (URL) - Forma mais leve e recomendada
   const handleInsertImagePrompt = () => {
     const url = window.prompt('Digite ou cole a URL pública da imagem (ex: do seu site):', 'https://')
     if (url && url.trim() && url !== 'https://') {
@@ -1479,7 +1482,10 @@ export default function Home() {
     return matchesQuery && matchesRole
   })
 
-  const isFullEditor = profile?.role === 'editor'
+  // Habilita as permissões da Sala Editorial tanto para o Editor-Chefe quanto para o Editor-Adjunto
+  const isEditorChefe = profile?.role === 'editor'
+  const isEditorAdjunto = profile?.role === 'editor_adjunto'
+  const isFullEditor = isEditorChefe || isEditorAdjunto
   const isCouncil = profile?.role === 'council'
   const canAccessEditorialRoom = isFullEditor || isCouncil
 
@@ -1696,6 +1702,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2.5">
+              {/* Navegação de Funções: Editor-Chefe e Editor-Adjunto */}
               {isFullEditor && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('editor')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Sala Editorial</button>
@@ -1704,6 +1711,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* Navegação de Funções: Conselho Editorial (Somente Acompanhamento regimental) */}
               {isCouncil && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('council')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Conselho Editorial</button>
@@ -1719,7 +1727,9 @@ export default function Home() {
                 </div>
               )}
 
-              <span className="text-xs text-slate-700 font-medium">Olá, <strong>{profile?.full_name || 'Usuário'}</strong></span>
+              <span className="text-xs text-slate-700 font-medium">
+                Olá, <strong>{profile?.full_name || 'Usuário'}</strong> <span className="text-indigo-600 font-semibold">({formatRole(profile?.role)})</span>
+              </span>
               <button type="button" onClick={handleOpenProfileModal} className="px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 border rounded-lg font-medium flex items-center gap-1.5"><Edit3 className="w-3.5 h-3.5 text-indigo-600" /><span>Meu Perfil</span></button>
               <button type="button" onClick={() => supabase.auth.signOut()} className="px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg font-medium flex items-center gap-1"><LogOut className="w-3.5 h-3.5" />Sair</button>
             </div>
@@ -1859,13 +1869,17 @@ export default function Home() {
             </div>
           )}
 
-          {/* SALA EDITORIAL / CONSELHO EDITORIAL */}
+          {/* SALA EDITORIAL (Editor-Chefe / Editor-Adjunto) E CONSELHO EDITORIAL */}
           {canAccessEditorialRoom && (viewMode === 'editor' || viewMode === 'council') && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                  <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">{isFullEditor ? 'Sala Editorial' : 'Conselho Editorial'}</span>
-                  <h2 className="text-xl font-bold text-slate-800">{isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento do Fluxo Editorial'}</h2>
+                  <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    {isFullEditor ? `Sala Editorial (${formatRole(profile?.role)})` : 'Conselho Editorial (Acompanhamento)'}
+                  </span>
+                  <h2 className="text-xl font-bold text-slate-800">
+                    {isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento do Fluxo Editorial'}
+                  </h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {isFullEditor && <button type="button" onClick={handleExportBackup} className="px-3 py-2 bg-emerald-50 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1 border border-emerald-200"><FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Exportar Backup (Excel)</button>}
@@ -1874,7 +1888,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Sub-Abas apenas para o Editor */}
+              {/* Sub-Abas apenas para o Editor-Chefe e Editor-Adjunto */}
               {isFullEditor && (
                 <div className="flex border-b border-slate-200 bg-white px-4 rounded-xl shadow-sm">
                   <button 
@@ -1941,6 +1955,7 @@ export default function Home() {
                               <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-700">Baixar</button>
                               {hasRevision && <button type="button" onClick={() => handleDownloadFile(art.original_file_url, art.title, 'Versao_Original')} className="px-2.5 py-1.5 text-xs border border-slate-200 bg-slate-50 rounded-lg text-slate-600">Original</button>}
 
+                              {/* Ações operacionais restritas ao Editor-Chefe e Editor-Adjunto */}
                               {isFullEditor && !isOwnArticle && (
                                 <>
                                   <button 
@@ -1976,6 +1991,7 @@ export default function Home() {
                             </div>
                           )}
 
+                          {/* PARECERISTAS DESIGNADOS (Com botão de REMOVER para Editores) */}
                           {!isOwnArticle && revs.length > 0 && (
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-xs">
                               <p className="font-bold text-slate-700">Pareceristas Designados:</p>
@@ -2001,6 +2017,7 @@ export default function Home() {
                                     )}
                                     {r.status === 'concluido' && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
                                     
+                                    {/* BOTÃO EXCLUIR / REMOVER PARECERISTA DESIGNADO */}
                                     {isFullEditor && (
                                       <button 
                                         type="button" 
@@ -2035,7 +2052,8 @@ export default function Home() {
                       <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">{allProfiles.filter(p => p.role === 'author').length} Autores</span>
                       <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">{allProfiles.filter(p => p.role === 'reviewer').length} Pareceristas</span>
                       <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">{allProfiles.filter(p => p.role === 'council').length} Conselho</span>
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800">{allProfiles.filter(p => p.role === 'editor').length} Editores</span>
+                      <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">{allProfiles.filter(p => p.role === 'editor_adjunto').length} Ed.-Adjunto</span>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800">{allProfiles.filter(p => p.role === 'editor').length} Ed.-Chefe</span>
                     </div>
                   </div>
 
@@ -2051,7 +2069,7 @@ export default function Home() {
                       />
                     </div>
                     <div className="flex gap-1 overflow-x-auto text-xs">
-                      {['todos', 'author', 'reviewer', 'council', 'editor'].map((r) => (
+                      {['todos', 'author', 'reviewer', 'council', 'editor_adjunto', 'editor'].map((r) => (
                         <button 
                           key={r} 
                           type="button" 
@@ -2071,7 +2089,7 @@ export default function Home() {
                           <th className="p-3">Nome Completo</th>
                           <th className="p-3">E-mail</th>
                           <th className="p-3">Filiação</th>
-                          <th className="p-3">Função</th>
+                          <th className="p-3">Função no Sistema</th>
                           <th className="p-3 text-right">Ações</th>
                         </tr>
                       </thead>
@@ -2110,7 +2128,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING COM FORMATAÇÃO RICA E PREVIEW */}
+              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING COM FORMATAÇÃO RICA */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
@@ -2441,7 +2459,8 @@ export default function Home() {
                   <option value="author">Autor</option>
                   <option value="reviewer">Parecerista</option>
                   <option value="council">Conselho Editorial</option>
-                  <option value="editor">Editor</option>
+                  <option value="editor_adjunto">Editor-Adjunto</option>
+                  <option value="editor">Editor-Chefe</option>
                 </select>
               </div>
 
@@ -2540,7 +2559,7 @@ export default function Home() {
             <p className="text-xs text-slate-500">Selecione o parecerista cadastrado e determine o prazo para devolução do parecer.</p>
             <select value={selectedReviewerId} onChange={(e) => setSelectedReviewerId(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white">
               <option value="">-- Escolha um parecerista --</option>
-              {allProfiles.filter((p) => (p.role === 'reviewer' || p.role === 'editor' || p.role === 'council') && p.id !== assignModalArticle.author_id).map((rev) => (
+              {allProfiles.filter((p) => (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') && p.id !== assignModalArticle.author_id).map((rev) => (
                 <option key={rev.id} value={rev.id}>{rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'}</option>
               ))}
             </select>
