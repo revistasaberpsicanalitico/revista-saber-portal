@@ -7,7 +7,7 @@ import {
   LogOut, ShieldCheck, Users, UserCheck, Download, MessageSquare, 
   Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2, ShieldAlert,
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, 
-  Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter
+  Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter, ExternalLink
 } from 'lucide-react'
 
 // Helper para tradução das funções dos usuários
@@ -284,7 +284,7 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (COM LINHA DO TEMPO: SUBMISSÃO E APROVAÇÃO)
+// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (COM LINHA DO TEMPO)
 // ============================================================================
 function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any) {
   if (!data) return null
@@ -335,7 +335,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
       {/* Folha A4 Timbrada Institucional */}
       <div className="bg-white w-full max-w-[800px] min-h-[1080px] p-12 sm:p-16 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-12 print:w-full print:min-h-screen border border-slate-200">
         
-        {/* CABEÇALHO: LOGO DA REVISTA AUMENTADA COM DESTAQUE */}
+        {/* CABEÇALHO */}
         <div>
           <div className="flex items-center justify-between pb-6 border-b border-slate-200 gap-6">
             <img 
@@ -369,7 +369,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </h3>
           </div>
 
-          {/* TEXTO CERTIFICADO COM LINHA DO TEMPO (SUBMISSÃO E APROVAÇÃO/CONCLUSÃO) */}
+          {/* TEXTO CERTIFICADO */}
           <div className="text-[13px] sm:text-[14px] leading-relaxed text-justify space-y-4 text-slate-800 font-serif">
             {isAceite && (
               <>
@@ -552,6 +552,8 @@ export default function Home() {
   const [mailingSubject, setMailingSubject] = useState('')
   const [mailingTitle, setMailingTitle] = useState('')
   const [mailingBody, setMailingBody] = useState('')
+  const [mailingActionText, setMailingActionText] = useState('Acessar a Revista')
+  const [mailingActionUrl, setMailingActionUrl] = useState('https://www.asppsicanalise.com.br/revista')
   const [sendingMailing, setSendingMailing] = useState(false)
   const [copiedMailingEmails, setCopiedMailingEmails] = useState(false)
 
@@ -766,7 +768,6 @@ export default function Home() {
       const prefix = (parts.length >= 3 ? parts[2] : code.replace(/^ASP-(ACE|REC|PAR)-/i, '')).trim().toUpperCase()
       const cleanCode = prefix.replace(/[^A-Z0-9]/g, '')
 
-      // 1. Tenta RPC verify_document no banco de dados
       const { data: rpcData, error: rpcError } = await supabase.rpc('verify_document', { code })
       if (!rpcError && rpcData && rpcData.valid) {
         setVerifyResult(rpcData)
@@ -774,7 +775,6 @@ export default function Home() {
         return
       }
 
-      // 2. Verificação de Carta de Aceite (ASP-ACE-...)
       if (code.includes('ASP-ACE')) {
         let found = allArticles.find((a) => {
           const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -807,7 +807,6 @@ export default function Home() {
         }
       }
 
-      // 3. Verificação de Carta de Não Aceite (ASP-REC-...)
       if (code.includes('ASP-REC')) {
         let found = allArticles.find((a) => {
           const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -840,7 +839,6 @@ export default function Home() {
         }
       }
 
-      // 4. Verificação de Certificado de Parecerista (ASP-PAR-...)
       if (code.includes('ASP-PAR')) {
         let foundRev = allReviews.find((r) => {
           const idClean = (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -865,7 +863,7 @@ export default function Home() {
             valid: true,
             type: 'Declaração de Atuação como Parecerista Ad-hoc',
             title: foundRev.article?.title || 'Avaliação por Pares',
-            person: foundRev.reviewer?.full_name || revPerson?.full_name || 'Parecerista Registrado',
+            person: revPerson?.full_name || 'Parecerista Registrado',
             date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
             role: 'Parecerista Ad-hoc',
           })
@@ -1313,6 +1311,27 @@ export default function Home() {
     }
   }
 
+  // REMOVER / DESATRIBUIR PARECERISTA PELO EDITOR (Nova funcionalidade)
+  const handleRemoveReviewerAssignment = async (reviewId: string, articleId: string) => {
+    if (!window.confirm('Deseja realmente desatribuir este parecerista deste artigo?')) return
+    try {
+      const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+      if (error) throw error
+
+      // Se não restarem outros pareceristas para este artigo, volta o status para 'submetido'
+      const remainingReviews = allReviews.filter((r) => r.article_id === articleId && r.id !== reviewId)
+      if (remainingReviews.length === 0) {
+        await supabase.from('articles').update({ status: 'submetido' }).eq('id', articleId)
+      }
+
+      alert('Parecerista desatribuído com sucesso!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao desatribuir parecerista: ${err.message}`)
+    }
+  }
+
+  // PARECERISTA EMITE PARECER
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -1367,15 +1386,21 @@ export default function Home() {
     if (templateType === 'issue') {
       setMailingSubject('Publicação da Nova Edição - Revista Saber Psicanalítico')
       setMailingTitle('Nova Edição Disponível para Leitura e Download')
-      setMailingBody(`Prezados(as) pesquisadores(as) e leitores(as),\n\nTemos a satisfação de anunciar a publicação da nova edição da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nConvidamos toda a comunidade científica a conferir os artigos, ensaios e relatos clínicos que compõem este número, disponíveis de forma gratuita e aberta.\n\nAcesse e baixe os trabalhos pelo nosso site oficial:\nhttps://www.asppsicanalise.com.br/revista\n\nDesejamos uma excelente leitura!`)
+      setMailingBody(`Prezados(as) pesquisadores(as) e leitores(as),\n\nTemos a satisfação de anunciar a publicação da nova edição da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nConvidamos toda a comunidade científica a conferir os artigos, ensaios e relatos clínicos que compõem este número, disponíveis de forma gratuita e aberta.\n\nAcesse e baixe os trabalhos pelo nosso site oficial.\n\nDesejamos uma excelente leitura!`)
+      setMailingActionText('Ler Nova Edição no Site')
+      setMailingActionUrl('https://www.asppsicanalise.com.br/revista')
     } else if (templateType === 'cfp') {
       setMailingSubject('Chamada Aberta de Artigos (Call for Papers) - Revista Saber Psicanalítico')
       setMailingTitle('Submissões Abertas para o Próximo Fascículo')
-      setMailingBody(`Prezados(as) autores(as) e pesquisadores(as),\n\nA Revista Saber Psicanalítico (ISSN 3086-8416) está com a chamada aberta para submissão de manuscritos inéditos nas seguintes categorias:\n• Artigos Científicos\n• Ensaios Teóricos\n• Relatos de Experiência Clínica\n• Resenhas\n\nNosso periódico adota o sistema de avaliação duplo-cega por pares (blind peer review) e é 100% gratuito (sem taxas de submissão ou publicação - APC Free).\n\nSubmeta seu trabalho diretamente pelo nosso portal:\nhttps://revista-saber-portal.vercel.app`)
+      setMailingBody(`Prezados(as) autores(as) e pesquisadores(as),\n\nA Revista Saber Psicanalítico (ISSN 3086-8416) está com a chamada aberta para submissão de manuscritos inéditos nas seguintes categorias:\n• Artigos Científicos\n• Ensaios Teóricos\n• Relatos de Experiência Clínica\n• Resenhas\n\nNosso periódico adota o sistema de avaliação duplo-cega por pares (blind peer review) e é 100% gratuito (sem cobrança de taxas de submissão ou publicação - APC Free).\n\nSubmeta seu trabalho diretamente pelo nosso portal editorial:`)
+      setMailingActionText('Submeter Artigo no Portal')
+      setMailingActionUrl('https://revista-saber-portal.vercel.app')
     } else {
       setMailingSubject('')
       setMailingTitle('')
       setMailingBody('')
+      setMailingActionText('Acessar a Revista')
+      setMailingActionUrl('https://www.asppsicanalise.com.br/revista')
     }
   }
 
@@ -1397,8 +1422,8 @@ export default function Home() {
             subject: mailingSubject,
             title: mailingTitle || mailingSubject,
             message: `Olá, ${u.full_name || 'Colega'},\n\n${mailingBody}`,
-            actionText: 'Acessar a Revista',
-            actionUrl: 'https://www.asppsicanalise.com.br/revista'
+            actionText: mailingActionText || undefined,
+            actionUrl: mailingActionUrl || undefined
           })
         }
       }
@@ -1410,10 +1435,16 @@ export default function Home() {
     }
   }
 
+  // Lista de Pareceristas com Conclusão para o Expediente
   const completedReviewers = allProfiles.filter((p) => Array.from(new Set(allReviews.filter((r) => r.status === 'concluido').map((r) => r.reviewer_id))).includes(p.id))
 
   const handleCopyReviewers = () => {
-    const text = completedReviewers.map((r) => `• ${r.full_name} (${r.institution || 'ASP'})`).join('\n')
+    const text = completedReviewers.map((r) => {
+      let line = `• ${r.full_name} (${r.institution || 'ASP'})`
+      if (r.orcid) line += ` - ORCID: ${r.orcid}`
+      if (r.lattes_url) line += ` - Lattes: ${r.lattes_url}`
+      return line
+    }).join('\n')
     navigator.clipboard.writeText(text)
     setCopiedThanks(true)
     setTimeout(() => setCopiedThanks(false), 2500)
@@ -1556,7 +1587,6 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* CARD OFICIAL DE RESULTADO DA VERIFICAÇÃO */}
               {verifyResult && (
                 verifyResult.valid ? (
                   <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/70 text-slate-800 space-y-3 text-xs shadow-sm">
@@ -1818,10 +1848,9 @@ export default function Home() {
             </div>
           )}
 
-          {/* SALA EDITORIAL / CONSELHO EDITORIAL COM NAVEGAÇÃO EM ABAS */}
+          {/* SALA EDITORIAL / CONSELHO EDITORIAL */}
           {canAccessEditorialRoom && (viewMode === 'editor' || viewMode === 'council') && (
             <div className="space-y-6">
-              {/* Barra de Título */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">{isFullEditor ? 'Sala Editorial' : 'Conselho Editorial'}</span>
@@ -1834,7 +1863,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Seletor de Sub-Abas na Sala Editorial (Artigos / Usuários / Mailing) */}
+              {/* Sub-Abas apenas para o Editor */}
               {isFullEditor && (
                 <div className="flex border-b border-slate-200 bg-white px-4 rounded-xl shadow-sm">
                   <button 
@@ -1861,7 +1890,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 1: SUBMISSÕES E ARTIGOS (OU VISÃO ÚNICA DO CONSELHO) */}
+              {/* ABA 1: SUBMISSÕES E ARTIGOS */}
               {(editorialTab === 'articles' || isCouncil) && (
                 <div className="space-y-6">
                   <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -1901,7 +1930,7 @@ export default function Home() {
                               <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-700">Baixar</button>
                               {hasRevision && <button type="button" onClick={() => handleDownloadFile(art.original_file_url, art.title, 'Versao_Original')} className="px-2.5 py-1.5 text-xs border border-slate-200 bg-slate-50 rounded-lg text-slate-600">Original</button>}
 
-                              {/* Ações operacionais restritas ao Editor (Conselho não tem caneta para alterar status nem atribuir parecerista) */}
+                              {/* Apenas o Editor pode atribuir parecerista e alterar status */}
                               {isFullEditor && !isOwnArticle && (
                                 <>
                                   <button 
@@ -1937,17 +1966,18 @@ export default function Home() {
                             </div>
                           )}
 
+                          {/* PARECERISTAS DESIGNADOS (Com botão de REMOVER para o Editor) */}
                           {!isOwnArticle && revs.length > 0 && (
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-xs">
                               <p className="font-bold text-slate-700">Pareceristas Designados:</p>
                               {revs.map((r) => (
-                                <div key={r.id} className="flex justify-between items-center bg-white p-2.5 rounded border border-slate-200">
+                                <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2.5 rounded border border-slate-200 gap-2">
                                   <div>
                                     <span className="font-bold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
                                     <span className="ml-2 text-indigo-600 font-semibold">[{r.status.toUpperCase()}]</span>
                                     {r.status !== 'concluido' && <span className="ml-2">{getDeadlineBadge(r.deadline)}</span>}
                                   </div>
-                                  <div className="flex gap-2">
+                                  <div className="flex items-center gap-2">
                                     {r.status === 'concluido' && isFullEditor && (
                                       <button 
                                         type="button" 
@@ -1961,6 +1991,18 @@ export default function Home() {
                                       <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline">Baixar Anexo</button>
                                     )}
                                     {r.status === 'concluido' && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
+                                    
+                                    {/* BOTÃO EXCLUIR / REMOVER PARECERISTA DESIGNADO */}
+                                    {isFullEditor && (
+                                      <button 
+                                        type="button" 
+                                        onClick={() => handleRemoveReviewerAssignment(r.id, art.id)} 
+                                        className="px-2 py-0.5 text-[11px] text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-medium inline-flex items-center gap-1 transition"
+                                        title="Remover / Desatribuir Parecerista"
+                                      >
+                                        <Trash2 className="w-3 h-3 text-rose-500" /> Remover
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -1973,7 +2015,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 2: QUADRO DE USUÁRIOS DEDICADO COM BUSCA E EDIÇÃO */}
+              {/* ABA 2: QUADRO DE USUÁRIOS DEDICADO */}
               {isFullEditor && editorialTab === 'users' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
@@ -1981,7 +2023,6 @@ export default function Home() {
                       <h3 className="text-base font-bold text-slate-800">Quadro Geral de Usuários ({allProfiles.length})</h3>
                       <p className="text-xs text-slate-500">Gerencie permissões e dados cadastrais dos membros registrados no portal.</p>
                     </div>
-                    {/* Contadores Resumidos */}
                     <div className="flex flex-wrap gap-1.5 text-[11px] font-semibold">
                       <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">{allProfiles.filter(p => p.role === 'author').length} Autores</span>
                       <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">{allProfiles.filter(p => p.role === 'reviewer').length} Pareceristas</span>
@@ -1990,7 +2031,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Filtro e Busca na Lista de Usuários */}
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <div className="flex-1 relative">
                       <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
@@ -2016,7 +2056,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Tabela com limite de rolagem vertical para nunca esticar a página */}
                   <div className="overflow-x-auto max-h-[550px] overflow-y-auto border border-slate-100 rounded-lg">
                     <table className="w-full text-left text-xs text-slate-600">
                       <thead className="bg-slate-50 text-slate-700 uppercase font-semibold sticky top-0 z-10 border-b">
@@ -2063,15 +2102,14 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING EM MASSA */}
+              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING COM LINK CUSTOMIZÁVEL */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
                     <h3 className="text-base font-bold text-slate-800">Central de Disparos Editoriais (Mailing)</h3>
-                    <p className="text-xs text-slate-500">Envie chamadas de publicação, comunicados da ASP e avisos de lançamento de novos fascículos.</p>
+                    <p className="text-xs text-slate-500">Envie chamadas de publicação, comunicados da ASP e avisos de lançamento de novos fascículos com botão e link personalizáveis.</p>
                   </div>
 
-                  {/* Seleção de Destinatários e Ações Rápidas */}
                   <div className="grid md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">Selecionar Grupo de Destinatários:</label>
@@ -2099,7 +2137,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Modelos Prontos de E-mail (Templates com 1 clique) */}
+                  {/* Modelos Prontos de E-mail */}
                   <div className="space-y-1.5">
                     <span className="text-xs font-bold text-slate-700">Modelos Prontos com 1 Clique:</span>
                     <div className="flex flex-wrap gap-2">
@@ -2127,7 +2165,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Formulário de Envio de Comunicado */}
                   <form onSubmit={handleSendMailing} className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">Assunto do E-mail *</label>
@@ -2162,6 +2199,30 @@ export default function Home() {
                         placeholder="Escreva aqui a mensagem oficial..." 
                         className="w-full px-3 py-2 text-xs border rounded-lg font-sans" 
                       />
+                    </div>
+
+                    {/* CAMPOS CUSTOMIZÁVEIS DE BOTÃO E LINK NO CORPO DO E-MAIL */}
+                    <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Texto do Botão no E-mail (Opcional):</label>
+                        <input 
+                          type="text" 
+                          value={mailingActionText} 
+                          onChange={(e) => setMailingActionText(e.target.value)} 
+                          placeholder="Ex: Ler Nova Edição / Acessar Portal" 
+                          className="w-full px-3 py-2 text-xs border rounded-lg bg-white" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Link de Destino do Botão (URL):</label>
+                        <input 
+                          type="url" 
+                          value={mailingActionUrl} 
+                          onChange={(e) => setMailingActionUrl(e.target.value)} 
+                          placeholder="https://..." 
+                          className="w-full px-3 py-2 text-xs border rounded-lg bg-white" 
+                        />
+                      </div>
                     </div>
 
                     <div className="flex justify-end pt-2 border-t">
@@ -2384,7 +2445,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL ATRIBUIR PARECERISTA (Inclui Pareceristas, Conselho e Editores) */}
+      {/* MODAL ATRIBUIR PARECERISTA */}
       {assignModalArticle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
@@ -2481,7 +2542,7 @@ export default function Home() {
               <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
             </div>
 
-            {/* Anexo com orientações ao parecerista */}
+            {/* ANEXO DE MANUSCRITO COM APONTAMENTOS */}
             <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
               <label className="block text-xs font-bold text-slate-800">
                 Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):
@@ -2516,18 +2577,35 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL AGRADECIMENTO PARECERISTAS */}
+      {/* MODAL AGRADECIMENTO PARECERISTAS (Com Lattes e ORCID na tela e cópia) */}
       {showReviewerThankModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border space-y-4">
             <h3 className="text-lg font-bold text-slate-900">Quadro de Pareceristas que Concluíram Avaliações</h3>
-            <p className="text-xs text-slate-500">Relação de pareceristas que emitiram avaliações no sistema para compor o expediente e agradecimentos da revista.</p>
-            <div className="bg-slate-50 p-4 rounded-xl border max-h-60 overflow-y-auto space-y-2 text-xs">
+            <p className="text-xs text-slate-500">Relação de pareceristas atuantes para compor a folha de expediente e agradecimentos do fascículo.</p>
+            
+            <div className="bg-slate-50 p-4 rounded-xl border max-h-72 overflow-y-auto space-y-2.5 text-xs">
               {completedReviewers.map((rev) => (
-                <div key={rev.id} className="bg-white p-2.5 rounded border"><p className="font-bold text-slate-900">{rev.full_name} ({rev.institution || 'ASP'})</p></div>
+                <div key={rev.id} className="bg-white p-3 rounded-lg border space-y-1">
+                  <p className="font-bold text-slate-900">{rev.full_name} ({rev.institution || 'ASP'})</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                    {rev.orcid && <span>ORCID: <strong>{rev.orcid}</strong></span>}
+                    {rev.lattes_url && (
+                      <a href={rev.lattes_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline inline-flex items-center gap-0.5">
+                        Lattes <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
-            <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setShowReviewerThankModal(false)} className="px-4 py-2 text-xs text-slate-600">Fechar</button><button type="button" onClick={handleCopyReviewers} className="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{copiedThanks ? 'Copiado!' : 'Copiar Relação'}</button></div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button type="button" onClick={() => setShowReviewerThankModal(false)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Fechar</button>
+              <button type="button" onClick={handleCopyReviewers} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5">
+                {copiedThanks ? <><Check className="w-3.5 h-3.5" /> Relação Copiada com Lattes/ORCID!</> : <><Copy className="w-3.5 h-3.5" /> Copiar Dados para Expediente</>}
+              </button>
+            </div>
           </div>
         </div>
       )}
