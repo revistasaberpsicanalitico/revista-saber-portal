@@ -539,7 +539,7 @@ export default function Home() {
   const [editUserRole, setEditUserRole] = useState('')
   const [savingUserEdit, setSavingUserEdit] = useState(false)
 
-  // Central de Mailing / Comunicados com Formatação Rica e Preview
+  // Central de Mailing / Comunicados com Formatação Rica e Preview (Via URL de imagem)
   const [mailingTarget, setMailingTarget] = useState<'all' | 'author' | 'reviewer' | 'council'>('all')
   const [mailingSubject, setMailingSubject] = useState('')
   const [mailingTitle, setMailingTitle] = useState('')
@@ -547,7 +547,6 @@ export default function Home() {
   const [mailingActionText, setMailingActionText] = useState('Acessar a Revista')
   const [mailingActionUrl, setMailingActionUrl] = useState('https://www.asppsicanalise.com.br/revista')
   const [mailingMode, setMailingMode] = useState<'editor' | 'preview'>('editor')
-  const [uploadingMailingImg, setUploadingMailingImg] = useState(false)
   const [sendingMailing, setSendingMailing] = useState(false)
   const [copiedMailingEmails, setCopiedMailingEmails] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -751,7 +750,6 @@ export default function Home() {
     }
   }
 
-  // Validador oficial de documentos
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
     if (!code) return
@@ -1356,7 +1354,6 @@ export default function Home() {
     }
   }
 
-  // Funções do Mailing / Disparo de E-mails
   const filteredMailingUsers = allProfiles.filter((p) => {
     if (mailingTarget === 'all') return true
     return p.role === mailingTarget
@@ -1369,7 +1366,6 @@ export default function Home() {
     setTimeout(() => setCopiedMailingEmails(false), 3000)
   }
 
-  // Inserção de formatação rica no texto do comunicado
   const handleInsertTag = (openTag: string, closeTag: string, defaultText = '') => {
     const textarea = textareaRef.current
     if (!textarea) return
@@ -1386,7 +1382,6 @@ export default function Home() {
     }, 0)
   }
 
-  // Inserir link com prompt
   const handleInsertLinkPrompt = () => {
     const url = window.prompt('Digite a URL do link (ex: https://...):', 'https://')
     if (url && url !== 'https://') {
@@ -1394,37 +1389,12 @@ export default function Home() {
     }
   }
 
-  // Inserir imagem por URL
+  // Inserir imagem por Link direto (URL) - Forma mais leve e recomendada
   const handleInsertImagePrompt = () => {
-    const url = window.prompt('Digite o link público da imagem (URL da imagem):', 'https://')
-    if (url && url !== 'https://') {
-      const imgHtml = `\n<div style="text-align: center; margin: 16px 0;"><img src="${url.trim()}" alt="Imagem" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: inline-block;" /></div>\n`
+    const url = window.prompt('Digite ou cole a URL pública da imagem (ex: do seu site):', 'https://')
+    if (url && url.trim() && url !== 'https://') {
+      const imgHtml = `\n<div style="text-align: center; margin: 16px 0;"><img src="${url.trim()}" alt="Imagem do Comunicado" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: inline-block;" /></div>\n`
       setMailingBody((prev) => prev + imgHtml)
-    }
-  }
-
-  // Fazer upload de imagem do computador para o e-mail
-  const handleUploadMailingImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploadingMailingImg(true)
-    try {
-      const ext = file.name.split('.').pop()
-      const filePath = `comunicados/img_${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage.from('manuscritos').upload(filePath, file)
-      if (uploadError) throw uploadError
-
-      const { data } = supabase.storage.from('manuscritos').getPublicUrl(filePath)
-      if (data?.publicUrl) {
-        const imgHtml = `\n<div style="text-align: center; margin: 16px 0;"><img src="${data.publicUrl}" alt="Imagem do Comunicado" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: inline-block;" /></div>\n`
-        setMailingBody((prev) => prev + imgHtml)
-        alert('Imagem anexada com sucesso ao comunicado!')
-      }
-    } catch (err: any) {
-      alert(`Erro ao anexar imagem: ${err.message}`)
-    } finally {
-      setUploadingMailingImg(false)
-      e.target.value = ''
     }
   }
 
@@ -2263,13 +2233,9 @@ export default function Home() {
                             <button type="button" onClick={handleInsertLinkPrompt} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold inline-flex items-center gap-1" title="Inserir Link">
                               <LinkIcon className="w-3.5 h-3.5" /> Link
                             </button>
-                            <button type="button" onClick={handleInsertImagePrompt} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold inline-flex items-center gap-1" title="Inserir Imagem por Link">
+                            <button type="button" onClick={handleInsertImagePrompt} className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-xs font-bold inline-flex items-center gap-1" title="Inserir Imagem por Link (Recomendado)">
                               <ImageIcon className="w-3.5 h-3.5" /> Imagem (URL)
                             </button>
-                            <label className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-xs font-bold inline-flex items-center gap-1 cursor-pointer" title="Fazer upload de imagem do computador">
-                              <Upload className="w-3.5 h-3.5" /> {uploadingMailingImg ? 'Enviando Imagem...' : 'Anexar Imagem (Arquivo)'}
-                              <input type="file" accept="image/*" disabled={uploadingMailingImg} onChange={handleUploadMailingImage} className="hidden" />
-                            </label>
                           </div>
                         )}
                       </div>
@@ -2283,7 +2249,7 @@ export default function Home() {
                             rows={8} 
                             value={mailingBody} 
                             onChange={(e) => setMailingBody(e.target.value)} 
-                            placeholder="Escreva a mensagem oficial... Você pode usar os botões acima para aplicar negrito, itálico, links e imagens." 
+                            placeholder="Escreva a mensagem oficial... Você pode usar os botões acima para aplicar negrito, itálico, links e imagens via URL." 
                             className="w-full px-3 py-2 text-xs border rounded-lg font-sans leading-relaxed focus:ring-2 focus:ring-indigo-500" 
                           />
                           <p className="text-[11px] text-slate-400">Dica: Selecione qualquer palavra e clique nos botões da barra para aplicar negrito, itálico ou links.</p>
@@ -2663,6 +2629,7 @@ export default function Home() {
               <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
             </div>
 
+            {/* ANEXO DE MANUSCRITO COM APONTAMENTOS */}
             <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
               <label className="block text-xs font-bold text-slate-800">
                 Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):
