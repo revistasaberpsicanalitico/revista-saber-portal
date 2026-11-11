@@ -286,7 +286,138 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: DOCUMENTOS OFICIAIS TIMBRADOS A4 (COM LINHA DO TEMPO)
+// MODAL 3: FICHA COMPLETA COM TODOS OS DADOS DA SUBMISSÃO DO ARTIGO
+// ============================================================================
+function ArticleDetailsModal({ article, onClose, getAuthorName, getAuthorEmail, getAuthorInst, onDownloadFile }: any) {
+  if (!article) return null
+
+  const authorName = getAuthorName(article.author_id, article)
+  const authorEmail = getAuthorEmail(article.author_id, article)
+  const authorInst = article.author_institution || getAuthorInst(article.author_id, article)
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[85] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border space-y-6 max-h-[92vh] overflow-y-auto my-6">
+        <div className="flex justify-between items-start border-b pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded border border-indigo-100">
+                {article.section || 'Artigos Científicos'}
+              </span>
+              <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded">
+                STATUS: {article.status?.toUpperCase()}
+              </span>
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mt-2">{article.title}</h3>
+            {article.title_en && <p className="text-xs text-slate-500 italic mt-0.5">Title (EN): {article.title_en}</p>}
+          </div>
+          <button type="button" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Resumo e Abstract */}
+        <div className="space-y-4">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Resumo (Português)</h4>
+            <p className="text-xs text-slate-700 leading-relaxed text-justify whitespace-pre-line">{article.abstract}</p>
+            <p className="text-[11px] text-slate-600 pt-1"><strong>Palavras-chave:</strong> {article.keywords}</p>
+          </div>
+
+          {article.abstract_en && (
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Abstract (English)</h4>
+              <p className="text-xs text-slate-700 leading-relaxed text-justify whitespace-pre-line">{article.abstract_en}</p>
+              <p className="text-[11px] text-slate-600 pt-1"><strong>Keywords:</strong> {article.keywords_en}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Autor Principal */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+          <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Autor(a) Principal</h4>
+          <div className="grid sm:grid-cols-2 gap-2 text-xs">
+            <p><strong>Nome:</strong> {authorName}</p>
+            <p><strong>E-mail:</strong> {authorEmail || '-'}</p>
+            <p><strong>Filiação Institucional:</strong> {authorInst || '-'}</p>
+            <p><strong>ORCID:</strong> {article.author_orcid || '-'}</p>
+            {article.author_lattes && (
+              <p className="sm:col-span-2">
+                <strong>Currículo Lattes:</strong>{' '}
+                <a href={article.author_lattes} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">
+                  {article.author_lattes}
+                </a>
+              </p>
+            )}
+            {article.author_bio && (
+              <p className="sm:col-span-2 bg-slate-50 p-2.5 rounded border border-slate-100 text-slate-600">
+                <strong>Mini-biografia acadêmica:</strong> {article.author_bio}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Coautores */}
+        {article.coauthors && article.coauthors.length > 0 && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+            <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Coautores ({article.coauthors.length})</h4>
+            <div className="space-y-2">
+              {article.coauthors.map((co: any, i: number) => (
+                <div key={i} className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1">
+                  <p className="font-bold text-slate-900">{i + 1}. {co.name} ({co.email})</p>
+                  <p className="text-slate-600">Filiação: {co.institution || '-'} • ORCID: {co.orcid || '-'}</p>
+                  {co.lattes && (
+                    <p>
+                      <a href={co.lattes} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">
+                        Lattes: {co.lattes}
+                      </a>
+                    </p>
+                  )}
+                  {co.bio && <p className="text-[11px] text-slate-500 italic">"{co.bio}"</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Arquivos e Datas */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-indigo-50/60 p-4 rounded-xl border border-indigo-100 text-xs">
+          <div className="space-y-0.5 text-center sm:text-left">
+            <p className="font-bold text-slate-800">Data de Submissão: {new Date(article.created_at).toLocaleString('pt-BR')}</p>
+            <p className="text-slate-500">Última atualização: {new Date(article.updated_at || article.created_at).toLocaleString('pt-BR')}</p>
+          </div>
+          <div className="flex gap-2">
+            <button 
+              type="button" 
+              onClick={() => onDownloadFile(article.file_url, article.title, 'Manuscrito')} 
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg flex items-center gap-1.5 shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5" /> Baixar Manuscrito Atual
+            </button>
+            {article.original_file_url && article.original_file_url !== article.file_url && (
+              <button 
+                type="button" 
+                onClick={() => onDownloadFile(article.original_file_url, article.title, 'Versao_Original')} 
+                className="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold rounded-lg flex items-center gap-1.5"
+              >
+                Versão Original
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2 border-t">
+          <button type="button" onClick={onClose} className="px-5 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg">
+            Fechar Ficha
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// MODAL 4: DOCUMENTOS OFICIAIS TIMBRADOS A4 (COM LINHA DO TEMPO)
 // ============================================================================
 function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any) {
   if (!data) return null
@@ -436,7 +567,6 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
             </p>
           </div>
 
-          {/* ASSINATURA ELEGANTE E VALIDAÇÃO DIGITAL */}
           <div className="mt-8 text-center flex flex-col items-center justify-center">
             <p className="font-serif font-bold text-slate-900 text-sm sm:text-base">
               Dr. Edson Leandro de Almeida
@@ -522,6 +652,9 @@ export default function Home() {
   const [allArticles, setAllArticles] = useState<any[]>([])
   const [allProfiles, setAllProfiles] = useState<any[]>([])
   const [allReviews, setAllReviews] = useState<any[]>([])
+
+  // Modal para Visualização Completa da Ficha do Artigo
+  const [selectedArticleDetails, setSelectedArticleDetails] = useState<any>(null)
 
   // Filtros de Artigos
   const [editorSearch, setEditorSearch] = useState('')
@@ -716,6 +849,12 @@ export default function Home() {
     if (p?.email) return p.email
     if (authorId === session?.user?.id && profile?.email) return profile.email
     return ''
+  }
+
+  const getAuthorInst = (authorId: string, art?: any) => {
+    if (art?.author?.institution) return art.author.institution
+    const p = allProfiles.find((x) => x.id === authorId)
+    return p?.institution || '-'
   }
 
   const getArticleReviews = (articleId: string) => allReviews.filter((r) => r.article_id === articleId)
@@ -1190,6 +1329,15 @@ export default function Home() {
             actionText: 'Reenviar Arquivo no Portal',
             actionUrl: 'https://revista-saber-portal.vercel.app'
           })
+        } else if (status === 'em_avaliacao') {
+          sendEmailNotification({
+            to: authorEmail,
+            subject: 'Artigo em Avaliação por Pares - Revista Saber Psicanalítico',
+            title: 'Triagem Inicial Concluída',
+            message: `Prezado(a) ${authorName},\n\nComunicamos que seu manuscrito "${title}" foi aprovado na triagem regimental (Desk Review) e entrou na fase oficial de AVALIAÇÃO DUPLO-CEGA POR PARES (Double-Blind Peer Review).\n\nO trabalho está sob análise de pareceristas especialistas. Você pode acompanhar o andamento em tempo real diretamente pelo portal da revista.`,
+            actionText: 'Acompanhar no Portal',
+            actionUrl: 'https://revista-saber-portal.vercel.app'
+          })
         } else if (status === 'aceito') {
           sendEmailNotification({
             to: authorEmail,
@@ -1205,7 +1353,7 @@ export default function Home() {
       alert('Status atualizado com sucesso!')
       fetchAllData()
     } catch (err: any) {
-      alert(err.message)
+      alert(`Erro ao atualizar status: ${err.message}`)
     }
   }
 
@@ -1271,7 +1419,6 @@ export default function Home() {
     }
   }
 
-  // Atribuição de parecerista (Permite selecionar Pareceristas, Conselho ou outros Editores)
   const handleAssignReviewer = async () => {
     if (!selectedReviewerId || !assignModalArticle || !assignDeadline) return alert('Selecione o parecerista e o prazo.')
     try {
@@ -1393,6 +1540,7 @@ export default function Home() {
     }
   }
 
+  // Inserir imagem por Link direto (URL) - Forma mais leve e recomendada
   const handleInsertImagePrompt = () => {
     const url = window.prompt('Digite ou cole a URL pública da imagem (ex: do seu site):', 'https://')
     if (url && url.trim() && url !== 'https://') {
@@ -1482,7 +1630,7 @@ export default function Home() {
     return matchesQuery && matchesRole
   })
 
-  // Habilita as permissões da Sala Editorial tanto para o Editor-Chefe quanto para o Editor-Adjunto
+  // Habilita as permissões operacionais completas para Editor-Chefe e Editor-Adjunto
   const isEditorChefe = profile?.role === 'editor'
   const isEditorAdjunto = profile?.role === 'editor_adjunto'
   const isFullEditor = isEditorChefe || isEditorAdjunto
@@ -1711,7 +1859,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Navegação de Funções: Conselho Editorial (Somente Acompanhamento regimental) */}
+              {/* Navegação de Funções: Conselho Editorial */}
               {isCouncil && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('council')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Conselho Editorial</button>
@@ -1869,7 +2017,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* SALA EDITORIAL (Editor-Chefe / Editor-Adjunto) E CONSELHO EDITORIAL */}
+          {/* SALA EDITORIAL / CONSELHO EDITORIAL */}
           {canAccessEditorialRoom && (viewMode === 'editor' || viewMode === 'council') && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1950,6 +2098,16 @@ export default function Home() {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
+                              {/* NOVO BOTÃO: VER DETALHES COMPLETOS DA SUBMISSÃO */}
+                              <button 
+                                type="button" 
+                                onClick={() => setSelectedArticleDetails(art)} 
+                                className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg flex items-center gap-1 shadow-sm"
+                                title="Ver todos os dados preenchidos pelo autor"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-indigo-600" /> Ver Detalhes
+                              </button>
+
                               {isAccepted && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'aceite', article: art })} className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg">Carta de Aceite</button>}
                               {isRejected && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'recusa', article: art })} className="px-3 py-1.5 text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 rounded-lg">Carta Não Aceite</button>}
                               <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-700">Baixar</button>
@@ -1991,7 +2149,7 @@ export default function Home() {
                             </div>
                           )}
 
-                          {/* PARECERISTAS DESIGNADOS (Com botão de REMOVER para Editores) */}
+                          {/* PARECERISTAS DESIGNADOS */}
                           {!isOwnArticle && revs.length > 0 && (
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-xs">
                               <p className="font-bold text-slate-700">Pareceristas Designados:</p>
@@ -2017,7 +2175,6 @@ export default function Home() {
                                     )}
                                     {r.status === 'concluido' && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
                                     
-                                    {/* BOTÃO EXCLUIR / REMOVER PARECERISTA DESIGNADO */}
                                     {isFullEditor && (
                                       <button 
                                         type="button" 
@@ -2217,7 +2374,6 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Barra de Ferramentas / Alternância Editor e Pré-visualização */}
                     <div className="space-y-2">
                       <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-2">
                         <div className="flex items-center gap-1">
@@ -2273,7 +2429,6 @@ export default function Home() {
                           <p className="text-[11px] text-slate-400">Dica: Selecione qualquer palavra e clique nos botões da barra para aplicar negrito, itálico ou links.</p>
                         </div>
                       ) : (
-                        /* Modo Pré-visualização Real do E-mail */
                         <div className="border border-slate-200 rounded-xl bg-slate-50 p-6 space-y-4">
                           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-xl mx-auto space-y-4">
                             <div className="flex items-center justify-between border-b pb-4">
@@ -2428,6 +2583,17 @@ export default function Home() {
         submitting={submittingRevision}
       />
 
+      {/* MODAL DE FICHA COMPLETA COM DADOS DO ARTIGO */}
+      <ArticleDetailsModal
+        article={selectedArticleDetails}
+        onClose={() => setSelectedArticleDetails(null)}
+        getAuthorName={getAuthorName}
+        getAuthorEmail={getAuthorEmail}
+        getAuthorInst={getAuthorInst}
+        onDownloadFile={handleDownloadFile}
+      />
+
+      {/* MODAL DE DOCUMENTO TIMBRADO A4 */}
       <OfficialDocModal
         data={activeOfficialDoc}
         onClose={() => setActiveOfficialDoc(null)}
