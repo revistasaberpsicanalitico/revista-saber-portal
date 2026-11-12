@@ -8,7 +8,7 @@ import {
   Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2, ShieldAlert,
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, 
   Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter, ExternalLink,
-  Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, Code
+  Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, Code, ThumbsUp, ThumbsDown
 } from 'lucide-react'
 
 // Helper para tradução e exibição das funções dos usuários
@@ -1419,6 +1419,7 @@ export default function Home() {
     }
   }
 
+  // ATRIBUIÇÃO DE PARECERISTA COM STATUS INICIAL "CONVITE PENDENTE"
   const handleAssignReviewer = async () => {
     if (!selectedReviewerId || !assignModalArticle || !assignDeadline) return alert('Selecione o parecerista e o prazo.')
     try {
@@ -1427,7 +1428,7 @@ export default function Home() {
         article_id: assignModalArticle.id,
         reviewer_id: selectedReviewerId,
         deadline: assignDeadline,
-        status: 'pendente',
+        status: 'convite_pendente', // Status inicial aguardando resposta
       })
       if (error) throw error
       await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
@@ -1437,19 +1438,20 @@ export default function Home() {
           to: revProfile.email,
           subject: 'Convite para Avaliação Técnico-Científica - Revista Saber Psicanalítico',
           title: 'Designação de Manuscrito para Avaliação',
-          message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a atuar como Parecerista Ad-hoc avaliando o manuscrito "${assignModalArticle.title}" submetido à Revista Saber Psicanalítico (ISSN 3086-8416).\n\nPrazo para devolução do parecer: ${new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\nO manuscrito encontra-se devidamente anonimizado para avaliação duplo-cega. Acesse a área do parecerista no portal para aceitar o convite e registrar suas considerações.`,
-          actionText: 'Acessar Área do Parecerista',
+          message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a atuar como Parecerista Ad-hoc avaliando o manuscrito "${assignModalArticle.title}" submetido à Revista Saber Psicanalítico (ISSN 3086-8416).\n\nPrazo proposto para emissão do parecer: ${new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\nO trabalho está disponível para sua consulta preliminar no portal. Por favor, acesse seu painel para ACEITAR ou RECUSAR o convite de avaliação.`,
+          actionText: 'Responder Convite no Portal',
           actionUrl: 'https://revista-saber-portal.vercel.app'
         })
       }
-      alert('Parecerista atribuído com sucesso!')
+      alert('Convite enviado com sucesso! O parecerista foi notificado para aceitar ou recusar.')
       setAssignModalArticle(null)
       fetchAllData()
     } catch (err: any) {
-      alert(err.message)
+      alert(`Erro ao atribuir parecerista: ${err.message}`)
     }
   }
 
+  // REMOVER / DESATRIBUIR PARECERISTA PELO EDITOR
   const handleRemoveReviewerAssignment = async (reviewId: string, articleId: string) => {
     if (!window.confirm('Deseja realmente desatribuir este parecerista deste artigo?')) return
     try {
@@ -1468,6 +1470,52 @@ export default function Home() {
     }
   }
 
+  // PARECERISTA: ACEITAR CONVITE DE AVALIAÇÃO
+  const handleAcceptReviewInvitation = async (reviewId: string, articleTitle: string) => {
+    try {
+      const { error } = await supabase.from('reviews').update({ status: 'em_andamento' }).eq('id', reviewId)
+      if (error) throw error
+
+      sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: 'Convite Aceito por Parecerista - Revista Saber Psicanalítico',
+        title: 'Parecerista Confirmado',
+        message: `O(A) parecerista ${profile?.full_name} ACEITOU o convite para avaliar o artigo "${articleTitle}".\n\nO prazo de devolução está sendo contabilizado no sistema.`,
+        actionText: 'Sala Editorial',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
+      alert('Convite aceito com sucesso! O manuscrito está liberado para sua avaliação.')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao aceitar convite: ${err.message}`)
+    }
+  }
+
+  // PARECERISTA: RECUSAR CONVITE DE AVALIAÇÃO
+  const handleDeclineReviewInvitation = async (reviewId: string, articleTitle: string) => {
+    if (!window.confirm('Confirma a recusa deste convite de avaliação?')) return
+    try {
+      const { error } = await supabase.from('reviews').update({ status: 'recusado' }).eq('id', reviewId)
+      if (error) throw error
+
+      sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: 'Convite Recusado por Parecerista - Revista Saber Psicanalítico',
+        title: 'Recusa de Avaliação',
+        message: `O(A) parecerista ${profile?.full_name} comunicou que NÃO PODERÁ avaliar o artigo "${articleTitle}".\n\nAcesse a Sala Editorial para designar outro avaliador substituto.`,
+        actionText: 'Sala Editorial',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
+      alert('Recusa registrada. A Comissão Editorial foi informada.')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao recusar convite: ${err.message}`)
+    }
+  }
+
+  // PARECERISTA: CONCLUIR E ENVIAR PARECER
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -1540,7 +1588,6 @@ export default function Home() {
     }
   }
 
-  // Inserir imagem por Link direto (URL) - Forma mais leve e recomendada
   const handleInsertImagePrompt = () => {
     const url = window.prompt('Digite ou cole a URL pública da imagem (ex: do seu site):', 'https://')
     if (url && url.trim() && url !== 'https://') {
@@ -1630,7 +1677,6 @@ export default function Home() {
     return matchesQuery && matchesRole
   })
 
-  // Habilita as permissões operacionais completas para Editor-Chefe e Editor-Adjunto
   const isEditorChefe = profile?.role === 'editor'
   const isEditorAdjunto = profile?.role === 'editor_adjunto'
   const isFullEditor = isEditorChefe || isEditorAdjunto
@@ -1859,7 +1905,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Navegação de Funções: Conselho Editorial */}
+              {/* Navegação de Funções: Conselho Editorial (Com visão de Parecerista habilitada) */}
               {isCouncil && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('council')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Conselho Editorial</button>
@@ -1969,7 +2015,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* VISÃO DO PARECERISTA */}
+          {/* VISÃO DO PARECERISTA (COM OPÇÃO DE ACEITAR OU RECUSAR O CONVITE) */}
           {viewMode === 'reviewer' && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -1984,12 +2030,20 @@ export default function Home() {
                   {myReviewAssignments.map((rev) => {
                     const art = allArticles.find((a) => a.id === rev.article_id)
                     const isCompleted = rev.status === 'concluido'
+                    const isPendingInvitation = rev.status === 'convite_pendente'
+                    const isDeclined = rev.status === 'recusado'
+
                     return (
-                      <div key={rev.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                        <div className="flex justify-between items-start gap-4">
+                      <div key={rev.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                           <div>
-                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${isCompleted ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{isCompleted ? 'CONCLUÍDO' : 'PENDENTE'}</span>
-                            {!isCompleted && getDeadlineBadge(rev.deadline)}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {isCompleted && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">PARECER CONCLUÍDO</span>}
+                              {isPendingInvitation && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">CONVITE DE AVALIAÇÃO RECEBIDO</span>}
+                              {!isCompleted && !isPendingInvitation && !isDeclined && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">EM ELABORAÇÃO</span>}
+                              {isDeclined && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">CONVITE RECUSADO</span>}
+                              {!isCompleted && !isDeclined && getDeadlineBadge(rev.deadline)}
+                            </div>
                             <h3 className="text-lg font-bold text-slate-900 mt-2">{art?.title}</h3>
                           </div>
                           <div className="flex gap-2">
@@ -2002,13 +2056,58 @@ export default function Home() {
                                 <Award className="w-3.5 h-3.5" /> Declaração de Parecerista
                               </button>
                             )}
-                            {art && <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito_Parecer')} className="px-3 py-1.5 text-xs font-medium border rounded-lg text-slate-700 flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> Baixar Word</button>}
+                            {art && !isDeclined && (
+                              <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito_Parecer')} className="px-3 py-1.5 text-xs font-medium border rounded-lg text-slate-700 flex items-center gap-1.5 hover:bg-slate-50">
+                                <Download className="w-3.5 h-3.5" /> Baixar Manuscrito Anonimizado
+                              </button>
+                            )}
                           </div>
                         </div>
-                        {art && <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg">{art.abstract}</p>}
-                        <div className="flex justify-end">
-                          <button type="button" onClick={() => { setReviewModalData(rev); setRecommendation(rev.recommendation || 'aceitar'); setCommentsAuthor(rev.comments_for_author || ''); setCommentsEditor(rev.confidential_comments_editor || ''); setReviewFile(null); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold">{isCompleted ? 'Editar Parecer' : 'Preencher Parecer'}</button>
-                        </div>
+
+                        {art && <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg leading-relaxed">{art.abstract}</p>}
+
+                        {/* Bloco de Decisão do Convite (Aceitar / Recusar) */}
+                        {isPendingInvitation && (
+                          <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                            <div>
+                              <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" /> Deseja avaliar este manuscrito?
+                              </p>
+                              <p className="text-[11px] text-amber-800">
+                                Prazo para envio do parecer técnico: <strong>{new Date(rev.deadline + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                              <button 
+                                type="button" 
+                                onClick={() => handleAcceptReviewInvitation(rev.id, art?.title || 'Artigo')} 
+                                className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm"
+                              >
+                                <ThumbsUp className="w-3.5 h-3.5" /> Aceitar Avaliação
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => handleDeclineReviewInvitation(rev.id, art?.title || 'Artigo')} 
+                                className="flex-1 sm:flex-none px-3.5 py-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-semibold rounded-lg text-xs flex items-center justify-center gap-1.5"
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" /> Recusar Convite
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Botão de Preencher Parecer (Somente se o convite foi aceito) */}
+                        {!isPendingInvitation && !isDeclined && (
+                          <div className="flex justify-end pt-2 border-t">
+                            <button 
+                              type="button" 
+                              onClick={() => { setReviewModalData(rev); setRecommendation(rev.recommendation || 'aceitar'); setCommentsAuthor(rev.comments_for_author || ''); setCommentsEditor(rev.confidential_comments_editor || ''); setReviewFile(null); }} 
+                              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm"
+                            >
+                              {isCompleted ? 'Editar Parecer Emitido' : 'Preencher Parecer Técnico'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
@@ -2098,7 +2197,7 @@ export default function Home() {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
-                              {/* NOVO BOTÃO: VER DETALHES COMPLETOS DA SUBMISSÃO */}
+                              {/* Botão Ver Detalhes */}
                               <button 
                                 type="button" 
                                 onClick={() => setSelectedArticleDetails(art)} 
@@ -2149,45 +2248,75 @@ export default function Home() {
                             </div>
                           )}
 
-                          {/* PARECERISTAS DESIGNADOS */}
+                          {/* PARECERISTAS DESIGNADOS (COM SELO DE ACEITO / RECUSADO / PENDENTE) */}
                           {!isOwnArticle && revs.length > 0 && (
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-xs">
                               <p className="font-bold text-slate-700">Pareceristas Designados:</p>
-                              {revs.map((r) => (
-                                <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2.5 rounded border border-slate-200 gap-2">
-                                  <div>
-                                    <span className="font-bold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
-                                    <span className="ml-2 text-indigo-600 font-semibold">[{r.status.toUpperCase()}]</span>
-                                    {r.status !== 'concluido' && <span className="ml-2">{getDeadlineBadge(r.deadline)}</span>}
+                              {revs.map((r) => {
+                                const isCompleted = r.status === 'concluido'
+                                const isPending = r.status === 'convite_pendente'
+                                const isDeclined = r.status === 'recusado'
+                                const isAcceptedAndWorking = r.status === 'em_andamento' || r.status === 'pendente'
+
+                                return (
+                                  <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2.5 rounded border border-slate-200 gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-bold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
+                                      
+                                      {/* SELO VISUAL DE RESPOSTA AO CONVITE */}
+                                      {isPending && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                                          <Clock className="w-3 h-3" /> CONVITE PENDENTE
+                                        </span>
+                                      )}
+                                      {isAcceptedAndWorking && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                                          <ThumbsUp className="w-3 h-3" /> CONVITE ACEITO
+                                        </span>
+                                      )}
+                                      {isDeclined && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                                          <ThumbsDown className="w-3 h-3" /> CONVITE RECUSADO
+                                        </span>
+                                      )}
+                                      {isCompleted && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                          <Check className="w-3 h-3" /> PARECER CONCLUÍDO
+                                        </span>
+                                      )}
+
+                                      {!isCompleted && !isDeclined && getDeadlineBadge(r.deadline)}
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      {isCompleted && isFullEditor && (
+                                        <button 
+                                          type="button" 
+                                          onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} 
+                                          className="text-emerald-700 hover:underline font-semibold"
+                                        >
+                                          Declaração de Parecerista
+                                        </button>
+                                      )}
+                                      {isCompleted && r.review_file_url && (
+                                        <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline">Baixar Anexo</button>
+                                      )}
+                                      {isCompleted && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
+                                      
+                                      {isFullEditor && (
+                                        <button 
+                                          type="button" 
+                                          onClick={() => handleRemoveReviewerAssignment(r.id, art.id)} 
+                                          className="px-2 py-0.5 text-[11px] text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-medium inline-flex items-center gap-1 transition"
+                                          title="Remover / Desatribuir Parecerista"
+                                        >
+                                          <Trash2 className="w-3 h-3 text-rose-500" /> Remover
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    {r.status === 'concluido' && isFullEditor && (
-                                      <button 
-                                        type="button" 
-                                        onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} 
-                                        className="text-emerald-700 hover:underline font-semibold"
-                                      >
-                                        Declaração de Parecerista
-                                      </button>
-                                    )}
-                                    {r.status === 'concluido' && r.review_file_url && (
-                                      <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline">Baixar Anexo</button>
-                                    )}
-                                    {r.status === 'concluido' && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
-                                    
-                                    {isFullEditor && (
-                                      <button 
-                                        type="button" 
-                                        onClick={() => handleRemoveReviewerAssignment(r.id, art.id)} 
-                                        className="px-2 py-0.5 text-[11px] text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-medium inline-flex items-center gap-1 transition"
-                                        title="Remover / Desatribuir Parecerista"
-                                      >
-                                        <Trash2 className="w-3 h-3 text-rose-500" /> Remover
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           )}
                         </div>
@@ -2285,7 +2414,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING COM FORMATAÇÃO RICA */}
+              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
@@ -2320,7 +2449,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Modelos Prontos de E-mail */}
                   <div className="space-y-1.5">
                     <span className="text-xs font-bold text-slate-700">Modelos Prontos com 1 Clique:</span>
                     <div className="flex flex-wrap gap-2">
@@ -2348,7 +2476,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Formulário com Barra de Formatação Rica e Preview */}
                   <form onSubmit={handleSendMailing} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-3">
                       <div>
@@ -2414,7 +2541,6 @@ export default function Home() {
                         )}
                       </div>
 
-                      {/* Modo Editor */}
                       {mailingMode === 'editor' ? (
                         <div>
                           <textarea 
@@ -2461,7 +2587,6 @@ export default function Home() {
                       )}
                     </div>
 
-                    {/* Botão e Link customizáveis no e-mail */}
                     <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Texto do Botão no E-mail (Opcional):</label>
@@ -2583,7 +2708,6 @@ export default function Home() {
         submitting={submittingRevision}
       />
 
-      {/* MODAL DE FICHA COMPLETA COM DADOS DO ARTIGO */}
       <ArticleDetailsModal
         article={selectedArticleDetails}
         onClose={() => setSelectedArticleDetails(null)}
@@ -2593,7 +2717,6 @@ export default function Home() {
         onDownloadFile={handleDownloadFile}
       />
 
-      {/* MODAL DE DOCUMENTO TIMBRADO A4 */}
       <OfficialDocModal
         data={activeOfficialDoc}
         onClose={() => setActiveOfficialDoc(null)}
@@ -2814,7 +2937,6 @@ export default function Home() {
               <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
             </div>
 
-            {/* ANEXO DE MANUSCRITO COM APONTAMENTOS */}
             <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
               <label className="block text-xs font-bold text-slate-800">
                 Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):
