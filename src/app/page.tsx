@@ -8,7 +8,8 @@ import {
   Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2, ShieldAlert,
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, 
   Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter, ExternalLink,
-  Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, Code, ThumbsUp, ThumbsDown, BookOpen
+  Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, Code, ThumbsUp, ThumbsDown, BookOpen,
+  Sparkles
 } from 'lucide-react'
 
 const formatRole = (role: string) => {
@@ -458,7 +459,7 @@ export default function Home() {
   const [profile, setProfile] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor' | 'council'>('author')
   const [loading, setLoading] = useState(true)
-  const [editorialTab, setEditorialTab] = useState<'articles' | 'users' | 'mailing'>('articles')
+  const [editorialTab, setEditorialTab] = useState<'articles' | 'candidates' | 'users' | 'mailing'>('articles')
   const [showSpamNotice, setShowSpamNotice] = useState(true)
 
   // Auth States
@@ -628,6 +629,8 @@ export default function Home() {
           role: 'author',
           institution: 'Associação Saber Psicanalítico',
           phone: '',
+          reviewer_status: 'approved',
+          council_votes: []
         }
         await supabase.from('profiles').upsert(fallbackProfile)
         setProfile(fallbackProfile)
@@ -714,6 +717,67 @@ export default function Home() {
           <AlertCircle className="w-3 h-3" /> Expirado há {Math.abs(diffDays)} dias ({formatted})
         </span>
       )
+    }
+  }
+
+  // Votação do Conselho Editorial
+  const handleCastCouncilVote = async (candidate: any, voteType: 'favoravel' | 'desfavoravel') => {
+    try {
+      const existingVotes = candidate.council_votes || []
+      const filteredVotes = existingVotes.filter((v: any) => v.user_id !== session?.user?.id)
+
+      const newVote = {
+        user_id: session?.user?.id,
+        user_name: profile?.full_name || 'Membro do Conselho',
+        user_role: profile?.role,
+        vote: voteType,
+        created_at: new Date().toISOString()
+      }
+
+      const updatedVotes = [...filteredVotes, newVote]
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ council_votes: updatedVotes })
+        .eq('id', candidate.id)
+
+      if (error) throw error
+
+      alert('Seu voto foi registrado com sucesso!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao registrar voto: ${err.message}`)
+    }
+  }
+
+  // Homologação Final pelo Editor
+  const handleApproveReviewer = async (candidate: any) => {
+    if (!window.confirm(`Homologar "${candidate.full_name}" como Parecerista Ad-hoc Oficial da revista?`)) return
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          role: 'reviewer',
+          reviewer_status: 'approved'
+        })
+        .eq('id', candidate.id)
+
+      if (error) throw error
+
+      await sendEmailNotification({
+        to: candidate.email,
+        subject: 'Homologação Aprovada - Banco de Pareceristas da Revista Saber Psicanalítico',
+        title: 'Bem-vindo(a) ao Corpo de Pareceristas Ad-hoc',
+        message: `Prezado(a) ${candidate.full_name},\n\nTemos a satisfação de comunicar que sua inscrição para integrar o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416) foi HOMOLOGADA com parecer favorável do Conselho Editorial.\n\nSeu cadastro encontra-se plenamente ativo em nosso sistema.\n\n--- INFORMAÇÕES GERAIS DE FUNCIONAMENTO ---\n1. Convites de Avaliação: Conforme a afinidade temática dos manuscritos recebidos, você receberá um e-mail com o resumo da obra e o prazo sugerido (geralmente 21 dias).\n2. Aceite e Recusa: Ao acessar o portal com seu login e senha, você poderá aceitar ou recusar formalmente o convite.\n3. Avaliação Duplo-Cega: Os textos são anonimizados. Seu parecer circunstanciado e eventuais arquivos com comentários deverão manter rigoroso anonimato.\n4. Certificação Oficial: A cada parecer finalizado, o sistema emite automaticamente a Declaração Oficial Timbrada com código digital de verificação para comprovação no Lattes e em bancas acadêmicas.\n\nAgradecemos sua valorosa contribuição para o fortalecimento da transmissão e do rigor científico na Psicanálise.`,
+        actionText: 'Acessar Área do Parecerista',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
+      alert(`Parecerista "${candidate.full_name}" homologado com sucesso! O e-mail com orientações foi enviado.`)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao homologar parecerista: ${err.message}`)
     }
   }
 
@@ -1613,6 +1677,27 @@ export default function Home() {
             </button>
           </form>
 
+          {/* CARD DE DESTAQUE: CHAMADA DE PARECERISTAS AD-HOC */}
+          <div className="mt-6 p-4 bg-gradient-to-br from-amber-50/90 via-white to-indigo-50/70 rounded-2xl border border-amber-200 shadow-sm text-center space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px] uppercase tracking-wider border border-amber-300">
+              <Sparkles className="w-3 h-3 text-amber-600" /> Chamada Pública Aberta
+            </div>
+            <h3 className="text-xs font-bold text-slate-800">
+              Banco de Pareceristas Ad-Hoc
+            </h3>
+            <p className="text-[11px] text-slate-600 leading-relaxed max-w-xs mx-auto">
+              Pesquisadores(as) e psicanalistas: integrem nosso corpo de avaliadores por pares com certificação oficial para o Lattes.
+            </p>
+            <div className="pt-1">
+              <a
+                href="/pareceristas"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-lg text-xs font-bold shadow transition-all hover:scale-[1.02]"
+              >
+                <UserCheck className="w-3.5 h-3.5" /> Inscrever-se como Parecerista
+              </a>
+            </div>
+          </div>
+
           <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col items-center space-y-4">
             <button type="button" onClick={() => { setShowVerifyModal(true); setVerifyResult(null); setVerifyCodeInput(''); }} className="text-xs text-indigo-700 hover:underline flex items-center gap-1.5 font-semibold">
               <Search className="w-3.5 h-3.5" /> Verificar Autenticidade de Documento
@@ -1944,8 +2029,8 @@ export default function Home() {
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                  <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">{isFullEditor ? `Sala Editorial (${formatRole(profile?.role)})` : 'Conselho Editorial (Acompanhamento)'}</span>
-                  <h2 className="text-xl font-bold text-slate-800">{isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento do Fluxo Editorial'}</h2>
+                  <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">{isFullEditor ? `Sala Editorial (${formatRole(profile?.role)})` : 'Conselho Editorial (Deliberação Colegiada)'}</span>
+                  <h2 className="text-xl font-bold text-slate-800">{isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento e Votações do Conselho'}</h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {isFullEditor && <button type="button" onClick={handleExportBackup} className="px-3 py-2 bg-emerald-50 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1 border border-emerald-200"><FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Exportar Backup</button>}
@@ -1954,22 +2039,37 @@ export default function Home() {
                 </div>
               </div>
 
-              {isFullEditor && (
-                <div className="flex border-b border-slate-200 bg-white px-4 rounded-xl shadow-sm">
-                  <button type="button" onClick={() => setEditorialTab('articles')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 ${editorialTab === 'articles' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
-                    <FileText className="w-4 h-4" /> Submissões e Artigos ({allArticles.length})
-                  </button>
-                  <button type="button" onClick={() => setEditorialTab('users')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 ${editorialTab === 'users' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
-                    <Users className="w-4 h-4" /> Quadro de Usuários ({allProfiles.length})
-                  </button>
-                  <button type="button" onClick={() => setEditorialTab('mailing')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 ${editorialTab === 'mailing' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
-                    <Megaphone className="w-4 h-4" /> Central de Comunicados (Mailing)
-                  </button>
-                </div>
-              )}
+              {/* BARRA DE ABAS EDITORIAL */}
+              <div className="flex border-b border-slate-200 bg-white px-4 rounded-xl shadow-sm overflow-x-auto">
+                <button type="button" onClick={() => setEditorialTab('articles')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'articles' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                  <FileText className="w-4 h-4" /> Submissões e Artigos ({allArticles.length})
+                </button>
+                
+                {/* ABA DE CANDIDATURAS DE PARECERISTAS */}
+                <button type="button" onClick={() => setEditorialTab('candidates')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'candidates' ? 'border-amber-500 text-amber-700 bg-amber-50/50' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                  <Award className="w-4 h-4 text-amber-600" />
+                  <span>Candidaturas Pareceristas</span>
+                  {allProfiles.filter(p => p.reviewer_status === 'pending').length > 0 && (
+                    <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded-full text-[10px] font-black animate-pulse">
+                      {allProfiles.filter(p => p.reviewer_status === 'pending').length}
+                    </span>
+                  )}
+                </button>
+
+                {isFullEditor && (
+                  <>
+                    <button type="button" onClick={() => setEditorialTab('users')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'users' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                      <Users className="w-4 h-4" /> Quadro de Usuários ({allProfiles.length})
+                    </button>
+                    <button type="button" onClick={() => setEditorialTab('mailing')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'mailing' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                      <Megaphone className="w-4 h-4" /> Central de Comunicados (Mailing)
+                    </button>
+                  </>
+                )}
+              </div>
 
               {/* ABA 1: ARTIGOS */}
-              {(editorialTab === 'articles' || isCouncil) && (
+              {editorialTab === 'articles' && (
                 <div className="space-y-6">
                   <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <input type="text" value={editorSearch} onChange={(e) => setEditorSearch(e.target.value)} placeholder="Pesquise por título, autor ou seção..." className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
@@ -2084,7 +2184,175 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 2: QUADRO DE USUÁRIOS */}
+              {/* ABA 2: CANDIDATURAS DE PARECERISTAS (DELIBERAÇÃO COLEGIADA) */}
+              {editorialTab === 'candidates' && (
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                  <div className="border-b pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 uppercase">
+                          Deliberação Colegiada
+                        </span>
+                        <h3 className="text-base font-bold text-slate-900">
+                          Candidaturas ao Banco de Pareceristas
+                        </h3>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        O Conselho Editorial e a Editoria analisam as fichas e registram seus votos; a homologação final é realizada pela Editoria.
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border">
+                      Aguardando deliberação: {allProfiles.filter(p => p.reviewer_status === 'pending').length}
+                    </span>
+                  </div>
+
+                  {allProfiles.filter(p => p.reviewer_status === 'pending').length === 0 ? (
+                    <div className="p-12 text-center text-slate-400 text-xs border border-dashed rounded-xl">
+                      Não há nenhuma candidatura de parecerista aguardando deliberação no momento.
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {allProfiles.filter(p => p.reviewer_status === 'pending').map((cand) => {
+                        const votes: any[] = cand.council_votes || []
+                        const userVote = votes.find((v: any) => v.user_id === session?.user?.id)
+                        const favorCount = votes.filter((v: any) => v.vote === 'favoravel').length
+                        const againstCount = votes.filter((v: any) => v.vote === 'desfavoravel').length
+
+                        return (
+                          <div key={cand.id} className="p-5 rounded-xl border border-amber-200 bg-amber-50/20 space-y-4 shadow-sm">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-amber-200/60 pb-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                    {cand.academic_degree || 'Titulação'}
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-900">{cand.full_name}</span>
+                                  <span className="text-xs text-slate-500">({cand.institution || 'ASP'})</span>
+                                </div>
+                                <p className="text-xs text-indigo-700 font-medium mt-0.5">
+                                  Perfil: {cand.psicanalise_profile || 'Psicanalista'} • {cand.email} • Tel: {cand.phone || '-'}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {cand.lattes_url && (
+                                  <a
+                                    href={cand.lattes_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2.5 py-1 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-indigo-700 rounded-lg flex items-center gap-1 shadow-sm"
+                                  >
+                                    Lattes <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                                {cand.orcid && (
+                                  <span className="text-[11px] text-slate-600 bg-white px-2 py-1 border rounded-lg">
+                                    ORCID: {cand.orcid}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Ficha Completa */}
+                            <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                              <div className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-1">
+                                <span className="font-bold text-slate-800">Mini-biografia e Formação:</span>
+                                <p className="text-slate-600 leading-relaxed whitespace-pre-line text-[11px]">
+                                  {cand.mini_bio || 'Não informado.'}
+                                </p>
+                              </div>
+
+                              <div className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
+                                <div>
+                                  <span className="font-bold text-slate-800">Eixos Temáticos de Atuação:</span>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {(cand.thematic_axes || []).map((ax: string) => (
+                                      <span key={ax} className="px-2 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded text-[10px] font-medium">
+                                        {ax}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="font-bold text-slate-800">Autores e Palavras-chave:</span>
+                                  <p className="text-[11px] text-slate-600">
+                                    <strong>Escolas:</strong> {(cand.theoretical_schools || []).join(', ') || '-'}<br />
+                                    <strong>Palavras:</strong> {cand.keywords || '-'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Placar de Votação do Conselho */}
+                            <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-slate-800">Votos Colegiados:</span>
+                                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold">
+                                    {favorCount} Aprovados
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-[10px] font-bold">
+                                    {againstCount} Recusas
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-500 flex flex-wrap gap-x-2">
+                                  {votes.length === 0 ? (
+                                    <span>Nenhum membro do conselho votou ainda.</span>
+                                  ) : (
+                                    votes.map((v: any, i: number) => (
+                                      <span key={i} className="inline-flex items-center gap-1 font-medium">
+                                        • {v.user_name} ({v.vote === 'favoravel' ? '👍 A favor' : '👎 Contra'})
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Ações de Voto e Homologação */}
+                              <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
+                                {!userVote ? (
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCastCouncilVote(cand, 'favoravel')}
+                                      className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                                    >
+                                      👍 Meu Voto: Aprovado
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCastCouncilVote(cand, 'desfavoravel')}
+                                      className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-lg flex items-center gap-1"
+                                    >
+                                      👎 Recusar
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+                                    Você votou: {userVote.vote === 'favoravel' ? 'Favorável' : 'Desfavorável'}
+                                  </span>
+                                )}
+
+                                {isFullEditor && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleApproveReviewer(cand)}
+                                    className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shadow"
+                                  >
+                                    <Check className="w-3.5 h-3.5" /> Homologar e Ativar Parecerista
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ABA 3: QUADRO DE USUÁRIOS */}
               {isFullEditor && editorialTab === 'users' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
@@ -2149,7 +2417,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 3: MAILING */}
+              {/* ABA 4: MAILING */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
