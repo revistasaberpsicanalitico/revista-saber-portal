@@ -11,7 +11,6 @@ import {
   Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, Code, ThumbsUp, ThumbsDown, BookOpen
 } from 'lucide-react'
 
-// Helper para tradução e exibição das funções dos usuários
 const formatRole = (role: string) => {
   switch (role) {
     case 'author': return 'Autor'
@@ -24,7 +23,7 @@ const formatRole = (role: string) => {
 }
 
 // ============================================================================
-// MODAL 1: SUBMISSÃO DINÂMICA POR CATEGORIA DE MANUSCRITO
+// MODAL 1: SUBMISSÃO DINÂMICA
 // ============================================================================
 function SubmitModal({
   show, onClose, onSubmit, newSection, setNewSection,
@@ -50,22 +49,19 @@ function SubmitModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[92vh] overflow-y-auto my-6">
-        <div className="flex justify-between items-start border-b pb-4">
+      <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[92vh] overflow-y-auto my-6">
+        <div className="flex justify-between items-start border-b pb-3">
           <div>
-            <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">Portal Editorial</span>
-            <h3 className="text-xl font-bold text-slate-900 mt-1">Submissão de Novo Manuscrito</h3>
-            <p className="text-xs text-slate-500">Revista Saber Psicanalítico • ISSN 3086-8416 • Avaliação Duplo-Cega</p>
+            <span className="text-[11px] font-bold uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded border border-indigo-100">Portal Editorial</span>
+            <h3 className="text-lg font-bold text-slate-900 mt-1">Submissão de Manuscrito</h3>
+            <p className="text-xs text-slate-500">Revista Saber Psicanalítico • ISSN 3086-8416</p>
           </div>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <X className="w-5 h-5" />
-          </button>
+          <button type="button" onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-5">
-          {/* Seletor da Seção Editorial */}
+        <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Seção Editorial Pretendida *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Seção Editorial *</label>
             <select value={newSection} onChange={(e) => setNewSection(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
               <option value="Artigos Científicos">Artigos Científicos (2.000 a 8.000 palavras)</option>
               <option value="Ensaios Teóricos">Ensaios Teóricos (1.500 a 6.000 palavras)</option>
@@ -74,233 +70,139 @@ function SubmitModal({
             </select>
           </div>
 
-          {/* Banner Orientador Dinâmico */}
-          {isScientific && (
-            <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 text-xs text-blue-950 flex items-start gap-2">
-              <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p><strong>Artigos Científicos:</strong> Pesquisas originais com rigor metodológico, teóricas ou empíricas. Exigem títulos, resumos e palavras-chave bilíngues.</p>
-            </div>
-          )}
-
-          {isEssay && (
-            <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3 text-xs text-indigo-950 flex items-start gap-2">
-              <BookOpen className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
-              <p><strong>Ensaios Teóricos:</strong> Reflexões aprofundadas sobre conceitos psicanalíticos, metapsicologia ou interlocuções com a cultura. Exigem títulos, resumos e palavras-chave bilíngues.</p>
-            </div>
-          )}
-
           {isClinical && (
-            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-950 flex items-start gap-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-950 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-amber-900">Relatos de Experiência Clínica / Casos Clínicos:</p>
-                <p className="text-[11px] leading-relaxed">Foco na técnica e na discussão metapsicológica. <strong>O sigilo analítico e a descaracterização de dados biográficos do analisando são de exigência absoluta.</strong></p>
-              </div>
+              <p><strong>Relatos Clínicos:</strong> O sigilo e a descaracterização de dados biográficos do analisando são de exigência absoluta.</p>
             </div>
           )}
 
           {isReview && (
-            <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3.5 text-xs text-emerald-950 flex items-start gap-2">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-950 flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-emerald-900">Resenhas Críticas de Livros ou Obras:</p>
-                <p className="text-[11px] leading-relaxed">Conforme os padrões internacionais de periódicos acadêmicos, resenhas são textos concisos e <strong>dispensam resumo bilíngue (Abstract) e palavras-chave</strong>. É obrigatório informar a referência completa da obra resenhada abaixo.</p>
-              </div>
+              <p><strong>Resenhas:</strong> Textos concisos que <strong>dispensam resumo bilíngue (Abstract) e palavras-chave</strong>. Informe a referência completa da obra abaixo.</p>
             </div>
           )}
 
-          {/* Título Principal */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {isReview ? 'Título da Resenha (ou "Resenha da obra...") *' : 'Título do Manuscrito (em Português) *'}
-            </label>
-            <input type="text" required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={isReview ? 'Ex: Uma Leitura Crítica de Além do Princípio do Prazer' : 'Título conciso e representativo'} className="w-full px-3 py-2 text-xs border rounded-lg" />
+            <label className="block text-xs font-bold text-slate-700 mb-1">{isReview ? 'Título da Resenha *' : 'Título do Manuscrito (Português) *'}</label>
+            <input type="text" required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Título conciso" className="w-full px-3 py-2 text-xs border rounded-lg" />
           </div>
 
-          {/* Campo Exclusivo de Resenha */}
           {isReview && (
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Referência Bibliográfica Completa da Obra Resenhada (ABNT) *:
-              </label>
-              <textarea 
-                required 
-                rows={3} 
-                value={bookReference} 
-                onChange={(e) => setBookReference(e.target.value)} 
-                placeholder="Ex: FREUD, Sigmund. Além do princípio do prazer. Tradução de Paulo César de Souza. São Paulo: Companhia das Letras, 2010. 160 p. ISBN: 978-8535916034." 
-                className="w-full px-3 py-2 text-xs border rounded-lg bg-emerald-50/30 focus:ring-2 focus:ring-emerald-500" 
-              />
-              <p className="text-[11px] text-slate-500">Informe: Autor(es), Título, Tradutor (se houver), Cidade, Editora, Ano de publicação, Número de páginas e ISBN.</p>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Referência da Obra Resenhada (ABNT) *</label>
+              <textarea required rows={3} value={bookReference} onChange={(e) => setBookReference(e.target.value)} placeholder="Autor, Título, Cidade, Editora, Ano, Páginas, ISBN..." className="w-full px-3 py-2 text-xs border rounded-lg bg-emerald-50/20" />
             </div>
           )}
 
-          {/* Title em Inglês (Oculto em Resenhas) */}
           {!isReview && (
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Title (em Inglês) *</label>
-              <input type="text" required value={newTitleEn} onChange={(e) => setNewTitleEn(e.target.value)} placeholder="Title in English language" className="w-full px-3 py-2 text-xs border rounded-lg" />
-            </div>
+            <>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Title (Inglês) *</label>
+                <input type="text" required value={newTitleEn} onChange={(e) => setNewTitleEn(e.target.value)} placeholder="Title in English" className="w-full px-3 py-2 text-xs border rounded-lg" />
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Resumo (Português) *</label>
+                  <textarea required rows={4} value={newAbstract} onChange={(e) => setNewAbstract(e.target.value)} placeholder="150 a 250 palavras..." className="w-full px-3 py-2 text-xs border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Abstract (Inglês) *</label>
+                  <textarea required rows={4} value={newAbstractEn} onChange={(e) => setNewAbstractEn(e.target.value)} placeholder="150 to 250 words..." className="w-full px-3 py-2 text-xs border rounded-lg" />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Palavras-chave *</label>
+                  <input type="text" required value={newKeywords} onChange={(e) => setNewKeywords(e.target.value)} placeholder="Ex: Psicanálise; Inconsciente; Clínica." className="w-full px-3 py-2 text-xs border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Keywords *</label>
+                  <input type="text" required value={newKeywordsEn} onChange={(e) => setNewKeywordsEn(e.target.value)} placeholder="Ex: Psychoanalysis; Unconscious; Clinic." className="w-full px-3 py-2 text-xs border rounded-lg" />
+                </div>
+              </div>
+            </>
           )}
 
-          {/* Resumos Bilíngues (Ocultos em Resenhas) */}
-          {!isReview && (
-            <div className="grid md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Resumo em Português (150 a 250 palavras) *</label>
-                <textarea required rows={4} value={newAbstract} onChange={(e) => setNewAbstract(e.target.value)} placeholder="Apresente objetivo, referencial teórico psicanalítico, metodologia e considerações..." className="w-full px-3 py-2 text-xs border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Abstract (em Inglês) *</label>
-                <textarea required rows={4} value={newAbstractEn} onChange={(e) => setNewAbstractEn(e.target.value)} placeholder="Present objective, psychoanalytic theoretical framework, methodology, and conclusions..." className="w-full px-3 py-2 text-xs border rounded-lg" />
-              </div>
+          {/* Dados do Autor */}
+          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+            <h4 className="text-xs font-bold text-slate-800">Identificação Acadêmica do Autor Principal</h4>
+            <div className="grid md:grid-cols-3 gap-2">
+              <input type="text" required value={authorInstitution} onChange={(e) => setAuthorInstitution(e.target.value)} placeholder="Filiação Institucional *" className="px-3 py-1.5 text-xs border rounded-lg bg-white" />
+              <input type="url" value={authorLattes} onChange={(e) => setAuthorLattes(e.target.value)} placeholder="Link Lattes" className="px-3 py-1.5 text-xs border rounded-lg bg-white" />
+              <input type="text" value={authorOrcid} onChange={(e) => setAuthorOrcid(e.target.value)} placeholder="ORCID (0000-...)" className="px-3 py-1.5 text-xs border rounded-lg bg-white" />
             </div>
-          )}
-
-          {/* Palavras-chave Bilíngues (Ocultas em Resenhas) */}
-          {!isReview && (
-            <div className="grid md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Palavras-chave (3 a 5, separadas por ponto e vírgula) *</label>
-                <input type="text" required value={newKeywords} onChange={(e) => setNewKeywords(e.target.value)} placeholder="Ex: Psicanálise; Inconsciente; Transferência; Clínica." className="w-full px-3 py-2 text-xs border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Keywords (em Inglês, separadas por ponto e vírgula) *</label>
-                <input type="text" required value={newKeywordsEn} onChange={(e) => setNewKeywordsEn(e.target.value)} placeholder="Ex: Psychoanalysis; Unconscious; Transference; Clinic." className="w-full px-3 py-2 text-xs border rounded-lg" />
-              </div>
-            </div>
-          )}
-
-          {/* Autor Principal */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <div>
-              <h4 className="text-xs font-bold text-slate-800">Identificação Acadêmica do(a) Autor(a) Principal</h4>
-              <p className="text-[11px] text-slate-500">Dados confidenciais de controle editorial (não divulgados aos pareceristas durante a avaliação).</p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Filiação Institucional *</label>
-                <input type="text" required value={authorInstitution} onChange={(e) => setAuthorInstitution(e.target.value)} placeholder="Ex: ASP / Universidade..." className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Link do Currículo Lattes</label>
-                <input type="url" value={authorLattes} onChange={(e) => setAuthorLattes(e.target.value)} placeholder="http://lattes.cnpq.br/..." className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Identificador ORCID</label>
-                <input type="text" value={authorOrcid} onChange={(e) => setAuthorOrcid(e.target.value)} placeholder="0000-0000-0000-0000" className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Mini-biografia acadêmica (titulação e área de atuação) *</label>
-              <textarea rows={2} required value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Ex: Psicanalista, Especialista em Teoria e Clínica Psicanalítica..." className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
-            </div>
+            <textarea rows={2} required value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Mini-biografia acadêmica (titulação e área) *" className="w-full px-3 py-1.5 text-xs border rounded-lg bg-white" />
           </div>
 
           {/* Coautores */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
             <div className="flex justify-between items-center">
-              <div>
-                <h4 className="text-xs font-bold text-slate-800">Coautores ({coauthors.length})</h4>
-                <p className="text-[11px] text-slate-500">Adicione os coautores que participaram da pesquisa com sua titulação.</p>
-              </div>
-              <button type="button" onClick={onAddCoauthor} className="px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg flex items-center gap-1 hover:bg-indigo-100">
-                <Plus className="w-3.5 h-3.5" /> Adicionar Coautor
-              </button>
+              <h4 className="text-xs font-bold text-slate-800">Coautores ({coauthors.length})</h4>
+              <button type="button" onClick={onAddCoauthor} className="px-2 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</button>
             </div>
-            {coauthors.length === 0 ? (
-              <p className="text-center text-xs text-slate-400 py-1">Nenhum coautor adicionado (autoria individual).</p>
-            ) : (
-              coauthors.map((co: any, idx: number) => (
-                <div key={idx} className="bg-white p-3 rounded-lg border space-y-2.5 relative shadow-sm">
-                  <button type="button" onClick={() => onRemoveCoauthor(idx)} className="absolute top-2.5 right-2.5 text-rose-500 hover:text-rose-700 text-xs">
-                    <X className="w-4 h-4" />
-                  </button>
-                  <p className="text-[11px] font-bold text-indigo-700">Coautor(a) #{idx + 1}</p>
-                  <div className="grid md:grid-cols-3 gap-2 pr-6">
-                    <input type="text" required value={co.name} onChange={(e) => onUpdateCoauthor(idx, 'name', e.target.value)} placeholder="Nome completo *" className="px-2.5 py-1.5 text-xs border rounded" />
-                    <input type="email" required value={co.email} onChange={(e) => onUpdateCoauthor(idx, 'email', e.target.value)} placeholder="E-mail *" className="px-2.5 py-1.5 text-xs border rounded" />
-                    <input type="text" required value={co.institution} onChange={(e) => onUpdateCoauthor(idx, 'institution', e.target.value)} placeholder="Filiação institucional *" className="px-2.5 py-1.5 text-xs border rounded" />
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-2">
-                    <input type="url" value={co.lattes || ''} onChange={(e) => onUpdateCoauthor(idx, 'lattes', e.target.value)} placeholder="Link do Lattes (opcional)" className="px-2.5 py-1.5 text-xs border rounded" />
-                    <input type="text" value={co.orcid || ''} onChange={(e) => onUpdateCoauthor(idx, 'orcid', e.target.value)} placeholder="ORCID (opcional)" className="px-2.5 py-1.5 text-xs border rounded" />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Mini-biografia acadêmica (titulação e área de atuação)</label>
-                    <textarea rows={2} value={co.bio || ''} onChange={(e) => onUpdateCoauthor(idx, 'bio', e.target.value)} placeholder="Ex: Psicanalista, Mestre em Psicologia Clínica, pesquisador(a)..." className="w-full px-2.5 py-1.5 text-xs border rounded bg-white" />
-                  </div>
+            {coauthors.map((co: any, idx: number) => (
+              <div key={idx} className="bg-white p-3 rounded-lg border space-y-2 relative shadow-sm">
+                <button type="button" onClick={() => onRemoveCoauthor(idx)} className="absolute top-2 right-2 text-rose-500"><X className="w-3.5 h-3.5" /></button>
+                <div className="grid md:grid-cols-3 gap-2 pr-5">
+                  <input type="text" required value={co.name} onChange={(e) => onUpdateCoauthor(idx, 'name', e.target.value)} placeholder="Nome completo *" className="px-2 py-1 text-xs border rounded" />
+                  <input type="email" required value={co.email} onChange={(e) => onUpdateCoauthor(idx, 'email', e.target.value)} placeholder="E-mail *" className="px-2 py-1 text-xs border rounded" />
+                  <input type="text" required value={co.institution} onChange={(e) => onUpdateCoauthor(idx, 'institution', e.target.value)} placeholder="Filiação *" className="px-2 py-1 text-xs border rounded" />
                 </div>
-              ))
-            )}
+                <div className="grid md:grid-cols-2 gap-2">
+                  <input type="url" value={co.lattes || ''} onChange={(e) => onUpdateCoauthor(idx, 'lattes', e.target.value)} placeholder="Link Lattes" className="px-2 py-1 text-xs border rounded" />
+                  <input type="text" value={co.orcid || ''} onChange={(e) => onUpdateCoauthor(idx, 'orcid', e.target.value)} placeholder="ORCID" className="px-2 py-1 text-xs border rounded" />
+                </div>
+                <textarea rows={1} value={co.bio || ''} onChange={(e) => onUpdateCoauthor(idx, 'bio', e.target.value)} placeholder="Mini-biografia do coautor..." className="w-full px-2 py-1 text-xs border rounded" />
+              </div>
+            ))}
           </div>
 
-          {/* Anexo de Manuscrito */}
-          <div className="border-2 border-dashed border-slate-300 p-5 rounded-xl text-center space-y-2 bg-slate-50/50">
-            <FileText className="w-10 h-10 mx-auto text-indigo-600" />
+          {/* Upload Manuscrito */}
+          <div className="border-2 border-dashed border-slate-300 p-4 rounded-xl text-center space-y-1.5 bg-slate-50/50">
+            <FileText className="w-8 h-8 mx-auto text-indigo-600" />
             <label className="block text-xs font-semibold text-slate-700 cursor-pointer">
-              Clique para selecionar o Manuscrito Anonimizado (.doc ou .docx)
-              <input type="file" required accept=".doc,.docx,.pdf" onChange={onFileChange} className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mt-2" />
+              Selecionar Manuscrito Anonimizado (.doc ou .docx)
+              <input type="file" required accept=".doc,.docx,.pdf" onChange={onFileChange} className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 mt-2" />
             </label>
-            <div className="text-[11px] text-slate-600 max-w-xl mx-auto space-y-1.5 text-left bg-white p-3.5 rounded-lg border border-slate-200 mt-2">
-              <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" /> Estrutura obrigatória do arquivo:
-              </p>
-              <p>
-                {isReview 
-                  ? 'O arquivo da resenha deve conter: Título, Referência Bibliográfica completa da obra, Texto crítico-analítico e Referências complementares (se houver).' 
-                  : 'O arquivo deve conter: Título (PT/EN), Resumo, Abstract, Palavras-chave, Keywords, Introdução, Desenvolvimento teórico/clínico e Referências.'}
-              </p>
-              <p className="text-amber-800 font-semibold pt-1 border-t border-slate-100 flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                Anonimização Estrita: o texto não deve conter nomes de autores ou propriedades pessoais no Word.
-              </p>
-            </div>
+            <p className="text-[11px] text-amber-700">O arquivo não deve conter nomes ou marcas de autoria no texto e propriedades.</p>
           </div>
 
           {/* Declarações Éticas */}
-          <div className="space-y-2.5 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 text-xs text-slate-700">
-            <h5 className="font-bold text-indigo-950 mb-1 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-indigo-600" />
-              Declarações Éticas e Compromissos Editoriais (COPE / CC-BY 4.0):
-            </h5>
-            <label className="flex items-start gap-2.5 cursor-pointer">
+          <div className="space-y-2 bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-100 text-xs text-slate-700">
+            <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" required checked={termOriginal} onChange={(e) => setTermOriginal(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
-              <span><strong>Ineditismo e Exclusividade:</strong> Declaro que o manuscrito é original, inédito e não foi submetido simultaneamente a outro periódico.</span>
+              <span><strong>Ineditismo:</strong> Trabalho original, inédito e não submetido a outro periódico.</span>
             </label>
-            <label className="flex items-start gap-2.5 cursor-pointer">
+            <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" required checked={termEthics} onChange={(e) => setTermEthics(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
-              <span><strong>Conformidade Ética (COPE):</strong> Declaro conformidade com as diretrizes internacionais de ética em publicação científica.</span>
+              <span><strong>COPE:</strong> Conformidade com diretrizes éticas internacionais de publicação.</span>
             </label>
-
-            {/* TERMO EXCLUSIVO DE CASO CLÍNICO */}
             {isClinical && (
-              <label className="flex items-start gap-2.5 cursor-pointer bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+              <label className="flex items-start gap-2 cursor-pointer bg-amber-50 p-2 rounded border border-amber-200">
                 <input type="checkbox" required checked={termClinicalPledge} onChange={(e) => setTermClinicalPledge(e.target.checked)} className="mt-0.5 rounded text-amber-600" />
-                <span className="text-amber-950">
-                  <strong>Sigilo Clínico e Descaracterização do Paciente (Obrigatório para Casos Clínicos):</strong> Declaro sob responsabilidade ética e profissional que todos os dados biográficos, ocupacionais e circunstanciais do analisando foram integralmente alterados ou suprimidos, impossibilitando qualquer identificação direta ou indireta do sujeito atendido.
-                </span>
+                <span className="text-amber-950 font-medium"><strong>Sigilo Analítico:</strong> Todos os dados do paciente foram integralmente descaracterizados.</span>
               </label>
             )}
-
-            <label className="flex items-start gap-2.5 cursor-pointer">
+            <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" required checked={termAnonymous} onChange={(e) => setTermAnonymous(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
-              <span><strong>Garantia de Anonimização:</strong> Confirmo que o documento anexado foi totalmente desprovido de qualquer marca que identifique os autores, permitindo a avaliação duplo-cega (*blind peer review*).</span>
+              <span><strong>Anonimização:</strong> Documento sem nenhuma identificação dos autores.</span>
             </label>
-            <label className="flex items-start gap-2.5 cursor-pointer">
+            <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" required checked={termCC} onChange={(e) => setTermCC(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
-              <span><strong>Acesso Aberto (CC-BY 4.0):</strong> Concordo que, se aceito, o manuscrito será distribuído sob a licença internacional Creative Commons Atribuição 4.0 (CC-BY 4.0), livre e gratuito.</span>
+              <span><strong>Acesso Aberto:</strong> Cessão sob licença Creative Commons CC-BY 4.0 gratuita.</span>
             </label>
-            <label className="flex items-start gap-2.5 cursor-pointer">
+            <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" required checked={termAI} onChange={(e) => setTermAI(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
-              <span><strong>Uso Ético de Inteligência Artificial:</strong> Declaro autoria integral e que qualquer emprego de modelos generativos de linguagem foi explicitado na seção metodológica.</span>
+              <span><strong>IA:</strong> Autoria integral humana com menção metodológica de eventuais suportes de IA.</span>
             </label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-            <button type="submit" disabled={submitting} className="px-5 py-2.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
-              {submitting ? 'Gravando e Notificando Editores...' : <><Upload className="w-4 h-4" /> Concluir Submissão Oficial</>}
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-medium text-slate-600">Cancelar</button>
+            <button type="submit" disabled={submitting} className="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-1.5">
+              {submitting ? 'Gravando...' : <><Upload className="w-3.5 h-3.5" /> Concluir Submissão</>}
             </button>
           </div>
         </form>
@@ -310,59 +212,31 @@ function SubmitModal({
 }
 
 // ============================================================================
-// MODAL 2: REENVIO DE ARQUIVO CORRIGIDO
+// MODAL 2: REENVIO DE ARQUIVO
 // ============================================================================
 function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }: any) {
   if (!article) return null
-
-  const isAnonAdjustment = article.status === 'ajustes_iniciais'
+  const isAnon = article.status === 'ajustes_iniciais'
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-        <div className="flex justify-between items-start border-b pb-3">
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
+        <div className="flex justify-between items-start border-b pb-2">
           <div>
-            <span className="text-[11px] font-bold tracking-wider uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
-              {isAnonAdjustment ? 'Ajuste de Anonimização' : 'Reenvio de Correções'}
-            </span>
-            <h3 className="text-base font-bold text-slate-900 mt-1">Enviar Versão Revisada do Manuscrito</h3>
+            <h3 className="text-base font-bold text-slate-900">Enviar Versão Revisada</h3>
             <p className="text-xs text-slate-500 line-clamp-1">{article.title}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4" /></button>
+          <button type="button" onClick={onClose}><X className="w-4 h-4" /></button>
         </div>
-
-        {isAnonAdjustment ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-950 space-y-1.5">
-            <p className="font-bold flex items-center gap-1.5 text-amber-900">
-              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-              Solicitação da Editoria: Remoção de Identificação
-            </p>
-            <p className="text-[11px] leading-relaxed">
-              O trabalho não pôde seguir para os pareceristas por conter marcas de autoria. Por favor, <strong>remova nomes, filiações e informações pessoais do corpo do texto e das propriedades do arquivo Word</strong> e reenvie para dar início à avaliação duplo-cega.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3.5 text-xs text-indigo-950 space-y-1.5">
-            <p className="font-bold flex items-center gap-1.5 text-indigo-900">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-              Orientações para o Reenvio com Correções
-            </p>
-            <p className="text-[11px] leading-relaxed">
-              Incorpore as alterações recomendadas nos pareceres dos avaliadores e nas considerações da editoria. Se o artigo for submetido a uma nova rodada de avaliação cega, mantenha o anonimato do texto.
-            </p>
-          </div>
-        )}
-
+        <p className="text-xs text-slate-600">
+          {isAnon ? 'Remova nomes e dados pessoais do texto e das propriedades do Word antes de anexar.' : 'Anexe a versão revisada incorporando os pareceres da editoria.'}
+        </p>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Selecione o arquivo corrigido (.doc, .docx ou .pdf):</label>
-            <input type="file" required accept=".doc,.docx,.pdf" onChange={onFileChange} className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-1" />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t">
-            <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-1.5">
-              {submitting ? 'Enviando...' : <><RefreshCw className="w-3.5 h-3.5" /> Enviar Arquivo Corrigido</>}
+          <input type="file" required accept=".doc,.docx,.pdf" onChange={onFileChange} className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700" />
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
+            <button type="submit" disabled={submitting} className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg">
+              {submitting ? 'Enviando...' : 'Confirmar Reenvio'}
             </button>
           </div>
         </form>
@@ -372,137 +246,67 @@ function ResubmitModal({ article, onClose, onSubmit, onFileChange, submitting }:
 }
 
 // ============================================================================
-// MODAL 3: FICHA COMPLETA COM TODOS OS DADOS DA SUBMISSÃO DO ARTIGO
+// MODAL 3: FICHA COMPLETA DO ARTIGO
 // ============================================================================
 function ArticleDetailsModal({ article, onClose, getAuthorName, getAuthorEmail, getAuthorInst, onDownloadFile }: any) {
   if (!article) return null
-
-  const authorName = getAuthorName(article.author_id, article)
-  const authorEmail = getAuthorEmail(article.author_id, article)
-  const authorInst = article.author_institution || getAuthorInst(article.author_id, article)
   const isReview = article.section === 'Resenhas'
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[85] overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border space-y-6 max-h-[92vh] overflow-y-auto my-6">
-        <div className="flex justify-between items-start border-b pb-4">
+      <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border space-y-5 max-h-[92vh] overflow-y-auto my-6">
+        <div className="flex justify-between items-start border-b pb-3">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded border border-indigo-100">
-                {article.section || 'Artigos Científicos'}
-              </span>
-              <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded">
-                STATUS: {article.status?.toUpperCase()}
-              </span>
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mt-2">{article.title}</h3>
-            {article.title_en && !isReview && <p className="text-xs text-slate-500 italic mt-0.5">Title (EN): {article.title_en}</p>}
+            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{article.section || 'Artigos Científicos'}</span>
+            <h3 className="text-base font-bold text-slate-900 mt-1">{article.title}</h3>
+            {article.title_en && !isReview && <p className="text-xs text-slate-500 italic">Title (EN): {article.title_en}</p>}
           </div>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <X className="w-5 h-5" />
-          </button>
+          <button type="button" onClick={onClose}><X className="w-4 h-4 text-slate-400" /></button>
         </div>
 
-        {/* Resumo ou Referência da Obra Resenhada */}
-        <div className="space-y-4">
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              {isReview ? 'Referência da Obra Resenhada' : 'Resumo (Português)'}
-            </h4>
-            <p className="text-xs text-slate-700 leading-relaxed text-justify whitespace-pre-line">{article.abstract}</p>
-            {!isReview && article.keywords && (
-              <p className="text-[11px] text-slate-600 pt-1"><strong>Palavras-chave:</strong> {article.keywords}</p>
-            )}
-          </div>
-
-          {!isReview && article.abstract_en && (
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Abstract (English)</h4>
-              <p className="text-xs text-slate-700 leading-relaxed text-justify whitespace-pre-line">{article.abstract_en}</p>
-              {article.keywords_en && (
-                <p className="text-[11px] text-slate-600 pt-1"><strong>Keywords:</strong> {article.keywords_en}</p>
-              )}
-            </div>
-          )}
+        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1">
+          <h4 className="font-bold text-slate-800 uppercase">{isReview ? 'Referência da Obra Resenhada' : 'Resumo'}</h4>
+          <p className="text-slate-700 leading-relaxed whitespace-pre-line text-justify">{article.abstract}</p>
+          {!isReview && article.keywords && <p className="text-slate-600 pt-1"><strong>Palavras-chave:</strong> {article.keywords}</p>}
         </div>
 
-        {/* Autor Principal */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
-          <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Autor(a) Principal</h4>
-          <div className="grid sm:grid-cols-2 gap-2 text-xs">
-            <p><strong>Nome:</strong> {authorName}</p>
-            <p><strong>E-mail:</strong> {authorEmail || '-'}</p>
-            <p><strong>Filiação Institucional:</strong> {authorInst || '-'}</p>
-            <p><strong>ORCID:</strong> {article.author_orcid || '-'}</p>
-            {article.author_lattes && (
-              <p className="sm:col-span-2">
-                <strong>Currículo Lattes:</strong>{' '}
-                <a href={article.author_lattes} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">
-                  {article.author_lattes}
-                </a>
-              </p>
-            )}
-            {article.author_bio && (
-              <p className="sm:col-span-2 bg-slate-50 p-2.5 rounded border border-slate-100 text-slate-600">
-                <strong>Mini-biografia acadêmica:</strong> {article.author_bio}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Coautores */}
-        {article.coauthors && article.coauthors.length > 0 && (
-          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
-            <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Coautores ({article.coauthors.length})</h4>
-            <div className="space-y-2">
-              {article.coauthors.map((co: any, i: number) => (
-                <div key={i} className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1">
-                  <p className="font-bold text-slate-900">{i + 1}. {co.name} ({co.email})</p>
-                  <p className="text-slate-600">Filiação: {co.institution || '-'} • ORCID: {co.orcid || '-'}</p>
-                  {co.lattes && (
-                    <p>
-                      <a href={co.lattes} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">
-                        Lattes: {co.lattes}
-                      </a>
-                    </p>
-                  )}
-                  {co.bio && <p className="text-[11px] text-slate-500 italic">"{co.bio}"</p>}
-                </div>
-              ))}
-            </div>
+        {!isReview && article.abstract_en && (
+          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1">
+            <h4 className="font-bold text-slate-800 uppercase">Abstract</h4>
+            <p className="text-slate-700 leading-relaxed whitespace-pre-line text-justify">{article.abstract_en}</p>
+            {article.keywords_en && <p className="text-slate-600 pt-1"><strong>Keywords:</strong> {article.keywords_en}</p>}
           </div>
         )}
 
-        {/* Arquivos e Datas */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-indigo-50/60 p-4 rounded-xl border border-indigo-100 text-xs">
-          <div className="space-y-0.5 text-center sm:text-left">
-            <p className="font-bold text-slate-800">Data de Submissão: {new Date(article.created_at).toLocaleString('pt-BR')}</p>
-            <p className="text-slate-500">Última atualização: {new Date(article.updated_at || article.created_at).toLocaleString('pt-BR')}</p>
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-xs space-y-1">
+          <h4 className="font-bold text-indigo-900 uppercase">Autor Principal</h4>
+          <p><strong>Nome:</strong> {getAuthorName(article.author_id, article)} | <strong>E-mail:</strong> {getAuthorEmail(article.author_id, article) || '-'}</p>
+          <p><strong>Filiação:</strong> {article.author_institution || getAuthorInst(article.author_id, article)} | <strong>ORCID:</strong> {article.author_orcid || '-'}</p>
+          {article.author_lattes && <p><strong>Lattes:</strong> <a href={article.author_lattes} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">{article.author_lattes}</a></p>}
+          {article.author_bio && <p className="text-slate-500 italic pt-1">"{article.author_bio}"</p>}
+        </div>
+
+        {article.coauthors && article.coauthors.length > 0 && (
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-xs space-y-2">
+            <h4 className="font-bold text-indigo-900 uppercase">Coautores ({article.coauthors.length})</h4>
+            {article.coauthors.map((co: any, i: number) => (
+              <div key={i} className="p-2 bg-slate-50 rounded border text-xs">
+                <p className="font-semibold text-slate-900">{co.name} ({co.email}) • {co.institution || '-'}</p>
+                {co.orcid && <p className="text-slate-500">ORCID: {co.orcid}</p>}
+              </div>
+            ))}
           </div>
-          <div className="flex gap-2">
-            <button 
-              type="button" 
-              onClick={() => onDownloadFile(article.file_url, article.title, 'Manuscrito')} 
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg flex items-center gap-1.5 shadow-sm"
-            >
-              <Download className="w-3.5 h-3.5" /> Baixar Manuscrito Atual
-            </button>
-            {article.original_file_url && article.original_file_url !== article.file_url && (
-              <button 
-                type="button" 
-                onClick={() => onDownloadFile(article.original_file_url, article.title, 'Versao_Original')} 
-                className="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold rounded-lg flex items-center gap-1.5"
-              >
-                Versão Original
-              </button>
-            )}
-          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-2 bg-indigo-50/60 p-3 rounded-xl border border-indigo-100 text-xs">
+          <p className="text-slate-600">Submetido em: {new Date(article.created_at).toLocaleString('pt-BR')}</p>
+          <button type="button" onClick={() => onDownloadFile(article.file_url, article.title, 'Manuscrito')} className="px-3 py-1.5 bg-indigo-600 text-white font-semibold rounded-lg flex items-center gap-1 shadow-sm">
+            <Download className="w-3.5 h-3.5" /> Baixar Arquivo
+          </button>
         </div>
 
         <div className="flex justify-end pt-2 border-t">
-          <button type="button" onClick={onClose} className="px-5 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg">
-            Fechar Ficha
-          </button>
+          <button type="button" onClick={onClose} className="px-4 py-1.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg">Fechar</button>
         </div>
       </div>
     </div>
@@ -532,56 +336,29 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
   
   const docCode = isAceite ? `ASP-ACE-${(article?.id || '').slice(0, 8).toUpperCase()}` :
                   isRecusa ? `ASP-REC-${(article?.id || '').slice(0, 8).toUpperCase()}` :
-                  `ASP-PAR-${(review?.id || '').slice(0, 8).toUpperCase()}`
+                  `ASP-PAR-${(review?.id || '').slice(0, 8).toUpperCase()}`;
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[90] overflow-y-auto flex flex-col items-center p-3 sm:p-6 print:p-0 print:bg-white">
       <div className="w-full max-w-[800px] flex justify-between items-center mb-4 no-print bg-slate-800 text-white px-4 py-2.5 rounded-xl shadow-lg">
         <span className="text-xs font-semibold text-slate-200">Documento Oficial Timbrado (Formato A4)</span>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow"
-          >
+          <button type="button" onClick={() => window.print()} className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow">
             <Printer className="w-3.5 h-3.5" /> Imprimir / Salvar em PDF
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <button type="button" onClick={onClose} className="p-1.5 text-slate-300 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
       </div>
 
       <div className="bg-white w-full max-w-[800px] min-h-[1080px] p-12 sm:p-16 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-12 print:w-full print:min-h-screen border border-slate-200">
         <div>
           <div className="flex items-center justify-between pb-6 border-b border-slate-200 gap-6">
-            <img 
-              src="/logo-revista.png" 
-              alt="Revista Saber Psicanalítico" 
-              className="h-36 sm:h-44 max-h-48 w-auto object-contain drop-shadow-sm" 
-              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-            />
+            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-36 sm:h-44 max-h-48 w-auto object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             <div className="text-right space-y-1">
-              <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-tight">
-                Revista Saber Psicanalítico
-              </h2>
-              <p className="text-xs font-semibold text-indigo-900 tracking-wide uppercase">
-                ISSN 3086-8416
-              </p>
-              <p className="text-xs text-slate-500">
-                Publicação Científica Semestral
-              </p>
-              <p className="text-[11px] text-slate-400">
-                revistasaberpsicanalitico@gmail.com
-              </p>
+              <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-tight">Revista Saber Psicanalítico</h2>
+              <p className="text-xs font-semibold text-indigo-900 tracking-wide uppercase">ISSN 3086-8416</p>
+              <p className="text-xs text-slate-500">Publicação Científica Semestral</p>
+              <p className="text-[11px] text-slate-400">revistasaberpsicanalitico@gmail.com</p>
             </div>
           </div>
 
@@ -600,20 +377,13 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
                   Declaramos, para os devidos fins e efeitos de comprovação acadêmica e curricular, que o trabalho científico intitulado <strong>“{article?.title}”</strong>, de autoria de <strong>{authName}</strong>
                   {article?.coauthors && article.coauthors.length > 0 && (
                     <> e pelos coautores {article.coauthors.map((c: any, i: number) => (
-                      <React.Fragment key={i}>
-                        {i > 0 && (i === article.coauthors.length - 1 ? ' e ' : ', ')}
-                        <strong>{c.name}</strong>
-                      </React.Fragment>
+                      <React.Fragment key={i}>{i > 0 && (i === article.coauthors.length - 1 ? ' e ' : ', ')}<strong>{c.name}</strong></React.Fragment>
                     ))}</>
                   )}
                   , foi submetido em <strong>{submitDateStr}</strong> e, após processo formal de avaliação duplo-cega por pares (<em>double-blind peer review</em>), <strong>APROVADO PARA PUBLICAÇÃO</strong> em <strong>{decisionDateStr}</strong> na <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>.
                 </p>
-                <p>
-                  O manuscrito obteve parecer favorável da Comissão Editorial, atendendo plenamente aos critérios de originalidade, consistência teórico-clínica metapsicológica e conformidade com os padrões éticos internacionais de publicação científica (COPE).
-                </p>
-                <p>
-                  A publicação oficial do referido trabalho está programada para integrar o <strong>{issueName}</strong> deste periódico.
-                </p>
+                <p>O manuscrito obteve parecer favorável da Comissão Editorial, atendendo aos critérios de originalidade, consistência metapsicológica e padrões éticos (COPE).</p>
+                <p>A publicação oficial está programada para integrar o <strong>{issueName}</strong> deste periódico.</p>
               </>
             )}
 
@@ -623,25 +393,16 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
                   Comunicamos, para os devidos fins, que o manuscrito intitulado <strong>“{article?.title}”</strong>, de autoria de <strong>{authName}</strong>
                   {article?.coauthors && article.coauthors.length > 0 && (
                     <> e pelos coautores {article.coauthors.map((c: any, i: number) => (
-                      <React.Fragment key={i}>
-                        {i > 0 && (i === article.coauthors.length - 1 ? ' e ' : ', ')}
-                        <strong>{c.name}</strong>
-                      </React.Fragment>
+                      <React.Fragment key={i}>{i > 0 && (i === article.coauthors.length - 1 ? ' e ' : ', ')}<strong>{c.name}</strong></React.Fragment>
                     ))}</>
                   )}
-                  , submetido à apreciação da <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong> em <strong>{submitDateStr}</strong>, concluiu todas as etapas regimentais de triagem e avaliação por pares (<em>peer review</em>) em <strong>{decisionDateStr}</strong>.
+                  , submetido à apreciação em <strong>{submitDateStr}</strong>, concluiu todas as etapas regimentais de avaliação em <strong>{decisionDateStr}</strong>.
                 </p>
-                <p>
-                  Após a análise dos pareceres emitidos pelo corpo de pareceristas ad-hoc e as deliberações da Comissão Editorial, informamos que o trabalho <strong>NÃO FOI ACEITO PARA PUBLICAÇÃO</strong> no presente ciclo editorial deste periódico.
-                </p>
+                <p>Após análise dos pareceres emitidos pelos avaliadores ad-hoc e deliberações da Comissão Editorial, informamos que o trabalho <strong>NÃO FOI ACEITO PARA PUBLICAÇÃO</strong> no presente ciclo.</p>
                 {article?.rejection_reason && (
-                  <p className="bg-slate-50 p-4 rounded border border-slate-200 text-xs italic font-sans text-slate-700">
-                    <strong>Considerações da Editoria:</strong> {article.rejection_reason}
-                  </p>
+                  <p className="bg-slate-50 p-4 rounded border border-slate-200 text-xs italic font-sans text-slate-700"><strong>Considerações da Editoria:</strong> {article.rejection_reason}</p>
                 )}
-                <p>
-                  Agradecemos a valiosa contribuição ao submeter sua pesquisa à Revista Saber Psicanalítico e encorajamos a submissão de futuras investigações científicas.
-                </p>
+                <p>Agradecemos a valiosa contribuição ao submeter sua pesquisa à Revista Saber Psicanalítico.</p>
               </>
             )}
 
@@ -650,54 +411,30 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
                 <p>
                   Declaramos, para os devidos fins de direito, que <strong>{reviewer?.full_name || 'Parecerista'}</strong> atuou como <strong>Parecerista Ad-hoc</strong> da <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, periódico científico semestral publicado pela Associação Saber Psicanalítico (ASP).
                 </p>
-                <p>
-                  O processo avaliativo ocorreu no âmbito do sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), mediante a emissão de parecer circunstanciado de mérito técnico-científico que apreciou o rigor metodológico, a pertinência metapsicológica e a relevância psicanalítica da produção acadêmica designada.
-                </p>
-                <p>
-                  Reconhecemos e agradecemos a inestimável colaboração prestada a esta publicação científica e à difusão do saber psicanalítico.
-                </p>
+                <p>O processo avaliativo ocorreu no âmbito do sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), mediante emissão de parecer circunstanciado de mérito técnico-científico que apreciou o rigor conceitual e a relevância da produção acadêmica designada.</p>
+                <p>Reconhecemos e agradecemos a inestimável colaboração prestada a esta publicação científica.</p>
               </>
             )}
 
-            <p className="text-right text-xs pt-2 font-sans text-slate-700">
-              Caruaru/PE, {docDate}.
-            </p>
+            <p className="text-right text-xs pt-2 font-sans text-slate-700">Caruaru/PE, {docDate}.</p>
           </div>
 
           <div className="mt-8 text-center flex flex-col items-center justify-center">
-            <p className="font-serif font-bold text-slate-900 text-sm sm:text-base">
-              Dr. Edson Leandro de Almeida
-            </p>
-            <p className="text-xs text-indigo-900 font-semibold mt-0.5">
-              Editor-Chefe • Revista Saber Psicanalítico
-            </p>
+            <p className="font-serif font-bold text-slate-900 text-sm sm:text-base">Dr. Edson Leandro de Almeida</p>
+            <p className="text-xs text-indigo-900 font-semibold mt-0.5">Editor-Chefe • Revista Saber Psicanalítico</p>
 
             <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg max-w-lg mx-auto text-center font-sans space-y-1">
-              <p className="text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                Documento Assinado Digitalmente
-              </p>
-              <p className="text-[10px] text-slate-500 leading-tight">
-                Assinado eletronicamente pelo Editor-Chefe em conformidade com as diretrizes e padrões de validação eletrônica da Revista Saber Psicanalítico.
-              </p>
-              <p className="text-[11px] font-mono text-slate-800 font-bold tracking-wide pt-0.5">
-                Código de Verificação: {docCode}
-              </p>
-              <p className="text-[9.5px] text-slate-400">
-                A autenticidade deste documento pode ser verificada em: <span className="text-indigo-600 font-semibold">https://revista-saber-portal.vercel.app</span> informando o código acima.
-              </p>
+              <p className="text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Documento Assinado Digitalmente</p>
+              <p className="text-[10px] text-slate-500 leading-tight">Assinado eletronicamente pelo Editor-Chefe conforme diretrizes de validação eletrônica da Revista Saber Psicanalítico.</p>
+              <p className="text-[11px] font-mono text-slate-800 font-bold pt-0.5">Código de Verificação: {docCode}</p>
+              <p className="text-[9.5px] text-slate-400">Validação em: <span className="text-indigo-600 font-semibold">https://revista-saber-portal.vercel.app</span></p>
             </div>
           </div>
         </div>
 
         <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-sans">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo-asp.png" 
-              alt="ASP" 
-              className="h-8 sm:h-9 object-contain opacity-80" 
-              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-            />
+            <img src="/logo-asp.png" alt="ASP" className="h-8 sm:h-9 object-contain opacity-80" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             <div>
               <p className="font-bold text-slate-700 text-[11px] whitespace-nowrap">Associação Saber Psicanalítico (ASP)</p>
               <p className="text-slate-500 whitespace-nowrap">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
@@ -705,12 +442,9 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
           </div>
           <div className="text-center sm:text-right space-y-0.5 text-slate-500">
             <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-            <p>
-              <span>www.asppsicanalise.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span>
-            </p>
+            <p><span>www.asppsicanalise.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span></p>
           </div>
         </div>
-
       </div>
     </div>
   )
@@ -724,10 +458,7 @@ export default function Home() {
   const [profile, setProfile] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor' | 'council'>('author')
   const [loading, setLoading] = useState(true)
-
-  // Sub-abas na Sala Editorial
   const [editorialTab, setEditorialTab] = useState<'articles' | 'users' | 'mailing'>('articles')
-
   const [showSpamNotice, setShowSpamNotice] = useState(true)
 
   // Auth States
@@ -739,8 +470,6 @@ export default function Home() {
   const [phone, setPhone] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
-
-  // Recuperação de Senha
   const [showForgotModal, setShowForgotModal] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
@@ -749,19 +478,15 @@ export default function Home() {
   const [allArticles, setAllArticles] = useState<any[]>([])
   const [allProfiles, setAllProfiles] = useState<any[]>([])
   const [allReviews, setAllReviews] = useState<any[]>([])
-
-  // Modal para Visualização Completa da Ficha do Artigo
   const [selectedArticleDetails, setSelectedArticleDetails] = useState<any>(null)
 
-  // Filtros de Artigos
+  // Filtros
   const [editorSearch, setEditorSearch] = useState('')
   const [editorStatusFilter, setEditorStatusFilter] = useState('todos')
-
-  // Filtros de Usuários
   const [userSearch, setUserSearch] = useState('')
   const [userRoleFilter, setUserRoleFilter] = useState('todos')
 
-  // Edição de Perfil de Usuário pelo Editor
+  // Edição de Usuário
   const [editingUserModal, setEditingUserModal] = useState<any>(null)
   const [editUserName, setEditUserName] = useState('')
   const [editUserInst, setEditUserInst] = useState('')
@@ -771,7 +496,7 @@ export default function Home() {
   const [editUserRole, setEditUserRole] = useState('')
   const [savingUserEdit, setSavingUserEdit] = useState(false)
 
-  // Central de Mailing / Comunicados com Formatação Rica e Preview (Via URL de imagem)
+  // Central de Mailing
   const [mailingTarget, setMailingTarget] = useState<'all' | 'author' | 'reviewer' | 'council'>('all')
   const [mailingSubject, setMailingSubject] = useState('')
   const [mailingTitle, setMailingTitle] = useState('')
@@ -789,7 +514,7 @@ export default function Home() {
   const [verifyResult, setVerifyResult] = useState<any>(null)
   const [checkingCode, setCheckingCode] = useState(false)
 
-  // Meu Perfil Pessoal
+  // Meu Perfil
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [profileInst, setProfileInst] = useState('')
@@ -798,7 +523,7 @@ export default function Home() {
   const [profileOrcid, setProfileOrcid] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
 
-  // Submissão do Autor (Com campos dinâmicos por seção)
+  // Submissão do Autor
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [newSection, setNewSection] = useState('Artigos Científicos')
   const [newTitle, setNewTitle] = useState('')
@@ -832,7 +557,7 @@ export default function Home() {
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
   const [assignDeadline, setAssignDeadline] = useState('')
 
-  // Solicitar Correções (Modal do Editor)
+  // Solicitar Correções
   const [requestChangesModalArticle, setRequestChangesModalArticle] = useState<any>(null)
   const [changesReasonText, setChangesReasonText] = useState('')
   const [savingChanges, setSavingChanges] = useState(false)
@@ -842,7 +567,7 @@ export default function Home() {
   const [rejectionReasonText, setRejectionReasonText] = useState('')
   const [savingRejection, setSavingRejection] = useState(false)
 
-  // Parecer Completo com Critérios Dinâmicos
+  // Parecer Técnico
   const [reviewModalData, setReviewModalData] = useState<any>(null)
   const [critTitle, setCritTitle] = useState('satisfatorio')
   const [critTheory, setCritTheory] = useState('consistente')
@@ -854,7 +579,7 @@ export default function Home() {
   const [reviewFile, setReviewFile] = useState<File | null>(null)
   const [submittingReview, setSubmittingReview] = useState(false)
 
-  // Documento Timbrado A4
+  // Documento Timbrado
   const [activeOfficialDoc, setActiveOfficialDoc] = useState<any>(null)
   const [showReviewerThankModal, setShowReviewerThankModal] = useState(false)
   const [copiedThanks, setCopiedThanks] = useState(false)
@@ -1444,7 +1169,7 @@ export default function Home() {
             to: authorEmail,
             subject: 'Ajuste de Anonimização Solicitado - Revista Saber Psicanalítico',
             title: 'Ajuste Inicial Necessário',
-            message: `Prezado(a) ${authorName},\n\nDurante a triagem do trabalho "${title}", identificamos marcas que comprometem o sigilo da avaliação duplo-cega (como nomes, filiações ou propriedades do arquivo).\n\nPor favor, acesse o portal, baixe o arquivo, remova qualquer identificação do texto e propriedades do documento, e anexe a versão anonimizada no botão "Enviar Arquivo Corrigido".`,
+            message: `Prezado(a) ${authorName},\n\nDurante a triagem do trabalho "${title}", identificamos marcas que comprometem o sigilo da avaliação duplo-cega.\n\nPor favor, remova qualquer identificação do texto e propriedades do documento, e anexe a versão anonimizada no botão "Enviar Arquivo Corrigido".`,
             actionText: 'Reenviar Arquivo no Portal',
             actionUrl: 'https://revista-saber-portal.vercel.app'
           })
@@ -1453,7 +1178,7 @@ export default function Home() {
             to: authorEmail,
             subject: 'Artigo em Avaliação por Pares - Revista Saber Psicanalítico',
             title: 'Triagem Inicial Concluída',
-            message: `Prezado(a) ${authorName},\n\nComunicamos que seu manuscrito "${title}" foi aprovado na triagem regimental (Desk Review) e entrou na fase oficial de AVALIAÇÃO DUPLO-CEGA POR PARES (Double-Blind Peer Review).\n\nO trabalho está sob análise de pareceristas especialistas. Você pode acompanhar o andamento em tempo real diretamente pelo portal da revista.`,
+            message: `Prezado(a) ${authorName},\n\nComunicamos que seu manuscrito "${title}" foi aprovado na triagem regimental (Desk Review) e entrou na fase oficial de AVALIAÇÃO DUPLO-CEGA POR PARES (Double-Blind Peer Review).\n\nVocê pode acompanhar o andamento em tempo real diretamente pelo portal da revista.`,
             actionText: 'Acompanhar no Portal',
             actionUrl: 'https://revista-saber-portal.vercel.app'
           })
@@ -1462,7 +1187,7 @@ export default function Home() {
             to: authorEmail,
             subject: 'Parabéns! Artigo Aceito para Publicação - Revista Saber Psicanalítico',
             title: 'Artigo Aceito para Publicação',
-            message: `Prezado(a) ${authorName},\n\nTemos a satisfação de comunicar que o trabalho "${title}" concluiu o processo de avaliação por pares e foi OFICIALMENTE APROVADO para publicação na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua Declaração Oficial de Aceite timbrada com código digital já se encontra disponível para emissão no portal.`,
+            message: `Prezado(a) ${authorName},\n\nTemos a satisfação de comunicar que o trabalho "${title}" concluiu o processo de avaliação por pares e foi OFICIALMENTE APROVADO para publicação na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua Declaração Oficial de Aceite timbrada com código digital já se encontra disponível no portal.`,
             actionText: 'Emitir Carta de Aceite',
             actionUrl: 'https://revista-saber-portal.vercel.app'
           })
@@ -1493,13 +1218,13 @@ export default function Home() {
           to: emailAut,
           subject: 'Correções Solicitadas no Manuscrito - Revista Saber Psicanalítico',
           title: 'Parecer Editorial Disponível com Solicitação de Ajustes',
-          message: `Prezado(a) ${authorName},\n\nInformamos que a rodada de avaliação do artigo "${requestChangesModalArticle.title}" foi concluída.\n\nPara que o manuscrito possa prosseguir para publicação, solicitamos a realização de ajustes com base nas recomendações editoriais e pareceres:\n\n--- ORIENTAÇÕES DA COMISSÃO EDITORIAL ---\n${changesReasonText}\n\nPor favor, acesse o portal da revista para consultar a íntegra dos pareceres técnicos e enviar a versão revisada no prazo regimental.`,
+          message: `Prezado(a) ${authorName},\n\nInformamos que a rodada de avaliação do artigo "${requestChangesModalArticle.title}" foi concluída.\n\nPara que o manuscrito possa prosseguir, solicitamos a realização de ajustes com base nas recomendações editoriais:\n\n--- ORIENTAÇÕES DA COMISSÃO EDITORIAL ---\n${changesReasonText}\n\nAcesse o portal da revista para consultar os pareceres técnicos e enviar a versão revisada.`,
           actionText: 'Ver Pareceres e Enviar Correções',
           actionUrl: 'https://revista-saber-portal.vercel.app'
         })
       }
 
-      alert('Correções solicitadas com sucesso! O autor foi notificado com suas orientações.')
+      alert('Correções solicitadas com sucesso! O autor foi notificado.')
       setRequestChangesModalArticle(null)
       fetchAllData()
     } catch (err: any) {
@@ -1523,12 +1248,12 @@ export default function Home() {
           to: emailAut,
           subject: 'Comunicação Editorial sobre Manuscrito - Revista Saber Psicanalítico',
           title: 'Decisão Editorial',
-          message: `Prezado(a) ${authorName},\n\nO processo de avaliação do manuscrito "${rejectionModalArticle.title}" foi finalizado pela Comissão Editorial.\n\nEm face dos pareceres emitidos e das deliberações regimentais, comunicamos que o trabalho não foi aceito para publicação neste ciclo.\n\nSua Comunicação Editorial com parecer circunstanciado está disponível no portal. Agradecemos o envio do seu trabalho à Revista Saber Psicanalítico.`,
+          message: `Prezado(a) ${authorName},\n\nO processo de avaliação do manuscrito "${rejectionModalArticle.title}" foi finalizado pela Comissão Editorial.\n\nEm face dos pareceres emitidos, comunicamos que o trabalho não foi aceito para publicação neste ciclo.\n\nSua Comunicação Editorial com parecer circunstanciado está disponível no portal.`,
           actionText: 'Acessar Comunicação no Portal',
           actionUrl: 'https://revista-saber-portal.vercel.app'
         })
       }
-      alert('Manuscrito Recusado com sucesso!')
+      alert('Manuscrito Recusado!')
       setRejectionModalArticle(null)
       fetchAllData()
     } catch (err: any) {
@@ -1556,12 +1281,12 @@ export default function Home() {
           to: revProfile.email,
           subject: 'Convite para Avaliação Técnico-Científica - Revista Saber Psicanalítico',
           title: 'Designação de Manuscrito para Avaliação',
-          message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a atuar como Parecerista Ad-hoc avaliando o manuscrito "${assignModalArticle.title}" submetido à Revista Saber Psicanalítico (ISSN 3086-8416).\n\nPrazo proposto para emissão do parecer: ${new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\nO trabalho está disponível para sua consulta preliminar no portal. Por favor, acesse seu painel para ACEITAR ou RECUSAR o convite de avaliação.`,
+          message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a atuar como Parecerista Ad-hoc avaliando o manuscrito "${assignModalArticle.title}" submetido à Revista Saber Psicanalítico (ISSN 3086-8416).\n\nPrazo proposto: ${new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\nPor favor, acesse seu painel para ACEITAR ou RECUSAR o convite de avaliação.`,
           actionText: 'Responder Convite no Portal',
           actionUrl: 'https://revista-saber-portal.vercel.app'
         })
       }
-      alert('Convite enviado com sucesso! O parecerista foi notificado para aceitar ou recusar.')
+      alert('Convite enviado com sucesso!')
       setAssignModalArticle(null)
       fetchAllData()
     } catch (err: any) {
@@ -1580,7 +1305,7 @@ export default function Home() {
         await supabase.from('articles').update({ status: 'submetido' }).eq('id', articleId)
       }
 
-      alert('Parecerista desatribuído com sucesso!')
+      alert('Parecerista desatribuído!')
       fetchAllData()
     } catch (err: any) {
       alert(`Erro ao desatribuir parecerista: ${err.message}`)
@@ -1596,20 +1321,20 @@ export default function Home() {
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: 'Convite Aceito por Parecerista - Revista Saber Psicanalítico',
         title: 'Parecerista Confirmado',
-        message: `O(A) parecerista ${profile?.full_name} ACEITOU o convite para avaliar o artigo "${articleTitle}".\n\nO prazo de devolução está sendo contabilizado no sistema.`,
+        message: `O(A) parecerista ${profile?.full_name} ACEITOU o convite para avaliar o artigo "${articleTitle}".`,
         actionText: 'Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app'
       })
 
-      alert('Convite aceito com sucesso! O manuscrito está liberado para sua avaliação.')
+      alert('Convite aceito! O manuscrito está liberado para sua avaliação.')
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro ao aceitar convite: ${err.message}`)
+      alert(`Erro: ${err.message}`)
     }
   }
 
   const handleDeclineReviewInvitation = async (reviewId: string, articleTitle: string) => {
-    if (!window.confirm('Confirma a recusa deste convite de avaliação?')) return
+    if (!window.confirm('Confirma a recusa deste convite?')) return
     try {
       const { error } = await supabase.from('reviews').update({ status: 'recusado' }).eq('id', reviewId)
       if (error) throw error
@@ -1618,19 +1343,18 @@ export default function Home() {
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: 'Convite Recusado por Parecerista - Revista Saber Psicanalítico',
         title: 'Recusa de Avaliação',
-        message: `O(A) parecerista ${profile?.full_name} comunicou que NÃO PODERÁ avaliar o artigo "${articleTitle}".\n\nAcesse a Sala Editorial para designar outro avaliador substituto.`,
+        message: `O(A) parecerista ${profile?.full_name} comunicou que NÃO PODERÁ avaliar o artigo "${articleTitle}".`,
         actionText: 'Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app'
       })
 
-      alert('Recusa registrada. A Comissão Editorial foi informada.')
+      alert('Recusa registrada.')
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro ao recusar convite: ${err.message}`)
+      alert(`Erro: ${err.message}`)
     }
   }
 
-  // PARECERISTA: CONCLUIR E ENVIAR PARECER COM CRITÉRIOS ESPECÍFICOS POR SEÇÃO
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
@@ -1648,10 +1372,10 @@ export default function Home() {
 
       let fullComments = ''
       if (isRev) {
-        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (RESENHA CRÍTICA) ---\n• Título e Referência da Obra Resenhada: ${critTitle}\n• Profundidade Crítica e Síntese: ${critTheory}\n• Relevância para o Campo Psicanalítico: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
+        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (RESENHA) ---\n• Título e Referência da Obra: ${critTitle}\n• Profundidade Crítica: ${critTheory}\n• Relevância Psicanalítica: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
       } else if (isClin) {
         const ethicsText = critClinicalEthics === 'preservado' ? 'Preservado com Rigor' : critClinicalEthics === 'necessita_ajustes' ? 'Necessita Maior Descaracterização' : 'Insuficiente / Risco de Quebra de Sigilo'
-        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (RELATO CLÍNICO) ---\n• Título, Resumo e Palavras-chave: ${critTitle}\n• Rigor Teórico-Conceitual: ${critTheory}\n• Pertinência da Técnica e Clínica: ${critClinical}\n• Sigilo e Descaracterização do Paciente: ${ethicsText}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
+        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (RELATO CLÍNICO) ---\n• Título, Resumo e Palavras-chave: ${critTitle}\n• Rigor Teórico-Conceitual: ${critTheory}\n• Técnica e Clínica: ${critClinical}\n• Sigilo e Descaracterização: ${ethicsText}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
       } else {
         fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (${sec.toUpperCase()}) ---\n• Título, Resumo e Palavras-chave: ${critTitle}\n• Rigor Teórico-Conceitual: ${critTheory}\n• Relevância Psicanalítica: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
       }
@@ -1668,12 +1392,12 @@ export default function Home() {
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: 'Parecer Concluído por Avaliador - Revista Saber Psicanalítico',
         title: 'Novo Parecer Emitido',
-        message: `O(A) parecerista ${profile?.full_name} concluiu a avaliação do trabalho "${targetArt?.title}".\n\n• Categoria: ${sec}\n• Recomendação: ${recommendation.toUpperCase()}\n\nAcesse a Sala Editorial para conferir o parecer e deliberar sobre o artigo.`,
+        message: `O(A) parecerista ${profile?.full_name} concluiu a avaliação do trabalho "${targetArt?.title}".\n\n• Categoria: ${sec}\n• Recomendação: ${recommendation.toUpperCase()}`,
         actionText: 'Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app'
       })
 
-      alert('Parecer enviado com sucesso à Comissão Editorial!')
+      alert('Parecer enviado à Comissão Editorial!')
       setReviewModalData(null)
       fetchAllData()
     } catch (err: any) {
@@ -1771,9 +1495,9 @@ export default function Home() {
           })
         }
       }
-      alert('Comunicado disparado com sucesso para todos os destinatários!')
+      alert('Comunicado disparado com sucesso!')
     } catch (err: any) {
-      alert(`Ocorreu um erro no disparo: ${err.message}`)
+      alert(`Erro: ${err.message}`)
     } finally {
       setSendingMailing(false)
     }
@@ -1855,7 +1579,7 @@ export default function Home() {
                 setIsLogin(true)
               }
             } catch (err: any) {
-              let msg = err.message || 'Erro ao processar a autenticação.'
+              let msg = err.message || 'Erro ao processar.'
               if (msg.includes('Invalid login credentials')) {
                 msg = 'E-mail ou senha incorretos. Por favor, confira os dados digitados e tente novamente.'
               } else if (msg.includes('Email not confirmed')) {
@@ -1900,7 +1624,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* MODAL DE VALIDAÇÃO DIGITAL PROFISSIONAL */}
+        {/* MODAL DE VALIDAÇÃO DIGITAL */}
         {showVerifyModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
@@ -1913,20 +1637,9 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <input 
-                  type="text" 
-                  value={verifyCodeInput} 
-                  onChange={(e) => setVerifyCodeInput(e.target.value)} 
-                  placeholder="Ex: ASP-ACE-1A2B3C4D ou ASP-REC-1A2B3C4D" 
-                  className="w-full px-3 py-2 text-xs border rounded-lg font-mono uppercase text-center tracking-wider font-bold" 
-                />
-                <button 
-                  type="button" 
-                  disabled={checkingCode || !verifyCodeInput.trim()} 
-                  onClick={handleVerifyCode} 
-                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition"
-                >
-                  {checkingCode ? 'Consultando Registro Oficial...' : 'Verificar Autenticidade'}
+                <input type="text" value={verifyCodeInput} onChange={(e) => setVerifyCodeInput(e.target.value)} placeholder="Ex: ASP-ACE-1A2B3C4D ou ASP-REC-1A2B3C4D" className="w-full px-3 py-2 text-xs border rounded-lg font-mono uppercase text-center tracking-wider font-bold" />
+                <button type="button" disabled={checkingCode || !verifyCodeInput.trim()} onClick={handleVerifyCode} className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold">
+                  {checkingCode ? 'Consultando Registro...' : 'Verificar Autenticidade'}
                 </button>
               </div>
 
@@ -1940,30 +1653,23 @@ export default function Home() {
                         <p className="text-[10px] text-emerald-700">Verificação eletrônica confirmada nos registros da Revista Saber Psicanalítico</p>
                       </div>
                     </div>
-                    
-                    <div className="space-y-1.5 text-[11px] leading-relaxed">
-                      <p><strong>Tipo de Documento:</strong> {verifyResult.type}</p>
-                      <p><strong>Titular / Beneficiário(a):</strong> {verifyResult.person}</p>
+                    <div className="space-y-1.5 text-[11px]">
+                      <p><strong>Tipo:</strong> {verifyResult.type}</p>
+                      <p><strong>Titular:</strong> {verifyResult.person}</p>
                       {verifyResult.title && <p><strong>Trabalho:</strong> “{verifyResult.title}”</p>}
-                      <p><strong>Data de Emissão:</strong> {verifyResult.date}</p>
+                      <p><strong>Data:</strong> {verifyResult.date}</p>
                       <p><strong>Emissor:</strong> Revista Saber Psicanalítico (ISSN 3086-8416)</p>
-                      <p><strong>Editor-Chefe Responsável:</strong> Dr. Edson Leandro de Almeida</p>
+                      <p><strong>Responsável:</strong> Dr. Edson Leandro de Almeida (Editor-Chefe)</p>
                     </div>
-
-                    <div className="pt-2 border-t border-emerald-200/80 flex items-center justify-between text-[10px] text-emerald-800 font-mono">
+                    <div className="pt-2 border-t border-emerald-200 flex items-center justify-between text-[10px] text-emerald-800 font-mono">
                       <span>Código: <strong>{verifyCodeInput.toUpperCase()}</strong></span>
                       <span className="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded font-semibold">Status: Válido</span>
                     </div>
                   </div>
                 ) : (
                   <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/70 text-slate-800 space-y-2 text-xs">
-                    <div className="flex items-center gap-2 text-rose-800 font-bold">
-                      <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-                      <span>Documento Não Localizado</span>
-                    </div>
-                    <p className="text-[11px] text-rose-700 leading-relaxed">
-                      O código informado não corresponde a nenhum documento emitido oficialmente pela Revista Saber Psicanalítico. Certifique-se de digitar todos os caracteres corretamente (ex: ASP-ACE-XXXXXXXX ou ASP-REC-XXXXXXXX).
-                    </p>
+                    <div className="flex items-center gap-2 text-rose-800 font-bold"><AlertCircle className="w-4 h-4 text-rose-600" /><span>Documento Não Localizado</span></div>
+                    <p className="text-[11px] text-rose-700">O código informado não corresponde a nenhum documento oficial emitido pela Revista Saber Psicanalítico.</p>
                   </div>
                 )
               )}
@@ -1992,24 +1698,15 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <div>
-        {/* BANNER OFICIAL DE AVISO ANTI-SPAM NO TOPO */}
+        {/* BANNER OFICIAL ANTI-SPAM */}
         {showSpamNotice && (
           <div className="bg-gradient-to-r from-indigo-50 via-blue-50 to-amber-50 border-b border-indigo-100 py-2.5 px-4 no-print">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs text-slate-700">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                <span>
-                  <strong>Aviso Editorial Importante:</strong> Para garantir o recebimento dos avisos editoriais, prazos e pareceres, marque nossas mensagens como <em>"Não é spam"</em> ou adicione <strong>revistasaberpsicanalitico@gmail.com</strong> aos seus contatos.
-                </span>
+                <span><strong>Aviso Editorial:</strong> Para garantir o recebimento dos avisos editoriais, marque nossas mensagens como <em>"Não é spam"</em> ou adicione <strong>revistasaberpsicanalitico@gmail.com</strong> aos seus contatos.</span>
               </div>
-              <button 
-                type="button" 
-                onClick={() => setShowSpamNotice(false)} 
-                className="text-slate-400 hover:text-slate-700 p-1 rounded"
-                title="Dispensar aviso"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <button type="button" onClick={() => setShowSpamNotice(false)} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4" /></button>
             </div>
           </div>
         )}
@@ -2026,7 +1723,6 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2.5">
-              {/* Navegação de Funções: Editor-Chefe e Editor-Adjunto */}
               {isFullEditor && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('editor')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Sala Editorial</button>
@@ -2035,7 +1731,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Navegação de Funções: Conselho Editorial */}
               {isCouncil && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('council')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Conselho Editorial</button>
@@ -2102,10 +1797,7 @@ export default function Home() {
 
                         {art.status === 'correcoes_pendentes' && art.rejection_reason && (
                           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-1.5">
-                            <p className="font-bold text-amber-900 flex items-center gap-1.5">
-                              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                              Orientações da Comissão Editorial para as Correções:
-                            </p>
+                            <p className="font-bold text-amber-900 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" /> Orientações da Comissão Editorial para as Correções:</p>
                             <p className="whitespace-pre-line text-slate-700 leading-relaxed">{art.rejection_reason}</p>
                           </div>
                         )}
@@ -2121,16 +1813,11 @@ export default function Home() {
                               <div key={rev.id} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
                                 <span className="font-bold text-indigo-700">Parecer {idx + 1} ({rev.recommendation?.toUpperCase()}):</span>
                                 <p className="whitespace-pre-line text-slate-600 leading-relaxed">{rev.comments_for_author}</p>
-                                
                                 {rev.review_file_url && (
                                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
                                     <span className="text-[11px] text-slate-500 font-medium">O parecerista incluiu um arquivo com apontamentos:</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDownloadFile(rev.review_file_url, art.title, `Manuscrito_Anotado_Parecerista_${idx + 1}`)}
-                                      className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition"
-                                    >
-                                      <Download className="w-3.5 h-3.5" /> Baixar Manuscrito com Apontamentos do Parecerista {idx + 1}
+                                    <button type="button" onClick={() => handleDownloadFile(rev.review_file_url, art.title, `Manuscrito_Anotado_Parecerista_${idx + 1}`)} className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5">
+                                      <Download className="w-3.5 h-3.5" /> Baixar Manuscrito Anotado
                                     </button>
                                   </div>
                                 )}
@@ -2146,7 +1833,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* VISÃO DO PARECERISTA: COM DESTAQUE CLARO DA CATEGORIA E DIRETRIZES */}
+          {/* VISÃO DO PARECERISTA */}
           {viewMode === 'reviewer' && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -2173,100 +1860,73 @@ export default function Home() {
                         <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                           <div>
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                              {/* ETIQUETA COM COR E NOME DA CATEGORIA */}
                               <span className={`px-2.5 py-0.5 rounded text-xs font-bold border ${
                                 isReviewSec ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                                 isClinicalSec ? 'bg-amber-50 text-amber-800 border-amber-200' :
                                 isEssaySec ? 'bg-purple-50 text-purple-700 border-purple-200' :
                                 'bg-blue-50 text-blue-700 border-blue-200'
-                              }`}>
-                                {sec}
-                              </span>
+                              }`}>{sec}</span>
 
                               {isCompleted && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">PARECER CONCLUÍDO</span>}
-                              {isPendingInvitation && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">CONVITE DE AVALIAÇÃO RECEBIDO</span>}
+                              {isPendingInvitation && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">CONVITE RECEBIDO</span>}
                               {!isCompleted && !isPendingInvitation && !isDeclined && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">EM ELABORAÇÃO</span>}
                               {isDeclined && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">CONVITE RECUSADO</span>}
                               {!isCompleted && !isDeclined && getDeadlineBadge(rev.deadline)}
                             </div>
-
                             <h3 className="text-lg font-bold text-slate-900 mt-1">{art?.title}</h3>
                           </div>
 
                           <div className="flex gap-2">
                             {isCompleted && (
-                              <button 
-                                type="button" 
-                                onClick={() => setActiveOfficialDoc({ type: 'lattes', review: rev, article: art, reviewer: profile })} 
-                                className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm transition"
-                              >
+                              <button type="button" onClick={() => setActiveOfficialDoc({ type: 'lattes', review: rev, article: art, reviewer: profile })} className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 shadow-sm">
                                 <Award className="w-3.5 h-3.5" /> Declaração de Parecerista
                               </button>
                             )}
                             {art && !isDeclined && (
                               <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito_Parecer')} className="px-3 py-1.5 text-xs font-medium border rounded-lg text-slate-700 flex items-center gap-1.5 hover:bg-slate-50">
-                                <Download className="w-3.5 h-3.5" /> Baixar Manuscrito Anonimizado
+                                <Download className="w-3.5 h-3.5" /> Baixar Manuscrito
                               </button>
                             )}
                           </div>
                         </div>
 
-                        {/* MINI-BANNER ORIENTADOR DA CATEGORIA ANTES DE AVALIAR */}
                         <div className="p-2.5 rounded-lg border text-[11px] leading-relaxed flex items-center gap-2 bg-slate-50 text-slate-700">
                           <Info className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
                           <span>
-                            {isReviewSec && 'Categoria Resenha (1.000 a 1.500 palavras): Avalie a leitura crítica e contextualização da obra. Dispensado de resumo bilíngue e palavras-chave.'}
-                            {isClinicalSec && 'Categoria Relato Clínico (2.000 a 5.000 palavras): Foco na articulação da técnica com a teoria. Verifique o rigoroso sigilo analítico e a descaracterização do paciente.'}
+                            {isReviewSec && 'Categoria Resenha (1.000 a 1.500 palavras): Avalie a leitura crítica da obra. Dispensado de resumo bilíngue e palavras-chave.'}
+                            {isClinicalSec && 'Categoria Relato Clínico (2.000 a 5.000 palavras): Foco na articulação clínica. Verifique o rigoroso sigilo analítico e a descaracterização do paciente.'}
                             {isEssaySec && 'Categoria Ensaio Teórico (1.500 a 6.000 palavras): Foco no encadeamento conceitual e metapsicologia. Não exigir metodologia empírica.'}
-                            {!isReviewSec && !isClinicalSec && !isEssaySec && 'Categoria Artigo Científico (2.000 a 8.000 palavras): Foco na investigação original, consistência metodológica e discussão teórica.'}
+                            {!isReviewSec && !isClinicalSec && !isEssaySec && 'Categoria Artigo Científico (2.000 a 8.000 palavras): Foco na pesquisa original, consistência metodológica e discussão teórica.'}
                           </span>
                         </div>
 
                         {art && (
                           <div className="text-xs text-slate-600 bg-slate-50/70 p-3 rounded-lg leading-relaxed">
-                            <p className="font-semibold text-slate-800 mb-1">{isReviewSec ? 'Referência da Obra / Síntese:' : 'Resumo do Trabalho:'}</p>
+                            <p className="font-semibold text-slate-800 mb-1">{isReviewSec ? 'Referência da Obra:' : 'Resumo do Trabalho:'}</p>
                             <p className="whitespace-pre-line">{art.abstract}</p>
                           </div>
                         )}
 
-                        {/* Bloco de Decisão do Convite */}
                         {isPendingInvitation && (
                           <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                             <div>
-                              <p className="font-bold text-amber-900 flex items-center gap-1.5">
-                                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" /> Deseja avaliar este manuscrito?
-                              </p>
-                              <p className="text-[11px] text-amber-800">
-                                Prazo para envio do parecer técnico: <strong>{new Date(rev.deadline + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>.
-                              </p>
+                              <p className="font-bold text-amber-900 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" /> Deseja avaliar este manuscrito?</p>
+                              <p className="text-[11px] text-amber-800">Prazo para envio do parecer: <strong>{new Date(rev.deadline + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>.</p>
                             </div>
                             <div className="flex items-center gap-2 w-full sm:w-auto">
-                              <button 
-                                type="button" 
-                                onClick={() => handleAcceptReviewInvitation(rev.id, art?.title || 'Artigo')} 
-                                className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm"
-                              >
+                              <button type="button" onClick={() => handleAcceptReviewInvitation(rev.id, art?.title || 'Artigo')} className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm">
                                 <ThumbsUp className="w-3.5 h-3.5" /> Aceitar Avaliação
                               </button>
-                              <button 
-                                type="button" 
-                                onClick={() => handleDeclineReviewInvitation(rev.id, art?.title || 'Artigo')} 
-                                className="flex-1 sm:flex-none px-3.5 py-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-semibold rounded-lg text-xs flex items-center justify-center gap-1.5"
-                              >
+                              <button type="button" onClick={() => handleDeclineReviewInvitation(rev.id, art?.title || 'Artigo')} className="flex-1 sm:flex-none px-3.5 py-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-semibold rounded-lg text-xs flex items-center justify-center gap-1.5">
                                 <ThumbsDown className="w-3.5 h-3.5" /> Recusar Convite
                               </button>
                             </div>
                           </div>
                         )}
 
-                        {/* Botão de Preencher Parecer */}
                         {!isPendingInvitation && !isDeclined && (
                           <div className="flex justify-end pt-2 border-t">
-                            <button 
-                              type="button" 
-                              onClick={() => { setReviewModalData(rev); setRecommendation(rev.recommendation || 'aceitar'); setCommentsAuthor(rev.comments_for_author || ''); setCommentsEditor(rev.confidential_comments_editor || ''); setReviewFile(null); }} 
-                              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm"
-                            >
+                            <button type="button" onClick={() => { setReviewModalData(rev); setRecommendation(rev.recommendation || 'aceitar'); setCommentsAuthor(rev.comments_for_author || ''); setCommentsEditor(rev.confidential_comments_editor || ''); setReviewFile(null); }} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm">
                               {isCompleted ? 'Editar Parecer Emitido' : 'Preencher Parecer Técnico'}
                             </button>
                           </div>
@@ -2284,55 +1944,38 @@ export default function Home() {
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                  <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">
-                    {isFullEditor ? `Sala Editorial (${formatRole(profile?.role)})` : 'Conselho Editorial (Acompanhamento)'}
-                  </span>
-                  <h2 className="text-xl font-bold text-slate-800">
-                    {isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento do Fluxo Editorial'}
-                  </h2>
+                  <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">{isFullEditor ? `Sala Editorial (${formatRole(profile?.role)})` : 'Conselho Editorial (Acompanhamento)'}</span>
+                  <h2 className="text-xl font-bold text-slate-800">{isFullEditor ? 'Gestão Editorial de Artigos' : 'Acompanhamento do Fluxo Editorial'}</h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {isFullEditor && <button type="button" onClick={handleExportBackup} className="px-3 py-2 bg-emerald-50 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1 border border-emerald-200"><FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Exportar Backup (Excel)</button>}
+                  {isFullEditor && <button type="button" onClick={handleExportBackup} className="px-3 py-2 bg-emerald-50 text-emerald-800 font-semibold rounded-lg text-xs flex items-center gap-1 border border-emerald-200"><FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Exportar Backup</button>}
                   <button type="button" onClick={() => setShowReviewerThankModal(true)} className="px-3 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg text-xs flex items-center gap-1 border border-slate-200"><Award className="w-3.5 h-3.5" /> Quadro de Pareceristas</button>
                   <button type="button" onClick={() => setShowSubmitModal(true)} className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg text-xs flex items-center gap-1.5"><Upload className="w-4 h-4" /> + Submeter Artigo</button>
                 </div>
               </div>
 
-              {/* Sub-Abas apenas para o Editor */}
               {isFullEditor && (
                 <div className="flex border-b border-slate-200 bg-white px-4 rounded-xl shadow-sm">
-                  <button 
-                    type="button" 
-                    onClick={() => setEditorialTab('articles')}
-                    className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition ${editorialTab === 'articles' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
-                  >
+                  <button type="button" onClick={() => setEditorialTab('articles')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 ${editorialTab === 'articles' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                     <FileText className="w-4 h-4" /> Submissões e Artigos ({allArticles.length})
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setEditorialTab('users')}
-                    className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition ${editorialTab === 'users' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
-                  >
+                  <button type="button" onClick={() => setEditorialTab('users')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 ${editorialTab === 'users' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                     <Users className="w-4 h-4" /> Quadro de Usuários ({allProfiles.length})
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setEditorialTab('mailing')}
-                    className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition ${editorialTab === 'mailing' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
-                  >
+                  <button type="button" onClick={() => setEditorialTab('mailing')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 ${editorialTab === 'mailing' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                     <Megaphone className="w-4 h-4" /> Central de Comunicados (Mailing)
                   </button>
                 </div>
               )}
 
-              {/* ABA 1: SUBMISSÕES E ARTIGOS */}
+              {/* ABA 1: ARTIGOS */}
               {(editorialTab === 'articles' || isCouncil) && (
                 <div className="space-y-6">
                   <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <input type="text" value={editorSearch} onChange={(e) => setEditorSearch(e.target.value)} placeholder="Pesquise por título, autor ou seção..." className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
                     <div className="flex gap-1.5 overflow-x-auto text-xs">
                       {['todos', 'submetido', 'ajustes_iniciais', 'em_avaliacao', 'correcoes_pendentes', 'revisao_submetida', 'aceito', 'recusado'].map((status) => (
-                        <button key={status} type="button" onClick={() => setEditorStatusFilter(status)} className={`px-3 py-1.5 rounded-lg font-medium capitalize ${editorStatusFilter === status ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{status.replace('_', ' ')}</button>
+                        <button key={status} type="button" onClick={() => setEditorStatusFilter(status)} className={`px-3 py-1.5 rounded-lg font-medium capitalize text-xs ${editorStatusFilter === status ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{status.replace('_', ' ')}</button>
                       ))}
                     </div>
                   </div>
@@ -2360,32 +2003,17 @@ export default function Home() {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
-                              <button 
-                                type="button" 
-                                onClick={() => setSelectedArticleDetails(art)} 
-                                className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg flex items-center gap-1 shadow-sm"
-                                title="Ver todos os dados preenchidos pelo autor"
-                              >
+                              <button type="button" onClick={() => setSelectedArticleDetails(art)} className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg flex items-center gap-1 shadow-sm">
                                 <Eye className="w-3.5 h-3.5 text-indigo-600" /> Ver Detalhes
                               </button>
-
                               {isAccepted && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'aceite', article: art })} className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg">Carta de Aceite</button>}
                               {isRejected && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'recusa', article: art })} className="px-3 py-1.5 text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 rounded-lg">Carta Não Aceite</button>}
                               <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-700">Baixar</button>
                               {hasRevision && <button type="button" onClick={() => handleDownloadFile(art.original_file_url, art.title, 'Versao_Original')} className="px-2.5 py-1.5 text-xs border border-slate-200 bg-slate-50 rounded-lg text-slate-600">Original</button>}
 
-                              {/* Ações operacionais restritas ao Editor-Chefe e Editor-Adjunto */}
                               {isFullEditor && !isOwnArticle && (
                                 <>
-                                  <button 
-                                    type="button" 
-                                    onClick={() => { 
-                                      setAssignModalArticle(art); 
-                                      setSelectedReviewerId(''); 
-                                      setAssignDeadline(new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); 
-                                    }} 
-                                    className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center gap-1"
-                                  >
+                                  <button type="button" onClick={() => { setAssignModalArticle(art); setSelectedReviewerId(''); setAssignDeadline(new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); }} className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center gap-1">
                                     <UserCheck className="w-3.5 h-3.5" /> Atribuir Parecerista
                                   </button>
 
@@ -2410,7 +2038,6 @@ export default function Home() {
                             </div>
                           )}
 
-                          {/* PARECERISTAS DESIGNADOS */}
                           {!isOwnArticle && revs.length > 0 && (
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-xs">
                               <p className="font-bold text-slate-700">Pareceristas Designados:</p>
@@ -2424,53 +2051,23 @@ export default function Home() {
                                   <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2.5 rounded border border-slate-200 gap-2">
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <span className="font-bold text-slate-800">{getReviewerName(r.reviewer_id)}</span>
-                                      
-                                      {isPending && (
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
-                                          <Clock className="w-3 h-3" /> CONVITE PENDENTE
-                                        </span>
-                                      )}
-                                      {isAcceptedAndWorking && (
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
-                                          <ThumbsUp className="w-3 h-3" /> CONVITE ACEITO
-                                        </span>
-                                      )}
-                                      {isDeclined && (
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                                          <ThumbsDown className="w-3 h-3" /> CONVITE RECUSADO
-                                        </span>
-                                      )}
-                                      {isCompleted && (
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                                          <Check className="w-3 h-3" /> PARECER CONCLUÍDO
-                                        </span>
-                                      )}
-
+                                      {isPending && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1"><Clock className="w-3 h-3" /> CONVITE PENDENTE</span>}
+                                      {isAcceptedAndWorking && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> CONVITE ACEITO</span>}
+                                      {isDeclined && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"><ThumbsDown className="w-3 h-3" /> CONVITE RECUSADO</span>}
+                                      {isCompleted && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1"><Check className="w-3 h-3" /> PARECER CONCLUÍDO</span>}
                                       {!isCompleted && !isDeclined && getDeadlineBadge(r.deadline)}
                                     </div>
 
                                     <div className="flex items-center gap-2">
                                       {isCompleted && isFullEditor && (
-                                        <button 
-                                          type="button" 
-                                          onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} 
-                                          className="text-emerald-700 hover:underline font-semibold"
-                                        >
+                                        <button type="button" onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} className="text-emerald-700 hover:underline font-semibold">
                                           Declaração de Parecerista
                                         </button>
                                       )}
-                                      {isCompleted && r.review_file_url && (
-                                        <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline">Baixar Anexo</button>
-                                      )}
+                                      {isCompleted && r.review_file_url && <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline">Baixar Anexo</button>}
                                       {isCompleted && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
-                                      
                                       {isFullEditor && (
-                                        <button 
-                                          type="button" 
-                                          onClick={() => handleRemoveReviewerAssignment(r.id, art.id)} 
-                                          className="px-2 py-0.5 text-[11px] text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-medium inline-flex items-center gap-1 transition"
-                                          title="Remover / Desatribuir Parecerista"
-                                        >
+                                        <button type="button" onClick={() => handleRemoveReviewerAssignment(r.id, art.id)} className="px-2 py-0.5 text-[11px] text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-medium inline-flex items-center gap-1">
                                           <Trash2 className="w-3 h-3 text-rose-500" /> Remover
                                         </button>
                                       )}
@@ -2487,13 +2084,13 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 2: QUADRO DE USUÁRIOS DEDICADO */}
+              {/* ABA 2: QUADRO DE USUÁRIOS */}
               {isFullEditor && editorialTab === 'users' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
                     <div>
                       <h3 className="text-base font-bold text-slate-800">Quadro Geral de Usuários ({allProfiles.length})</h3>
-                      <p className="text-xs text-slate-500">Gerencie permissões e dados cadastrais dos membros registrados no portal.</p>
+                      <p className="text-xs text-slate-500">Gerencie permissões e cadastros dos membros registrados.</p>
                     </div>
                     <div className="flex flex-wrap gap-1.5 text-[11px] font-semibold">
                       <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">{allProfiles.filter(p => p.role === 'author').length} Autores</span>
@@ -2507,22 +2104,11 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <div className="flex-1 relative">
                       <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-                      <input 
-                        type="text" 
-                        value={userSearch} 
-                        onChange={(e) => setUserSearch(e.target.value)} 
-                        placeholder="Buscar por nome, e-mail ou filiação..." 
-                        className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-                      />
+                      <input type="text" value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Buscar por nome, e-mail ou filiação..." className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
                     </div>
                     <div className="flex gap-1 overflow-x-auto text-xs">
                       {['todos', 'author', 'reviewer', 'council', 'editor_adjunto', 'editor'].map((r) => (
-                        <button 
-                          key={r} 
-                          type="button" 
-                          onClick={() => setUserRoleFilter(r)} 
-                          className={`px-3 py-1.5 rounded-lg font-medium capitalize text-xs ${userRoleFilter === r ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                        >
+                        <button key={r} type="button" onClick={() => setUserRoleFilter(r)} className={`px-3 py-1.5 rounded-lg font-medium capitalize text-xs ${userRoleFilter === r ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                           {r === 'todos' ? 'Todos' : formatRole(r)}
                         </button>
                       ))}
@@ -2548,23 +2134,11 @@ export default function Home() {
                             <td className="p-3 text-slate-500">{p.institution || '-'}</td>
                             <td className="p-3 font-bold text-indigo-700">{formatRole(p.role)}</td>
                             <td className="p-3 text-right flex items-center justify-end gap-1.5">
-                              <button 
-                                type="button" 
-                                onClick={() => handleOpenEditUserModal(p)} 
-                                className="px-2.5 py-1 text-xs border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg font-medium inline-flex items-center gap-1"
-                                title="Editar dados cadastrais"
-                              >
+                              <button type="button" onClick={() => handleOpenEditUserModal(p)} className="px-2.5 py-1 text-xs border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg font-medium inline-flex items-center gap-1">
                                 <Edit3 className="w-3 h-3 text-indigo-600" /> Editar
                               </button>
                               {p.id !== session?.user?.id && (
-                                <button 
-                                  type="button" 
-                                  onClick={() => handleDeleteUser(p)} 
-                                  className="p-1 text-rose-500 hover:bg-rose-50 rounded" 
-                                  title="Excluir cadastro"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                <button type="button" onClick={() => handleDeleteUser(p)} className="p-1 text-rose-500 hover:bg-rose-50 rounded" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
                               )}
                             </td>
                           </tr>
@@ -2575,7 +2149,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING COM FORMATAÇÃO RICA */}
+              {/* ABA 3: MAILING */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
@@ -2585,12 +2159,8 @@ export default function Home() {
 
                   <div className="grid md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Selecionar Grupo de Destinatários:</label>
-                      <select 
-                        value={mailingTarget} 
-                        onChange={(e: any) => setMailingTarget(e.target.value)} 
-                        className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium"
-                      >
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Selecionar Destinatários:</label>
+                      <select value={mailingTarget} onChange={(e: any) => setMailingTarget(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
                         <option value="all">Todos os Cadastrados ({allProfiles.length})</option>
                         <option value="author">Apenas Autores ({allProfiles.filter(p => p.role === 'author').length})</option>
                         <option value="reviewer">Apenas Pareceristas ({allProfiles.filter(p => p.role === 'reviewer').length})</option>
@@ -2600,121 +2170,58 @@ export default function Home() {
 
                     <div className="flex flex-col justify-end">
                       <span className="text-[11px] text-slate-500 mb-1">Deseja enviar direto pelo Gmail institucional?</span>
-                      <button 
-                        type="button" 
-                        onClick={handleCopyMailingEmails}
-                        className="px-3 py-2 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5 shadow-sm text-slate-700"
-                      >
-                        {copiedMailingEmails ? <><Check className="w-3.5 h-3.5 text-emerald-600" /> Lista Copiada para a Área de Transferência!</> : <><Copy className="w-3.5 h-3.5 text-indigo-600" /> Copiar E-mails Selecionados (Cco)</>}
+                      <button type="button" onClick={handleCopyMailingEmails} className="px-3 py-2 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5 shadow-sm text-slate-700">
+                        {copiedMailingEmails ? <><Check className="w-3.5 h-3.5 text-emerald-600" /> Lista Copiada!</> : <><Copy className="w-3.5 h-3.5 text-indigo-600" /> Copiar E-mails Selecionados (Cco)</>}
                       </button>
                     </div>
                   </div>
 
-                  {/* Modelos Prontos de E-mail */}
                   <div className="space-y-1.5">
                     <span className="text-xs font-bold text-slate-700">Modelos Prontos com 1 Clique:</span>
                     <div className="flex flex-wrap gap-2">
-                      <button 
-                        type="button" 
-                        onClick={() => handleLoadMailingTemplate('issue')}
-                        className="px-3 py-1.5 text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg hover:bg-emerald-100"
-                      >
-                        📖 Lançamento de Nova Edição
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={() => handleLoadMailingTemplate('cfp')}
-                        className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100"
-                      >
-                        📢 Chamada de Artigos (Call for Papers)
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={() => handleLoadMailingTemplate('clear')}
-                        className="px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200"
-                      >
-                        Limpar Campos
-                      </button>
+                      <button type="button" onClick={() => handleLoadMailingTemplate('issue')} className="px-3 py-1.5 text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg hover:bg-emerald-100">📖 Lançamento de Nova Edição</button>
+                      <button type="button" onClick={() => handleLoadMailingTemplate('cfp')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100">📢 Chamada de Artigos (Call for Papers)</button>
+                      <button type="button" onClick={() => handleLoadMailingTemplate('clear')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200">Limpar Campos</button>
                     </div>
                   </div>
 
-                  {/* Formulário com Barra de Formatação Rica e Preview */}
                   <form onSubmit={handleSendMailing} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">Assunto do E-mail *</label>
-                        <input 
-                          type="text" 
-                          required 
-                          value={mailingSubject} 
-                          onChange={(e) => setMailingSubject(e.target.value)} 
-                          placeholder="Ex: Nova Edição Disponível - Revista Saber Psicanalítico" 
-                          className="w-full px-3 py-2 text-xs border rounded-lg" 
-                        />
+                        <input type="text" required value={mailingSubject} onChange={(e) => setMailingSubject(e.target.value)} placeholder="Assunto do comunicado" className="w-full px-3 py-2 text-xs border rounded-lg" />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">Título de Destaque no Topo do E-mail</label>
-                        <input 
-                          type="text" 
-                          value={mailingTitle} 
-                          onChange={(e) => setMailingTitle(e.target.value)} 
-                          placeholder="Ex: Lançamento do Fascículo de Junho de 2026" 
-                          className="w-full px-3 py-2 text-xs border rounded-lg" 
-                        />
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Título de Destaque no Topo</label>
+                        <input type="text" value={mailingTitle} onChange={(e) => setMailingTitle(e.target.value)} placeholder="Título principal interno" className="w-full px-3 py-2 text-xs border rounded-lg" />
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-2">
                         <div className="flex items-center gap-1">
-                          <button 
-                            type="button" 
-                            onClick={() => setMailingMode('editor')}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${mailingMode === 'editor' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                          >
+                          <button type="button" onClick={() => setMailingMode('editor')} className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${mailingMode === 'editor' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
                             <Code className="w-3.5 h-3.5" /> Escrever / Editar
                           </button>
-                          <button 
-                            type="button" 
-                            onClick={() => setMailingMode('preview')}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${mailingMode === 'preview' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                          >
+                          <button type="button" onClick={() => setMailingMode('preview')} className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${mailingMode === 'preview' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
                             <Eye className="w-3.5 h-3.5" /> Pré-visualizar E-mail
                           </button>
                         </div>
 
                         {mailingMode === 'editor' && (
                           <div className="flex items-center gap-1 flex-wrap">
-                            <button type="button" onClick={() => handleInsertTag('<strong>', '</strong>', 'texto em negrito')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Negrito">
-                              <Bold className="w-3.5 h-3.5" />
-                            </button>
-                            <button type="button" onClick={() => handleInsertTag('<em>', '</em>', 'texto em itálico')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Itálico">
-                              <Italic className="w-3.5 h-3.5" />
-                            </button>
-                            <button type="button" onClick={() => handleInsertTag('<u>', '</u>', 'texto sublinhado')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Sublinhado">
-                              <Underline className="w-3.5 h-3.5" />
-                            </button>
-                            <button type="button" onClick={handleInsertLinkPrompt} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold inline-flex items-center gap-1" title="Inserir Link">
-                              <LinkIcon className="w-3.5 h-3.5" /> Link
-                            </button>
-                            <button type="button" onClick={handleInsertImagePrompt} className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-xs font-bold inline-flex items-center gap-1" title="Inserir Imagem por Link (Recomendado)">
-                              <ImageIcon className="w-3.5 h-3.5" /> Imagem (URL)
-                            </button>
+                            <button type="button" onClick={() => handleInsertTag('<strong>', '</strong>', 'texto em negrito')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Negrito"><Bold className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => handleInsertTag('<em>', '</em>', 'texto em itálico')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Itálico"><Italic className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => handleInsertTag('<u>', '</u>', 'texto sublinhado')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Sublinhado"><Underline className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={handleInsertLinkPrompt} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold inline-flex items-center gap-1" title="Inserir Link"><LinkIcon className="w-3.5 h-3.5" /> Link</button>
+                            <button type="button" onClick={handleInsertImagePrompt} className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-xs font-bold inline-flex items-center gap-1" title="Inserir Imagem por Link"><ImageIcon className="w-3.5 h-3.5" /> Imagem (URL)</button>
                           </div>
                         )}
                       </div>
 
                       {mailingMode === 'editor' ? (
                         <div>
-                          <textarea 
-                            ref={textareaRef}
-                            required 
-                            rows={8} 
-                            value={mailingBody} 
-                            onChange={(e) => setMailingBody(e.target.value)} 
-                            placeholder="Escreva a mensagem oficial... Você pode usar os botões acima para aplicar negrito, itálico, links e imagens via URL." 
-                            className="w-full px-3 py-2 text-xs border rounded-lg font-sans leading-relaxed focus:ring-2 focus:ring-indigo-500" 
-                          />
+                          <textarea ref={textareaRef} required rows={8} value={mailingBody} onChange={(e) => setMailingBody(e.target.value)} placeholder="Escreva a mensagem oficial... Você pode usar a barra acima para aplicar formatações." className="w-full px-3 py-2 text-xs border rounded-lg font-sans leading-relaxed focus:ring-2 focus:ring-indigo-500" />
                           <p className="text-[11px] text-slate-400">Dica: Selecione qualquer palavra e clique nos botões da barra para aplicar negrito, itálico ou links.</p>
                         </div>
                       ) : (
@@ -2724,24 +2231,13 @@ export default function Home() {
                               <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-12 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                               <span className="text-[11px] font-bold text-indigo-700">ISSN 3086-8416</span>
                             </div>
-
-                            {mailingTitle && (
-                              <h4 className="text-base font-bold text-slate-900 border-b pb-2">{mailingTitle}</h4>
-                            )}
-
-                            <div 
-                              className="text-xs text-slate-700 leading-relaxed space-y-2 whitespace-pre-line"
-                              dangerouslySetInnerHTML={{ __html: mailingBody || '<em>Sua mensagem aparecerá aqui formatada em tempo real...</em>' }}
-                            />
-
+                            {mailingTitle && <h4 className="text-base font-bold text-slate-900 border-b pb-2">{mailingTitle}</h4>}
+                            <div className="text-xs text-slate-700 leading-relaxed space-y-2 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: mailingBody || '<em>Sua mensagem aparecerá aqui formatada em tempo real...</em>' }} />
                             {mailingActionText && (
                               <div className="pt-3 text-center">
-                                <span className="inline-block px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm">
-                                  {mailingActionText}
-                                </span>
+                                <span className="inline-block px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm">{mailingActionText}</span>
                               </div>
                             )}
-
                             <div className="pt-4 border-t text-[10px] text-slate-400 text-center">
                               Associação Saber Psicanalítico (ASP) • Rua Visconde de Inhaúma, 1361 — Caruaru/PE
                             </div>
@@ -2753,32 +2249,16 @@ export default function Home() {
                     <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Texto do Botão no E-mail (Opcional):</label>
-                        <input 
-                          type="text" 
-                          value={mailingActionText} 
-                          onChange={(e) => setMailingActionText(e.target.value)} 
-                          placeholder="Ex: Ler Nova Edição / Acessar Portal" 
-                          className="w-full px-3 py-2 text-xs border rounded-lg bg-white" 
-                        />
+                        <input type="text" value={mailingActionText} onChange={(e) => setMailingActionText(e.target.value)} placeholder="Ex: Ler Nova Edição" className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
                       </div>
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Link de Destino do Botão (URL):</label>
-                        <input 
-                          type="url" 
-                          value={mailingActionUrl} 
-                          onChange={(e) => setMailingActionUrl(e.target.value)} 
-                          placeholder="https://..." 
-                          className="w-full px-3 py-2 text-xs border rounded-lg bg-white" 
-                        />
+                        <input type="url" value={mailingActionUrl} onChange={(e) => setMailingActionUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
                       </div>
                     </div>
 
                     <div className="flex justify-end pt-2 border-t">
-                      <button 
-                        type="submit" 
-                        disabled={sendingMailing || filteredMailingUsers.length === 0} 
-                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-2 shadow-sm transition"
-                      >
+                      <button type="submit" disabled={sendingMailing || filteredMailingUsers.length === 0} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-2 shadow-sm transition">
                         {sendingMailing ? 'Disparando E-mails...' : <><Send className="w-3.5 h-3.5" /> Disparar para {filteredMailingUsers.length} Destinatários</>}
                       </button>
                     </div>
@@ -2790,7 +2270,7 @@ export default function Home() {
         </main>
       </div>
 
-      {/* RODAPÉ OFICIAL AJUSTADO */}
+      {/* RODAPÉ OFICIAL */}
       <footer className="bg-white border-t border-slate-200 py-6 mt-12 no-print">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-3">
@@ -2802,18 +2282,11 @@ export default function Home() {
           </div>
           <div className="text-center md:text-right text-[11px]">
             <p>
-              <a 
-                href="https://maps.google.com/?q=Rua+Visconde+Inhauma+1361" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="underline hover:text-indigo-600 font-medium text-slate-700"
-              >
+              <a href="https://maps.google.com/?q=Rua+Visconde+Inhauma+1361" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-600 font-medium text-slate-700">
                 Rua Visconde Inhaúma, 1361
               </a>, sala 408 — Caruaru/PE
             </p>
-            <p>
-              <span>www.asppsicanalise.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span>
-            </p>
+            <p><span>www.asppsicanalise.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span></p>
           </div>
         </div>
       </footer>
@@ -2875,7 +2348,6 @@ export default function Home() {
         submitting={submittingRevision}
       />
 
-      {/* FICHA COMPLETA COM DADOS DO ARTIGO */}
       <ArticleDetailsModal
         article={selectedArticleDetails}
         onClose={() => setSelectedArticleDetails(null)}
@@ -2885,7 +2357,6 @@ export default function Home() {
         onDownloadFile={handleDownloadFile}
       />
 
-      {/* DOCUMENTO TIMBRADO A4 */}
       <OfficialDocModal
         data={activeOfficialDoc}
         onClose={() => setActiveOfficialDoc(null)}
@@ -2893,7 +2364,7 @@ export default function Home() {
         getArticleIssue={getArticleIssue}
       />
 
-      {/* MODAL: EDIÇÃO DE QUALQUER USUÁRIO PELO EDITOR */}
+      {/* MODAL: EDIÇÃO DE USUÁRIO */}
       {editingUserModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[85]">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
@@ -2910,7 +2381,6 @@ export default function Home() {
                 <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Nome Completo *</label>
                 <input type="text" required value={editUserName} onChange={(e) => setEditUserName(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
               </div>
-
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Função no Sistema *</label>
                 <select value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
@@ -2921,12 +2391,10 @@ export default function Home() {
                   <option value="editor">Editor-Chefe</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Filiação Institucional</label>
                 <input type="text" value={editUserInst} onChange={(e) => setEditUserInst(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
               </div>
-
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Link Lattes</label>
@@ -2937,14 +2405,12 @@ export default function Home() {
                   <input type="text" value={editUserOrcid} onChange={(e) => setEditUserOrcid(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded-lg" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Telefone / WhatsApp</label>
                 <input type="tel" value={editUserPhone} onChange={(e) => setEditUserPhone(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
               </div>
-
               <div className="flex justify-end gap-2 pt-2 border-t">
-                <button type="button" onClick={() => setEditingUserModal(null)} className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                <button type="button" onClick={() => setEditingUserModal(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
                 <button type="submit" disabled={savingUserEdit} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
                   {savingUserEdit ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
@@ -2964,27 +2430,12 @@ export default function Home() {
               <p className="text-xs text-slate-500 line-clamp-1">{requestChangesModalArticle.title}</p>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Orientações da Comissão Editorial e Síntese dos Pareceres *:
-              </label>
-              <textarea 
-                required 
-                rows={6} 
-                value={changesReasonText} 
-                onChange={(e) => setChangesReasonText(e.target.value)} 
-                placeholder="Descreva detalhadamente as correções que o autor deve realizar no texto (ex: revisão da fundamentação teórica, ajuste metodológico, ampliação das referências psicanalíticas, etc.)..." 
-                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-amber-500" 
-              />
-              <p className="text-[11px] text-slate-400 mt-1">Este texto será enviado por e-mail ao autor e ficará em destaque no painel dele.</p>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Orientações da Comissão Editorial e Síntese dos Pareceres *:</label>
+              <textarea required rows={6} value={changesReasonText} onChange={(e) => setChangesReasonText(e.target.value)} placeholder="Descreva detalhadamente as correções que o autor deve realizar no texto..." className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-amber-500" />
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setRequestChangesModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-              <button 
-                type="button" 
-                disabled={savingChanges || !changesReasonText.trim()} 
-                onClick={handleConfirmRequestChanges} 
-                className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50"
-              >
+              <button type="button" onClick={() => setRequestChangesModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
+              <button type="button" disabled={savingChanges || !changesReasonText.trim()} onClick={handleConfirmRequestChanges} className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50">
                 {savingChanges ? 'Enviando...' : 'Enviar Solicitação de Correções'}
               </button>
             </div>
@@ -3042,7 +2493,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL COMPLETO DE PARECER TÉCNICO-CIENTÍFICO (DINÂMICO POR SEÇÃO) */}
+      {/* MODAL COMPLETO DE PARECER (DINÂMICO) */}
       {reviewModalData && (() => {
         const currentArt = allArticles.find((a) => a.id === reviewModalData.article_id)
         const currentSec = currentArt?.section || 'Artigos Científicos'
@@ -3065,65 +2516,35 @@ export default function Home() {
                 <button type="button" onClick={() => setReviewModalData(null)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
               </div>
 
-              {/* Quadro de Diretrizes Específicas da Categoria para o Parecerista */}
               <div className="p-3 rounded-xl border text-xs leading-relaxed space-y-1 bg-indigo-50/60 border-indigo-100 text-indigo-950">
-                <p className="font-bold flex items-center gap-1.5">
-                  <Info className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                  Diretrizes Avaliativas para: {currentSec}
-                </p>
-                {isCurrentReview && (
-                  <p className="text-[11px]">
-                    Avalie a qualidade da leitura crítica, a síntese e a relevância da obra resenhada para a comunidade analítica. <strong>Lembrete: resenhas não possuem resumo bilíngue ou palavras-chave.</strong>
-                  </p>
-                )}
-                {isCurrentClinical && (
-                  <p className="text-[11px]">
-                    Avalie a consistência metapsicológica articulada ao caso clínico. <strong>Atenção redobrada: certifique-se de que o sigilo analítico e a descaracterização do paciente foram preservados com absoluto rigor.</strong>
-                  </p>
-                )}
-                {isCurrentEssay && (
-                  <p className="text-[11px]">
-                    Avalie a solidez teórica, o rigor no uso dos conceitos freudianos/pós-freudianos e a originalidade reflexiva. <strong>Não cobre metodologia empírica de pesquisa de campo neste ensaio.</strong>
-                  </p>
-                )}
-                {!isCurrentReview && !isCurrentClinical && !isCurrentEssay && (
-                  <p className="text-[11px]">
-                    Avalie a clareza do problema de pesquisa, o rigor metodológico, a discussão teórica/clínica e o ineditismo científico da contribuição.
-                  </p>
-                )}
+                <p className="font-bold flex items-center gap-1.5"><Info className="w-4 h-4 text-indigo-600 flex-shrink-0" /> Diretrizes Avaliativas para: {currentSec}</p>
+                {isCurrentReview && <p className="text-[11px]">Avalie a qualidade da leitura crítica e síntese da obra. <strong>Lembrete: resenhas não possuem resumo bilíngue ou palavras-chave.</strong></p>}
+                {isCurrentClinical && <p className="text-[11px]">Avalie a consistência metapsicológica articulada ao caso clínico. <strong>Atenção redobrada: certifique-se de que o sigilo analítico e a descaracterização do paciente foram preservados com rigor.</strong></p>}
+                {isCurrentEssay && <p className="text-[11px]">Avalie a solidez teórica e a originalidade reflexiva. <strong>Não cobre metodologia empírica de pesquisa de campo neste ensaio.</strong></p>}
+                {!isCurrentReview && !isCurrentClinical && !isCurrentEssay && <p className="text-[11px]">Avalie a clareza do problema de pesquisa, rigor metodológico, discussão teórica/clínica e ineditismo científico.</p>}
               </div>
 
-              {/* Critérios Avaliativos Adaptados */}
               <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
                 <h4 className="font-bold text-slate-800">Critérios de Avaliação Específicos:</h4>
-                
                 <div className="grid sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                      {isCurrentReview ? 'Título e Referência:' : 'Título e Resumo:'}
-                    </label>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">{isCurrentReview ? 'Título e Referência:' : 'Título e Resumo:'}</label>
                     <select value={critTitle} onChange={(e) => setCritTitle(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
                       <option value="satisfatorio">Satisfatório</option>
                       <option value="necessita_ajustes">Necessita Ajustes</option>
                       <option value="insatisfatorio">Insatisfatório</option>
                     </select>
                   </div>
-
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                      {isCurrentReview ? 'Profundidade Crítica:' : 'Rigor Conceitual:'}
-                    </label>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">{isCurrentReview ? 'Profundidade Crítica:' : 'Rigor Conceitual:'}</label>
                     <select value={critTheory} onChange={(e) => setCritTheory(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
                       <option value="consistente">Consistente</option>
                       <option value="regular">Regular</option>
                       <option value="fragil">Frágil</option>
                     </select>
                   </div>
-
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                      {isCurrentClinical ? 'Técnica e Clínica:' : 'Relevância Psicanalítica:'}
-                    </label>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">{isCurrentClinical ? 'Técnica e Clínica:' : 'Relevância Psicanalítica:'}</label>
                     <select value={critClinical} onChange={(e) => setCritClinical(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
                       <option value="alta">Alta</option>
                       <option value="media">Média</option>
@@ -3132,16 +2553,13 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* CRITÉRIO OBRIGATÓRIO EXCLUSIVO DE CASO CLÍNICO */}
                 {isCurrentClinical && (
                   <div className="pt-2 border-t border-slate-200">
-                    <label className="block text-[11px] font-bold text-amber-900 mb-1">
-                      Sigilo Analítico e Descaracterização do Paciente *:
-                    </label>
+                    <label className="block text-[11px] font-bold text-amber-900 mb-1">Sigilo Analítico e Descaracterização do Paciente *:</label>
                     <select value={critClinicalEthics} onChange={(e) => setCritClinicalEthics(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium text-slate-800">
                       <option value="preservado">Preservado com Rigor (Sem dados identificáveis)</option>
-                      <option value="necessita_ajustes">Necessita Maior Descaracterização (Ajustar dados circunstanciais)</option>
-                      <option value="insuficiente">Insuficiente / Risco de Quebra de Sigilo (Inaceitável na forma atual)</option>
+                      <option value="necessita_ajustes">Necessita Maior Descaracterização</option>
+                      <option value="insuficiente">Insuficiente / Risco de Quebra de Sigilo</option>
                     </select>
                   </div>
                 )}
@@ -3158,43 +2576,27 @@ export default function Home() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Parecer Circunstanciado (Enviado ao autor) *</label>
-                <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Apresente suas análises, fundamentos teóricos e apontamentos detalhados..." className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500" />
+                <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Apresente suas análises, fundamentos teóricos e apontamentos..." className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500" />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Comentários Confidenciais à Editoria (Opcional - Não visível ao autor)</label>
-                <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas destinadas exclusivamente aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
+                <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
               </div>
 
-              {/* Anexo de Manuscrito com Apontamentos */}
               <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-                <label className="block text-xs font-bold text-slate-800">
-                  Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):
-                </label>
-                <input 
-                  type="file" 
-                  accept=".docx,.doc" 
-                  onChange={(e) => setReviewFile(e.target.files?.[0] || null)} 
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-1 bg-white" 
-                />
-                
-                <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-3 text-[11px] text-amber-950 space-y-1.5 leading-relaxed">
-                  <p className="font-bold text-amber-900 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                    Orientações para Manutenção do Anonimato e Uso das Ferramentas do Word:
-                  </p>
-                  <ul className="list-disc list-inside space-y-1 text-amber-900/90 pl-1">
-                    <li><strong>Avaliação Duplo-Cega:</strong> Este arquivo poderá ser disponibilizado ao autor após a análise da editoria. Não se identifique no texto, cabeçalhos ou comentários.</li>
-                    <li><strong>Como inserir anotações no Word:</strong> Utilize a aba <em>Revisão &gt; Novo Comentário</em> para observações pontuais e <em>Revisão &gt; Controlar Alterações</em> para sugerir correções diretamente no texto.</li>
-                    <li><strong>Como anonimizar seu arquivo antes de salvar:</strong> No Microsoft Word, acesse <em>Arquivo &gt; Informações &gt; Inspecionar Documento &gt; Inspecionar &gt; Remover Tudo</em> em "Propriedades do Documento e Informações Pessoais". Alternativamente, em <em>Arquivo &gt; Opções &gt; Geral</em>, altere o "Nome do Usuário" para <strong>"Parecerista"</strong> ou <strong>"Avaliador"</strong>.</li>
-                  </ul>
+                <label className="block text-xs font-bold text-slate-800">Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):</label>
+                <input type="file" accept=".docx,.doc" onChange={(e) => setReviewFile(e.target.files?.[0] || null)} className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 border border-slate-200 rounded-lg p-1 bg-white" />
+                <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-3 text-[11px] text-amber-950 space-y-1 leading-relaxed">
+                  <p className="font-bold text-amber-900 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" /> Anonimato no Word:</p>
+                  <p>Utilize <em>Revisão &gt; Novo Comentário</em> e certifique-se de que seu nome de usuário nas opções do Word esteja como <strong>"Parecerista"</strong> ou <strong>"Avaliador"</strong> para garantir o duplo-cego.</p>
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t">
-                <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Voltar</button>
-                <button type="button" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 shadow-sm">
-                  {submittingReview ? 'Enviando Parecer...' : 'Concluir e Enviar Parecer à Editoria'}
+                <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600">Voltar</button>
+                <button type="submit" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 shadow-sm">
+                  {submittingReview ? 'Enviando...' : 'Concluir e Enviar Parecer'}
                 </button>
               </div>
             </div>
@@ -3207,7 +2609,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border space-y-4">
             <h3 className="text-lg font-bold text-slate-900">Quadro de Pareceristas que Concluíram Avaliações</h3>
-            <p className="text-xs text-slate-500">Relação de pareceristas atuantes para compor a folha de expediente e agradecimentos do fascículo.</p>
+            <p className="text-xs text-slate-500">Relação de pareceristas atuantes para compor a folha de expediente do fascículo.</p>
             
             <div className="bg-slate-50 p-4 rounded-xl border max-h-72 overflow-y-auto space-y-2.5 text-xs">
               {completedReviewers.map((rev) => (
@@ -3226,9 +2628,9 @@ export default function Home() {
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setShowReviewerThankModal(false)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Fechar</button>
+              <button type="button" onClick={() => setShowReviewerThankModal(false)} className="px-4 py-2 text-xs text-slate-600">Fechar</button>
               <button type="button" onClick={handleCopyReviewers} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5">
-                {copiedThanks ? <><Check className="w-3.5 h-3.5" /> Relação Copiada com Lattes/ORCID!</> : <><Copy className="w-3.5 h-3.5" /> Copiar Dados para Expediente</>}
+                {copiedThanks ? <><Check className="w-3.5 h-3.5" /> Relação Copiada!</> : <><Copy className="w-3.5 h-3.5" /> Copiar Dados para Expediente</>}
               </button>
             </div>
           </div>
