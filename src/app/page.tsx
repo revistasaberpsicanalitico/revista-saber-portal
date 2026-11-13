@@ -74,7 +74,7 @@ function SubmitModal({
             </select>
           </div>
 
-          {/* Banner Orientador Dinâmico para Cada Categoria */}
+          {/* Banner Orientador Dinâmico */}
           {isScientific && (
             <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 text-xs text-blue-950 flex items-start gap-2">
               <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -117,7 +117,7 @@ function SubmitModal({
             <input type="text" required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={isReview ? 'Ex: Uma Leitura Crítica de Além do Princípio do Prazer' : 'Título conciso e representativo'} className="w-full px-3 py-2 text-xs border rounded-lg" />
           </div>
 
-          {/* CAMPO EXCLUSIVO DE RESENHA: Referência Completa da Obra */}
+          {/* Campo Exclusivo de Resenha */}
           {isReview && (
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -235,7 +235,7 @@ function SubmitModal({
             )}
           </div>
 
-          {/* Anexo de Manuscrito Integral Anonimizado */}
+          {/* Anexo de Manuscrito */}
           <div className="border-2 border-dashed border-slate-300 p-5 rounded-xl text-center space-y-2 bg-slate-50/50">
             <FileText className="w-10 h-10 mx-auto text-indigo-600" />
             <label className="block text-xs font-semibold text-slate-700 cursor-pointer">
@@ -258,7 +258,7 @@ function SubmitModal({
             </div>
           </div>
 
-          {/* Declarações Éticas (Com item exclusivo de Sigilo Clínico para Relatos Clínicos) */}
+          {/* Declarações Éticas */}
           <div className="space-y-2.5 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 text-xs text-slate-700">
             <h5 className="font-bold text-indigo-950 mb-1 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-indigo-600" />
@@ -273,7 +273,7 @@ function SubmitModal({
               <span><strong>Conformidade Ética (COPE):</strong> Declaro conformidade com as diretrizes internacionais de ética em publicação científica.</span>
             </label>
 
-            {/* TERMO OBRIGATÓRIO EXCLUSIVO DE CASO CLÍNICO */}
+            {/* TERMO EXCLUSIVO DE CASO CLÍNICO */}
             {isClinical && (
               <label className="flex items-start gap-2.5 cursor-pointer bg-amber-50 p-2.5 rounded-lg border border-amber-200">
                 <input type="checkbox" required checked={termClinicalPledge} onChange={(e) => setTermClinicalPledge(e.target.checked)} className="mt-0.5 rounded text-amber-600" />
@@ -549,6 +549,10 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
           <button
             type="button"
             onClick={onClose}
+            className="p-1.5 text
+          <button
+            type="button"
+            onClick={onClose}
             className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg"
           >
             <X className="w-5 h-5" />
@@ -767,7 +771,7 @@ export default function Home() {
   const [editUserRole, setEditUserRole] = useState('')
   const [savingUserEdit, setSavingUserEdit] = useState(false)
 
-  // Central de Mailing / Comunicados
+  // Central de Mailing / Comunicados com Formatação Rica e Preview (Via URL de imagem)
   const [mailingTarget, setMailingTarget] = useState<'all' | 'author' | 'reviewer' | 'council'>('all')
   const [mailingSubject, setMailingSubject] = useState('')
   const [mailingTitle, setMailingTitle] = useState('')
@@ -799,7 +803,7 @@ export default function Home() {
   const [newSection, setNewSection] = useState('Artigos Científicos')
   const [newTitle, setNewTitle] = useState('')
   const [newTitleEn, setNewTitleEn] = useState('')
-  const [bookReference, setBookReference] = useState('') // Exclusivo para Resenhas
+  const [bookReference, setBookReference] = useState('')
   const [newAbstract, setNewAbstract] = useState('')
   const [newAbstractEn, setNewAbstractEn] = useState('')
   const [newKeywords, setNewKeywords] = useState('')
@@ -815,7 +819,7 @@ export default function Home() {
   const [termAnonymous, setTermAnonymous] = useState(false)
   const [termCC, setTermCC] = useState(false)
   const [termAI, setTermAI] = useState(false)
-  const [termClinicalPledge, setTermClinicalPledge] = useState(false) // Exclusivo de Relato Clínico
+  const [termClinicalPledge, setTermClinicalPledge] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   // Reenvio
@@ -838,11 +842,12 @@ export default function Home() {
   const [rejectionReasonText, setRejectionReasonText] = useState('')
   const [savingRejection, setSavingRejection] = useState(false)
 
-  // Parecer Completo com Critérios
+  // Parecer Completo com Critérios Dinâmicos
   const [reviewModalData, setReviewModalData] = useState<any>(null)
   const [critTitle, setCritTitle] = useState('satisfatorio')
   const [critTheory, setCritTheory] = useState('consistente')
   const [critClinical, setCritClinical] = useState('alta')
+  const [critClinicalEthics, setCritClinicalEthics] = useState('preservado')
   const [recommendation, setRecommendation] = useState('aceitar')
   const [commentsAuthor, setCommentsAuthor] = useState('')
   const [commentsEditor, setCommentsEditor] = useState('')
@@ -1260,24 +1265,20 @@ export default function Home() {
     document.body.removeChild(link)
   }
 
-  // SUBMISSÃO COM SUPORTE DINÂMICO A RESENHAS E RELATOS CLÍNICOS
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
     
-    // Validação ética
     if (!termOriginal || !termEthics || !termAnonymous || !termCC || !termAI) {
       alert('Por favor, confirme as declarações éticas obrigatórias.')
       return
     }
 
-    // Se for relato clínico, o termo de sigilo analítico do paciente é mandatório
     if (newSection === 'Relatos de Experiência Clínica' && !termClinicalPledge) {
       alert('Para relatos de experiência clínica, é obrigatório confirmar o compromisso de sigilo e descaracterização do paciente.')
       return
     }
 
-    // Se for resenha, a referência da obra resenhada é mandatória
     if (newSection === 'Resenhas' && !bookReference.trim()) {
       alert('Por favor, informe a referência bibliográfica completa da obra resenhada.')
       return
@@ -1291,7 +1292,6 @@ export default function Home() {
       const { error: uploadError } = await supabase.storage.from('manuscritos').upload(filePath, selectedFile)
       if (uploadError) throw uploadError
 
-      // Tratamento adaptado por categoria para compatibilidade com o banco
       const finalTitleEn = newSection === 'Resenhas' ? (newTitleEn.trim() || 'Book Review') : newTitleEn
       const finalAbstract = newSection === 'Resenhas' ? `[OBRA RESENHADA]:\n${bookReference}` : newAbstract
       const finalAbstractEn = newSection === 'Resenhas' ? 'Book Review (Abstract not applicable)' : newAbstractEn
@@ -1630,16 +1630,32 @@ export default function Home() {
     }
   }
 
+  // PARECERISTA: CONCLUIR E ENVIAR PARECER COM CRITÉRIOS ESPECÍFICOS POR SEÇÃO
   const handleSubmitReview = async () => {
     if (!reviewModalData) return
     setSubmittingReview(true)
     try {
+      const targetArt = allArticles.find((a) => a.id === reviewModalData.article_id)
+      const sec = targetArt?.section || 'Artigos Científicos'
+      const isClin = sec === 'Relatos de Experiência Clínica'
+      const isRev = sec === 'Resenhas'
+
       let rPath = reviewModalData.review_file_url || null
       if (reviewFile) {
         rPath = `pareceres/parecer_${reviewModalData.id}_${Date.now()}.${reviewFile.name.split('.').pop()}`
         await supabase.storage.from('manuscritos').upload(rPath, reviewFile)
       }
-      const fullComments = `--- CRITÉRIOS DE AVALIAÇÃO ---\n• Título, Resumo e Palavras-chave: ${critTitle}\n• Rigor Teórico-Conceitual: ${critTheory}\n• Relevância Psicanalítica: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
+
+      let fullComments = ''
+      if (isRev) {
+        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (RESENHA CRÍTICA) ---\n• Título e Referência da Obra Resenhada: ${critTitle}\n• Profundidade Crítica e Síntese: ${critTheory}\n• Relevância para o Campo Psicanalítico: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
+      } else if (isClin) {
+        const ethicsText = critClinicalEthics === 'preservado' ? 'Preservado com Rigor' : critClinicalEthics === 'necessita_ajustes' ? 'Necessita Maior Descaracterização' : 'Insuficiente / Risco de Quebra de Sigilo'
+        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (RELATO CLÍNICO) ---\n• Título, Resumo e Palavras-chave: ${critTitle}\n• Rigor Teórico-Conceitual: ${critTheory}\n• Pertinência da Técnica e Clínica: ${critClinical}\n• Sigilo e Descaracterização do Paciente: ${ethicsText}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
+      } else {
+        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (${sec.toUpperCase()}) ---\n• Título, Resumo e Palavras-chave: ${critTitle}\n• Rigor Teórico-Conceitual: ${critTheory}\n• Relevância Psicanalítica: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
+      }
+
       await supabase.from('reviews').update({
         recommendation,
         comments_for_author: fullComments,
@@ -1652,7 +1668,7 @@ export default function Home() {
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: 'Parecer Concluído por Avaliador - Revista Saber Psicanalítico',
         title: 'Novo Parecer Emitido',
-        message: `O(A) parecerista ${profile?.full_name} concluiu a avaliação do artigo "${allArticles.find(a => a.id === reviewModalData.article_id)?.title}".\n\n• Recomendação: ${recommendation.toUpperCase()}\n\nAcesse a Sala Editorial para conferir o parecer e deliberar sobre a solicitação de correções ou aceite do manuscrito.`,
+        message: `O(A) parecerista ${profile?.full_name} concluiu a avaliação do trabalho "${targetArt?.title}".\n\n• Categoria: ${sec}\n• Recomendação: ${recommendation.toUpperCase()}\n\nAcesse a Sala Editorial para conferir o parecer e deliberar sobre o artigo.`,
         actionText: 'Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app'
       })
@@ -2010,6 +2026,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2.5">
+              {/* Navegação de Funções: Editor-Chefe e Editor-Adjunto */}
               {isFullEditor && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('editor')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Sala Editorial</button>
@@ -2018,6 +2035,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* Navegação de Funções: Conselho Editorial */}
               {isCouncil && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('council')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'council' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Conselho Editorial</button>
@@ -2128,12 +2146,12 @@ export default function Home() {
             </div>
           )}
 
-          {/* VISÃO DO PARECERISTA */}
+          {/* VISÃO DO PARECERISTA: COM DESTAQUE CLARO DA CATEGORIA E DIRETRIZES */}
           {viewMode === 'reviewer' && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos</h2>
-                <p className="text-sm text-slate-500">Avaliação Duplo-Cega (*Blind Peer Review*).</p>
+                <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos para Avaliação</h2>
+                <p className="text-sm text-slate-500">Avaliação Duplo-Cega (*Blind Peer Review*) considerando as diretrizes de cada categoria de manuscrito.</p>
               </div>
 
               {myReviewAssignments.length === 0 ? (
@@ -2145,20 +2163,36 @@ export default function Home() {
                     const isCompleted = rev.status === 'concluido'
                     const isPendingInvitation = rev.status === 'convite_pendente'
                     const isDeclined = rev.status === 'recusado'
+                    const sec = art?.section || 'Artigos Científicos'
+                    const isReviewSec = sec === 'Resenhas'
+                    const isClinicalSec = sec === 'Relatos de Experiência Clínica'
+                    const isEssaySec = sec === 'Ensaios Teóricos'
 
                     return (
                       <div key={rev.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                         <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                           <div>
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              {/* ETIQUETA COM COR E NOME DA CATEGORIA */}
+                              <span className={`px-2.5 py-0.5 rounded text-xs font-bold border ${
+                                isReviewSec ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                                isClinicalSec ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                isEssaySec ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                'bg-blue-50 text-blue-700 border-blue-200'
+                              }`}>
+                                {sec}
+                              </span>
+
                               {isCompleted && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">PARECER CONCLUÍDO</span>}
                               {isPendingInvitation && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">CONVITE DE AVALIAÇÃO RECEBIDO</span>}
                               {!isCompleted && !isPendingInvitation && !isDeclined && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">EM ELABORAÇÃO</span>}
                               {isDeclined && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">CONVITE RECUSADO</span>}
                               {!isCompleted && !isDeclined && getDeadlineBadge(rev.deadline)}
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 mt-2">{art?.title}</h3>
+
+                            <h3 className="text-lg font-bold text-slate-900 mt-1">{art?.title}</h3>
                           </div>
+
                           <div className="flex gap-2">
                             {isCompleted && (
                               <button 
@@ -2177,8 +2211,25 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {art && <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg leading-relaxed">{art.abstract}</p>}
+                        {/* MINI-BANNER ORIENTADOR DA CATEGORIA ANTES DE AVALIAR */}
+                        <div className="p-2.5 rounded-lg border text-[11px] leading-relaxed flex items-center gap-2 bg-slate-50 text-slate-700">
+                          <Info className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
+                          <span>
+                            {isReviewSec && 'Categoria Resenha (1.000 a 1.500 palavras): Avalie a leitura crítica e contextualização da obra. Dispensado de resumo bilíngue e palavras-chave.'}
+                            {isClinicalSec && 'Categoria Relato Clínico (2.000 a 5.000 palavras): Foco na articulação da técnica com a teoria. Verifique o rigoroso sigilo analítico e a descaracterização do paciente.'}
+                            {isEssaySec && 'Categoria Ensaio Teórico (1.500 a 6.000 palavras): Foco no encadeamento conceitual e metapsicologia. Não exigir metodologia empírica.'}
+                            {!isReviewSec && !isClinicalSec && !isEssaySec && 'Categoria Artigo Científico (2.000 a 8.000 palavras): Foco na investigação original, consistência metodológica e discussão teórica.'}
+                          </span>
+                        </div>
 
+                        {art && (
+                          <div className="text-xs text-slate-600 bg-slate-50/70 p-3 rounded-lg leading-relaxed">
+                            <p className="font-semibold text-slate-800 mb-1">{isReviewSec ? 'Referência da Obra / Síntese:' : 'Resumo do Trabalho:'}</p>
+                            <p className="whitespace-pre-line">{art.abstract}</p>
+                          </div>
+                        )}
+
+                        {/* Bloco de Decisão do Convite */}
                         {isPendingInvitation && (
                           <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                             <div>
@@ -2208,6 +2259,7 @@ export default function Home() {
                           </div>
                         )}
 
+                        {/* Botão de Preencher Parecer */}
                         {!isPendingInvitation && !isDeclined && (
                           <div className="flex justify-end pt-2 border-t">
                             <button 
@@ -2358,7 +2410,7 @@ export default function Home() {
                             </div>
                           )}
 
-                          {/* PARECERISTAS DESIGNADOS COM SELO DE RESPOSTA */}
+                          {/* PARECERISTAS DESIGNADOS */}
                           {!isOwnArticle && revs.length > 0 && (
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-xs">
                               <p className="font-bold text-slate-700">Pareceristas Designados:</p>
@@ -2523,7 +2575,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING */}
+              {/* ABA 3: CENTRAL DE COMUNICADOS / MAILING COM FORMATAÇÃO RICA */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
@@ -2586,6 +2638,7 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* Formulário com Barra de Formatação Rica e Preview */}
                   <form onSubmit={handleSendMailing} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-3">
                       <div>
@@ -2989,103 +3042,165 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL COMPLETO DE PARECER TÉCNICO-CIENTÍFICO */}
-      {reviewModalData && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border space-y-5 max-h-[92vh] overflow-y-auto">
-            <div className="border-b pb-3 flex justify-between items-start">
-              <div>
-                <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">Formulário Oficial de Avaliação</span>
-                <h3 className="text-lg font-bold text-slate-900 mt-1">Parecer Editorial por Pares</h3>
+      {/* MODAL COMPLETO DE PARECER TÉCNICO-CIENTÍFICO (DINÂMICO POR SEÇÃO) */}
+      {reviewModalData && (() => {
+        const currentArt = allArticles.find((a) => a.id === reviewModalData.article_id)
+        const currentSec = currentArt?.section || 'Artigos Científicos'
+        const isCurrentReview = currentSec === 'Resenhas'
+        const isCurrentClinical = currentSec === 'Relatos de Experiência Clínica'
+        const isCurrentEssay = currentSec === 'Ensaios Teóricos'
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+            <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border space-y-5 max-h-[92vh] overflow-y-auto">
+              <div className="border-b pb-3 flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">Formulário de Avaliação</span>
+                    <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border">{currentSec}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Parecer Editorial por Pares</h3>
+                  <p className="text-xs text-slate-500 line-clamp-1">{currentArt?.title}</p>
+                </div>
+                <button type="button" onClick={() => setReviewModalData(null)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
               </div>
-              <button type="button" onClick={() => setReviewModalData(null)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
-            </div>
 
-            <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-              <h4 className="font-bold text-slate-800">Avaliação por Critérios Metapsicológicos e Científicos:</h4>
-              
-              <div className="grid sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Título e Resumo:</label>
-                  <select value={critTitle} onChange={(e) => setCritTitle(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white">
-                    <option value="satisfatorio">Satisfatório</option>
-                    <option value="necessita_ajustes">Necessita Ajustes</option>
-                    <option value="insatisfatorio">Insatisfatório</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Rigor Conceitual:</label>
-                  <select value={critTheory} onChange={(e) => setCritTheory(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white">
-                    <option value="consistente">Consistente</option>
-                    <option value="regular">Regular</option>
-                    <option value="fragil">Frágil</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Relevância Psicanalítica:</label>
-                  <select value={critClinical} onChange={(e) => setCritClinical(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white">
-                    <option value="alta">Alta</option>
-                    <option value="media">Média</option>
-                    <option value="baixa">Baixa</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Recomendação Editorial Conclusiva *</label>
-              <select value={recommendation} onChange={(e) => setRecommendation(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-semibold">
-                <option value="aceitar">Aceitar sem restrições</option>
-                <option value="correcoes_obrigatorias">Aceitar com correções (obrigatórias)</option>
-                <option value="rejeitar">Recusar manuscrito</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Parecer Circunstanciado *</label>
-              <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Detalhe as fundamentações teóricas, pontos fortes e recomendações de aprimoramento..." className="w-full px-3 py-2 text-xs border rounded-lg" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Comentários Confidenciais à Editoria (opcional - não visível ao autor)</label>
-              <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
-            </div>
-
-            <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-              <label className="block text-xs font-bold text-slate-800">
-                Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):
-              </label>
-              <input 
-                type="file" 
-                accept=".docx,.doc" 
-                onChange={(e) => setReviewFile(e.target.files?.[0] || null)} 
-                className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-1 bg-white" 
-              />
-              
-              <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-3 text-[11px] text-amber-950 space-y-1.5 leading-relaxed">
-                <p className="font-bold text-amber-900 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                  Orientações para Manutenção do Anonimato e Uso das Ferramentas do Word:
+              {/* Quadro de Diretrizes Específicas da Categoria para o Parecerista */}
+              <div className="p-3 rounded-xl border text-xs leading-relaxed space-y-1 bg-indigo-50/60 border-indigo-100 text-indigo-950">
+                <p className="font-bold flex items-center gap-1.5">
+                  <Info className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                  Diretrizes Avaliativas para: {currentSec}
                 </p>
-                <ul className="list-disc list-inside space-y-1 text-amber-900/90 pl-1">
-                  <li><strong>Avaliação Duplo-Cega:</strong> Este arquivo poderá ser disponibilizado ao autor após a análise da editoria. Não se identifique no texto, cabeçalhos ou comentários.</li>
-                  <li><strong>Como inserir anotações no Word:</strong> Utilize a aba <em>Revisão &gt; Novo Comentário</em> para observações pontuais e <em>Revisão &gt; Controlar Alterações</em> para sugerir correções diretamente no texto.</li>
-                  <li><strong>Como anonimizar seu arquivo antes de salvar:</strong> No Microsoft Word, acesse <em>Arquivo &gt; Informações &gt; Inspecionar Documento &gt; Inspecionar &gt; Remover Tudo</em> em "Propriedades do Documento e Informações Pessoais". Alternativamente, em <em>Arquivo &gt; Opções &gt; Geral</em>, altere o "Nome do Usuário" para <strong>"Parecerista"</strong> ou <strong>"Avaliador"</strong>.</li>
-                </ul>
+                {isCurrentReview && (
+                  <p className="text-[11px]">
+                    Avalie a qualidade da leitura crítica, a síntese e a relevância da obra resenhada para a comunidade analítica. <strong>Lembrete: resenhas não possuem resumo bilíngue ou palavras-chave.</strong>
+                  </p>
+                )}
+                {isCurrentClinical && (
+                  <p className="text-[11px]">
+                    Avalie a consistência metapsicológica articulada ao caso clínico. <strong>Atenção redobrada: certifique-se de que o sigilo analítico e a descaracterização do paciente foram preservados com absoluto rigor.</strong>
+                  </p>
+                )}
+                {isCurrentEssay && (
+                  <p className="text-[11px]">
+                    Avalie a solidez teórica, o rigor no uso dos conceitos freudianos/pós-freudianos e a originalidade reflexiva. <strong>Não cobre metodologia empírica de pesquisa de campo neste ensaio.</strong>
+                  </p>
+                )}
+                {!isCurrentReview && !isCurrentClinical && !isCurrentEssay && (
+                  <p className="text-[11px]">
+                    Avalie a clareza do problema de pesquisa, o rigor metodológico, a discussão teórica/clínica e o ineditismo científico da contribuição.
+                  </p>
+                )}
               </div>
-            </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t">
-              <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Voltar</button>
-              <button type="button" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">
-                {submittingReview ? 'Enviando Parecer...' : 'Concluir e Enviar Parecer à Editoria'}
-              </button>
+              {/* Critérios Avaliativos Adaptados */}
+              <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                <h4 className="font-bold text-slate-800">Critérios de Avaliação Específicos:</h4>
+                
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      {isCurrentReview ? 'Título e Referência:' : 'Título e Resumo:'}
+                    </label>
+                    <select value={critTitle} onChange={(e) => setCritTitle(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
+                      <option value="satisfatorio">Satisfatório</option>
+                      <option value="necessita_ajustes">Necessita Ajustes</option>
+                      <option value="insatisfatorio">Insatisfatório</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      {isCurrentReview ? 'Profundidade Crítica:' : 'Rigor Conceitual:'}
+                    </label>
+                    <select value={critTheory} onChange={(e) => setCritTheory(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
+                      <option value="consistente">Consistente</option>
+                      <option value="regular">Regular</option>
+                      <option value="fragil">Frágil</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      {isCurrentClinical ? 'Técnica e Clínica:' : 'Relevância Psicanalítica:'}
+                    </label>
+                    <select value={critClinical} onChange={(e) => setCritClinical(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
+                      <option value="alta">Alta</option>
+                      <option value="media">Média</option>
+                      <option value="baixa">Baixa</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* CRITÉRIO OBRIGATÓRIO EXCLUSIVO DE CASO CLÍNICO */}
+                {isCurrentClinical && (
+                  <div className="pt-2 border-t border-slate-200">
+                    <label className="block text-[11px] font-bold text-amber-900 mb-1">
+                      Sigilo Analítico e Descaracterização do Paciente *:
+                    </label>
+                    <select value={critClinicalEthics} onChange={(e) => setCritClinicalEthics(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium text-slate-800">
+                      <option value="preservado">Preservado com Rigor (Sem dados identificáveis)</option>
+                      <option value="necessita_ajustes">Necessita Maior Descaracterização (Ajustar dados circunstanciais)</option>
+                      <option value="insuficiente">Insuficiente / Risco de Quebra de Sigilo (Inaceitável na forma atual)</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Recomendação Editorial Conclusiva *</label>
+                <select value={recommendation} onChange={(e) => setRecommendation(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-semibold">
+                  <option value="aceitar">Aceitar sem restrições</option>
+                  <option value="correcoes_obrigatorias">Aceitar com correções (obrigatórias)</option>
+                  <option value="rejeitar">Recusar manuscrito</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Parecer Circunstanciado (Enviado ao autor) *</label>
+                <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Apresente suas análises, fundamentos teóricos e apontamentos detalhados..." className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Comentários Confidenciais à Editoria (Opcional - Não visível ao autor)</label>
+                <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas destinadas exclusivamente aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
+              </div>
+
+              {/* Anexo de Manuscrito com Apontamentos */}
+              <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                <label className="block text-xs font-bold text-slate-800">
+                  Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):
+                </label>
+                <input 
+                  type="file" 
+                  accept=".docx,.doc" 
+                  onChange={(e) => setReviewFile(e.target.files?.[0] || null)} 
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-1 bg-white" 
+                />
+                
+                <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-3 text-[11px] text-amber-950 space-y-1.5 leading-relaxed">
+                  <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                    Orientações para Manutenção do Anonimato e Uso das Ferramentas do Word:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-amber-900/90 pl-1">
+                    <li><strong>Avaliação Duplo-Cega:</strong> Este arquivo poderá ser disponibilizado ao autor após a análise da editoria. Não se identifique no texto, cabeçalhos ou comentários.</li>
+                    <li><strong>Como inserir anotações no Word:</strong> Utilize a aba <em>Revisão &gt; Novo Comentário</em> para observações pontuais e <em>Revisão &gt; Controlar Alterações</em> para sugerir correções diretamente no texto.</li>
+                    <li><strong>Como anonimizar seu arquivo antes de salvar:</strong> No Microsoft Word, acesse <em>Arquivo &gt; Informações &gt; Inspecionar Documento &gt; Inspecionar &gt; Remover Tudo</em> em "Propriedades do Documento e Informações Pessoais". Alternativamente, em <em>Arquivo &gt; Opções &gt; Geral</em>, altere o "Nome do Usuário" para <strong>"Parecerista"</strong> ou <strong>"Avaliador"</strong>.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t">
+                <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Voltar</button>
+                <button type="button" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 shadow-sm">
+                  {submittingReview ? 'Enviando Parecer...' : 'Concluir e Enviar Parecer à Editoria'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* MODAL AGRADECIMENTO PARECERISTAS */}
       {showReviewerThankModal && (
