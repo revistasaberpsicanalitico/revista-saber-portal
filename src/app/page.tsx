@@ -23,8 +23,27 @@ const formatRole = (role: string) => {
   }
 }
 
+// Opções Padronizadas de Cruzamento
+const schoolOptionsGlobal = [
+  'Sigmund Freud', 'Jacques Lacan', 'Donald Winnicott', 
+  'Sándor Ferenczi', 'Melanie Klein', 'Wilfred Bion', 'Françoise Dolto', 'Outros'
+]
+
+const axeOptionsGlobal = [
+  'Fundamentos, História e Epistemologia da Psicanálise',
+  'Metapsicologia e Conceitos Fundamentais',
+  'Clínica Psicanalítica e Técnica',
+  'Psicopatologia e Sofrimento Psíquico',
+  'Infância, Adolescência e Juventudes',
+  'Sexualidade, Gênero e Relações Familiares',
+  'Saúde Mental e Atenção Psicossocial',
+  'Psicanálise e Educação',
+  'Psicanálise, Filosofia e Ciências Humanas',
+  'Psicanálise, Cultura, Arte e Política'
+]
+
 // ============================================================================
-// MODAL: CHAMADA PÚBLICA E CADASTRO DE PARECERISTAS (INTEGRADO DIRETO NA HOME)
+// MODAL: CHAMADA PÚBLICA E CADASTRO DE PARECERISTAS (NA PÁGINA PRINCIPAL)
 // ============================================================================
 function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => void }) {
   const [step, setStep] = useState<'edital' | 'formulario'>('edital')
@@ -48,20 +67,6 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
   const [axes, setAxes] = useState<string[]>([])
   const [termsAccepted, setTermsAccepted] = useState(false)
 
-  const schoolOptions = ['Sigmund Freud', 'Jacques Lacan', 'Donald Winnicott', 'Sándor Ferenczi', 'Melanie Klein', 'Wilfred Bion', 'Françoise Dolto', 'Outros']
-  const axeOptions = [
-    'Fundamentos, História e Epistemologia da Psicanálise',
-    'Metapsicologia e Conceitos Fundamentais',
-    'Clínica Psicanalítica e Técnica',
-    'Psicopatologia e Sofrimento Psíquico',
-    'Infância, Adolescência e Juventudes',
-    'Sexualidade, Gênero e Relações Familiares',
-    'Saúde Mental e Atenção Psicossocial',
-    'Psicanálise e Educação',
-    'Psicanálise, Filosofia e Ciências Humanas',
-    'Psicanálise, Cultura, Arte e Política'
-  ]
-
   if (!show) return null
 
   const handleToggleSchool = (s: string) => {
@@ -72,7 +77,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
     if (axes.includes(a)) {
       setAxes(axes.filter(x => x !== a))
     } else {
-      if (axes.length >= 3) return alert('Selecione no máximo 3 eixos prioritários.')
+      if (axes.length >= 3) return alert('Selecione no máximo 3 eixos temáticos prioritários.')
       setAxes([...axes, a])
     }
   }
@@ -161,7 +166,6 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-[99] overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[92vh] overflow-y-auto my-4">
-        
         <div className="flex justify-between items-start border-b pb-3">
           <div>
             <span className="text-[11px] font-bold uppercase text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">
@@ -217,7 +221,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
                 <Award className="w-4 h-4 text-indigo-600" /> 2. Certificação Oficial no Lattes
               </h4>
               <p>
-                A cada avaliação concluída, o sistema emite automaticamente uma <strong>Declaração Oficial Timbrada de Parecerista Ad-hoc</strong> com código eletrônico de autenticidade, com validade formal para pontuação e comprovação curricular.
+                A cada avaliação concluída, o sistema emite automaticamente uma <strong>Declaração Oficial Timbrada de Parecerista Ad-hoc</strong> com código eletrônico de autenticidade, com validade formal para comprovação curricular e bancas acadêmicas.
               </p>
             </div>
 
@@ -226,7 +230,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
                 <Scale className="w-4 h-4 text-indigo-600" /> 3. Avaliação Duplo-Cega
               </h4>
               <p>
-                Todas as avaliações são realizadas sob avaliação duplo-cega (*double-blind peer review*), garantindo rigor técnico, sigilo e anonimato entre autores e pareceristas.
+                Todas as avaliações são realizadas sob avaliação duplo-cega (<em>Double-Blind Peer Review</em>), garantindo rigor técnico, sigilo e anonimato entre autores e pareceristas.
               </p>
             </div>
 
@@ -321,7 +325,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">Autores / Escolas de Referência:</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                {schoolOptions.map((s) => (
+                {schoolOptionsGlobal.map((s) => (
                   <label key={s} className="flex items-center gap-1.5 p-1.5 border rounded bg-slate-50 cursor-pointer text-[11px]">
                     <input type="checkbox" checked={schools.includes(s)} onChange={() => handleToggleSchool(s)} className="rounded text-indigo-600" />
                     <span>{s}</span>
@@ -336,7 +340,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
                 <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{axes.length}/3 selecionados</span>
               </div>
               <div className="grid sm:grid-cols-2 gap-1.5">
-                {axeOptions.map((ax) => (
+                {axeOptionsGlobal.map((ax) => (
                   <label key={ax} className={`flex items-start gap-1.5 p-2 border rounded cursor-pointer text-[11px] ${axes.includes(ax) ? 'bg-indigo-50 border-indigo-300 font-semibold' : 'bg-white'}`}>
                     <input type="checkbox" checked={axes.includes(ax)} onChange={() => handleToggleAxe(ax)} className="mt-0.5 rounded text-indigo-600" />
                     <span className="leading-tight">{ax}</span>
@@ -473,7 +477,6 @@ function SubmitModal({
             </>
           )}
 
-          {/* Dados do Autor */}
           <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
             <h4 className="text-xs font-bold text-slate-800">Identificação Acadêmica do Autor Principal</h4>
             <div className="grid md:grid-cols-3 gap-2">
@@ -496,7 +499,6 @@ function SubmitModal({
             </div>
           </div>
 
-          {/* Coautores */}
           <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
             <div className="flex justify-between items-center">
               <h4 className="text-xs font-bold text-slate-800">Coautores ({coauthors.length})</h4>
@@ -519,7 +521,6 @@ function SubmitModal({
             ))}
           </div>
 
-          {/* Upload Manuscrito */}
           <div className="border-2 border-dashed border-slate-300 p-4 rounded-xl text-center space-y-1.5 bg-slate-50/50">
             <FileText className="w-8 h-8 mx-auto text-indigo-600" />
             <label className="block text-xs font-semibold text-slate-700 cursor-pointer">
@@ -529,7 +530,6 @@ function SubmitModal({
             <p className="text-[11px] text-amber-700">O arquivo não deve conter nomes ou marcas de autoria no texto e propriedades.</p>
           </div>
 
-          {/* Declarações Éticas */}
           <div className="space-y-2 bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-100 text-xs text-slate-700">
             <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" required checked={termOriginal} onChange={(e) => setTermOriginal(e.target.checked)} className="mt-0.5 rounded text-indigo-600" />
@@ -740,7 +740,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
                       <React.Fragment key={i}>{i > 0 && (i === article.coauthors.length - 1 ? ' e ' : ', ')}<strong>{c.name}</strong></React.Fragment>
                     ))}</>
                   )}
-                  , foi submetido em <strong>{submitDateStr}</strong> e, após processo formal de avaliação duplo-cega por pares (<em>double-blind peer review</em>), <strong>APROVADO PARA PUBLICAÇÃO</strong> em <strong>{decisionDateStr}</strong> na <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>.
+                  , foi submetido em <strong>{submitDateStr}</strong> e, após processo formal de avaliação duplo-cega por pares (<em>Double-Blind Peer Review</em>), <strong>APROVADO PARA PUBLICAÇÃO</strong> em <strong>{decisionDateStr}</strong> na <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>.
                 </p>
                 <p>O manuscrito obteve parecer favorável da Comissão Editorial, atendendo aos critérios de originalidade, consistência metapsicológica e padrões éticos (COPE).</p>
                 <p>A publicação oficial está programada para integrar o <strong>{issueName}</strong> deste periódico.</p>
@@ -771,7 +771,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
                 <p>
                   Declaramos, para os devidos fins de direito, que <strong>{reviewer?.full_name || 'Parecerista'}</strong> atuou como <strong>Parecerista Ad-hoc</strong> da <strong>Revista Saber Psicanalítico (ISSN 3086-8416)</strong>, periódico científico semestral publicado pela Associação Saber Psicanalítico (ASP).
                 </p>
-                <p>O processo avaliativo ocorreu no âmbito do sistema de avaliação duplo-cega por pares (<em>double-blind peer review</em>), mediante emissão de parecer circunstanciado de mérito técnico-científico que apreciou o rigor conceitual e a relevância da produção acadêmica designada.</p>
+                <p>O processo avaliativo ocorreu no âmbito do sistema de avaliação duplo-cega por pares (<em>Double-Blind Peer Review</em>), mediante emissão de parecer circunstanciado de mérito técnico-científico que apreciou o rigor conceitual e a relevância da produção acadêmica designada.</p>
                 <p>Reconhecemos e agradecemos a inestimável colaboração prestada a esta publicação científica.</p>
               </>
             )}
@@ -811,7 +811,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
 }
 
 // ============================================================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL (HOME)
 // ============================================================================
 export default function Home() {
   const [session, setSession] = useState<any>(null)
@@ -877,7 +877,7 @@ export default function Home() {
   const [verifyResult, setVerifyResult] = useState<any>(null)
   const [checkingCode, setCheckingCode] = useState(false)
 
-  // Meu Perfil Completo
+  // Meu Perfil Completo com Eixos e Escolas (PONTO 3)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [profileInst, setProfileInst] = useState('')
@@ -888,6 +888,8 @@ export default function Home() {
   const [profilePsicanalise, setProfilePsicanalise] = useState('Psicanalista com atuação clínica')
   const [profileBio, setProfileBio] = useState('')
   const [profileKeywords, setProfileKeywords] = useState('')
+  const [profileSchools, setProfileSchools] = useState<string[]>([])
+  const [profileAxes, setProfileAxes] = useState<string[]>([])
   const [savingProfile, setSavingProfile] = useState(false)
 
   // Submissão do Autor
@@ -1223,7 +1225,7 @@ export default function Home() {
     }
   }
 
-  // Abrir Modal Meu Perfil Completo
+  // Abrir Modal Meu Perfil Completo com Eixos e Escolas
   const handleOpenProfileModal = () => {
     setProfileName(profile?.full_name || '')
     setProfileInst(profile?.institution || '')
@@ -1234,6 +1236,8 @@ export default function Home() {
     setProfilePsicanalise(profile?.psicanalise_profile || 'Psicanalista com atuação clínica')
     setProfileBio(profile?.mini_bio || '')
     setProfileKeywords(profile?.keywords || '')
+    setProfileSchools(profile?.theoretical_schools || [])
+    setProfileAxes(profile?.thematic_axes || [])
     setShowProfileModal(true)
   }
 
@@ -1252,6 +1256,8 @@ export default function Home() {
         psicanalise_profile: profilePsicanalise,
         mini_bio: profileBio,
         keywords: profileKeywords,
+        theoretical_schools: profileSchools,
+        thematic_axes: profileAxes,
       }).eq('id', session.user.id)
       if (error) throw error
       alert('Perfil atualizado com sucesso!')
@@ -1714,6 +1720,15 @@ export default function Home() {
   const isCouncil = profile?.role === 'council'
   const canAccessEditorialRoom = isFullEditor || isCouncil
 
+  // Pareceristas Homologados Elegíveis para Designação
+  const eligibleReviewers = allProfiles.filter((p) => 
+    (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') && 
+    p.reviewer_status === 'approved' &&
+    p.id !== assignModalArticle?.author_id
+  )
+
+  const selectedReviewerProfile = allProfiles.find(p => p.id === selectedReviewerId)
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Carregando Revista Saber Psicanalítico...</div>
   }
@@ -1820,7 +1835,7 @@ export default function Home() {
             </button>
           </form>
 
-          {/* CARD DE DESTAQUE: ABRE A CHAMADA DIRETO NA TELA (SEM 404!) */}
+          {/* CARD DE DESTAQUE: ABRE A CHAMADA DIRETO NA TELA */}
           <div className="mt-6 p-4 bg-gradient-to-br from-amber-50/90 via-white to-indigo-50/70 rounded-2xl border border-amber-200 shadow-sm text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px] uppercase tracking-wider border border-amber-300">
               <Sparkles className="w-3 h-3 text-amber-600" /> Chamada Pública Aberta
@@ -1853,7 +1868,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* MODAL INTEGRADO DE PARECERISTAS (ZERO 404) */}
+        {/* MODAL INTEGRADO DE PARECERISTAS */}
         <PareceristasModal show={showPareceristasModal} onClose={() => setShowPareceristasModal(false)} />
 
         {/* MODAL DE VALIDAÇÃO DIGITAL */}
@@ -1927,11 +1942,12 @@ export default function Home() {
     )
   }
 
-  // PONTO (F): Se o parecerista recusar, o trabalho some da tela dele!
   const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
   const myReviewAssignments = allReviews
     .filter((r) => r.reviewer_id === session?.user?.id)
     .filter((r) => r.status !== 'recusado')
+
+  const isReviewerPending = profile?.reviewer_status === 'pending'
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
@@ -2076,11 +2092,48 @@ export default function Home() {
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos para Avaliação</h2>
-                <p className="text-sm text-slate-500">Avaliação Duplo-Cega (*Blind Peer Review*) considerando as diretrizes de cada categoria de manuscrito.</p>
+                {/* PONTO 2: Termo em itálico limpo, sem asteriscos literais */}
+                <p className="text-sm text-slate-500">
+                  Avaliação Duplo-Cega <span className="italic font-medium text-slate-600">(Double-Blind Peer Review)</span> considerando as diretrizes regimentais de cada seção.
+                </p>
               </div>
 
+              {/* PONTO 1: AVISO EXPLÍCITO DE CANDIDATURA PENDENTE NO CONSELHO EDITORIAL */}
+              {isReviewerPending && (
+                <div className="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-5 text-amber-950 space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-amber-100 rounded-xl text-amber-800">
+                      <Clock className="w-5 h-5 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-amber-900">Inscrição em Processo de Deliberação Colegiada</h3>
+                      <p className="text-[11px] text-amber-800 font-medium">Conselho Editorial da Revista Saber Psicanalítico</p>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-relaxed text-amber-900">
+                    Sua inscrição para o <strong>Banco de Pareceristas Ad-hoc</strong> foi recebida com sucesso e encontra-se em apreciação pelos membros do Conselho Editorial.
+                  </p>
+                  <p className="text-[11px] text-amber-800/90 leading-relaxed bg-white/70 p-3 rounded-lg border border-amber-200">
+                    <strong>Importante:</strong> O envio do formulário não homologa automaticamente o avaliador. Assim que seu cadastro for aprovado e homologado pela Editoria, você receberá um comunicado oficial por e-mail e este painel estará habilitado para receber convites formais de avaliação.
+                  </p>
+                  <div className="pt-1 flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      onClick={() => setViewMode('author')} 
+                      className="px-3.5 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition"
+                    >
+                      <Upload className="w-3.5 h-3.5" /> Ir para Meus Trabalhos (Visão de Autor)
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {myReviewAssignments.length === 0 ? (
-                <div className="bg-white p-12 text-center rounded-xl border border-slate-200 text-slate-400 text-xs">Nenhum manuscrito atribuído no momento.</div>
+                <div className="bg-white p-12 text-center rounded-xl border border-slate-200 text-slate-400 text-xs">
+                  {isReviewerPending 
+                    ? 'Nenhum manuscrito pode ser atribuído antes da homologação de sua candidatura.' 
+                    : 'Nenhum manuscrito atribuído para avaliação no momento.'}
+                </div>
               ) : (
                 <div className="grid gap-4">
                   {myReviewAssignments.map((rev) => {
@@ -2207,7 +2260,6 @@ export default function Home() {
                   <FileText className="w-4 h-4" /> Submissões e Artigos ({allArticles.length})
                 </button>
                 
-                {/* ABA DE CANDIDATURAS DE PARECERISTAS */}
                 <button type="button" onClick={() => setEditorialTab('candidates')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'candidates' ? 'border-amber-500 text-amber-700 bg-amber-50/50' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                   <Award className="w-4 h-4 text-amber-600" />
                   <span>Candidaturas Pareceristas</span>
@@ -2422,7 +2474,6 @@ export default function Home() {
                               </div>
                             </div>
 
-                            {/* Ficha Completa */}
                             <div className="grid sm:grid-cols-2 gap-3 text-xs">
                               <div className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-1">
                                 <span className="font-bold text-slate-800">Mini-biografia e Formação:</span>
@@ -2452,7 +2503,6 @@ export default function Home() {
                               </div>
                             </div>
 
-                            {/* Placar de Votação do Conselho */}
                             <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
@@ -2477,7 +2527,6 @@ export default function Home() {
                                 </div>
                               </div>
 
-                              {/* Ações de Voto e Homologação */}
                               <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
                                 {!userVote ? (
                                   <div className="flex gap-1.5">
@@ -2680,19 +2729,19 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* MODAL: MEU PERFIL COMPLETO (PONTO C) */}
+      {/* MODAL: MEU PERFIL COMPLETO COM EIXOS E ESCOLAS (PONTO 3) */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[95] overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border space-y-4 max-h-[92vh] overflow-y-auto my-6">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border space-y-4 max-h-[92vh] overflow-y-auto my-6">
             <div className="flex justify-between items-start border-b pb-2">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Meu Perfil Cadastral</h3>
-                <p className="text-xs text-slate-500">Mantenha sua titulação, áreas temáticas e percurso atualizados.</p>
+                <h3 className="text-base font-bold text-slate-900">Meu Perfil Cadastral e de Afinidade</h3>
+                <p className="text-xs text-slate-500">Mantenha sua titulação, eixos temáticos e autores de referência atualizados.</p>
               </div>
               <button type="button" onClick={() => setShowProfileModal(false)}><X className="w-5 h-5" /></button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4">
+            <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Nome Completo *</label>
@@ -2716,23 +2765,80 @@ export default function Home() {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Relação com a Psicanálise *</label>
+                  <select value={profilePsicanalise} onChange={(e) => setProfilePsicanalise(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded-lg bg-white">
+                    <option value="Psicanalista com atuação clínica">Psicanalista com atuação clínica</option>
+                    <option value="Pesquisador(a) / Docente universitário(a)">Pesquisador(a) / Docente universitário(a)</option>
+                    <option value="Psicólogo(a) / Profissional de saúde mental">Psicólogo(a) / Profissional de saúde mental</option>
+                    <option value="Profissional de área afim com estudos em Psicanálise">Profissional de área afim com estudos em Psicanálise</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Telefone / WhatsApp</label>
                   <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-1.5 text-xs border rounded-lg" />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">ORCID</label>
-                  <input type="text" value={profileOrcid} onChange={(e) => setProfileOrcid(e.target.value)} placeholder="0000-..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
-                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Link do Currículo Lattes</label>
-                <input type="url" value={profileLattes} onChange={(e) => setProfileLattes(e.target.value)} placeholder="http://lattes.cnpq.br/..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Link do Currículo Lattes</label>
+                  <input type="url" value={profileLattes} onChange={(e) => setProfileLattes(e.target.value)} placeholder="http://lattes.cnpq.br/..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Identificador ORCID</label>
+                  <input type="text" value={profileOrcid} onChange={(e) => setProfileOrcid(e.target.value)} placeholder="0000-0000-0000-0000" className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                </div>
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Mini-biografia e Formação em Psicanálise</label>
-                <textarea rows={3} value={profileBio} onChange={(e) => setProfileBio(e.target.value)} placeholder="Apresente sua trajetória de estudos, escolas ou clínica..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                <textarea rows={2} value={profileBio} onChange={(e) => setProfileBio(e.target.value)} placeholder="Apresente sua trajetória de estudos, escolas ou clínica..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+              </div>
+
+              {/* PONTO 3: SELEÇÃO DE ESCOLAS TEÓRICAS NO PERFIL */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Escolas Teóricas / Autores de Referência:</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {schoolOptionsGlobal.map((s) => (
+                    <label key={s} className="flex items-center gap-1.5 p-1.5 border rounded bg-slate-50 cursor-pointer text-[10.5px]">
+                      <input 
+                        type="checkbox" 
+                        checked={profileSchools.includes(s)} 
+                        onChange={() => setProfileSchools(profileSchools.includes(s) ? profileSchools.filter(x => x !== s) : [...profileSchools, s])} 
+                        className="rounded text-indigo-600" 
+                      />
+                      <span>{s}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* PONTO 3: SELEÇÃO DE EIXOS TEMÁTICOS NO PERFIL */}
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[11px] font-bold text-slate-700">Eixos Temáticos de Atuação (Selecione até 3):</label>
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">{profileAxes.length}/3</span>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-1">
+                  {axeOptionsGlobal.map((ax) => (
+                    <label key={ax} className={`flex items-start gap-1.5 p-1.5 border rounded cursor-pointer text-[10.5px] ${profileAxes.includes(ax) ? 'bg-indigo-50 border-indigo-300 font-semibold text-indigo-950' : 'bg-white'}`}>
+                      <input 
+                        type="checkbox" 
+                        checked={profileAxes.includes(ax)} 
+                        onChange={() => {
+                          if (profileAxes.includes(ax)) {
+                            setProfileAxes(profileAxes.filter(x => x !== ax))
+                          } else {
+                            if (profileAxes.length >= 3) return alert('Máximo de 3 eixos temáticos.')
+                            setProfileAxes([...profileAxes, ax])
+                          }
+                        }} 
+                        className="mt-0.5 rounded text-indigo-600" 
+                      />
+                      <span className="leading-tight">{ax}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -2751,7 +2857,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL: SOLICITAR AJUSTES AO PARECERISTA (PONTO B) */}
+      {/* MODAL: SOLICITAR AJUSTES AO PARECERISTA */}
       {requestReviewerChangesModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[85]">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
@@ -2811,26 +2917,62 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL ATRIBUIR PARECERISTA */}
+      {/* MODAL ATRIBUIR PARECERISTA COM CRUZAMENTO DE AFINIDADE (PONTO 3) */}
       {assignModalArticle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Designar Parecerista</h3>
-            <p className="text-xs text-slate-500">Selecione o parecerista cadastrado e determine o prazo para devolução do parecer.</p>
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Parecerista Homologado *</label>
+              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase">
+                {assignModalArticle.section}
+              </span>
+              <h3 className="text-base font-bold text-slate-900 mt-1">Designar Parecerista</h3>
+              <p className="text-xs text-slate-500 line-clamp-1">{assignModalArticle.title}</p>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-lg border text-xs space-y-1">
+              <p className="text-slate-700 font-semibold">Palavras-chave do Artigo:</p>
+              <p className="text-slate-600 italic">{assignModalArticle.keywords || 'Não informadas.'}</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Selecione o Parecerista Homologado *</label>
               <select value={selectedReviewerId} onChange={(e) => setSelectedReviewerId(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white">
-                <option value="">-- Escolha um parecerista --</option>
-                {allProfiles.filter((p) => (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') && p.id !== assignModalArticle.author_id).map((rev) => (
-                  <option key={rev.id} value={rev.id}>{rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'}</option>
+                <option value="">-- Escolha um parecerista ativo --</option>
+                {eligibleReviewers.map((rev) => (
+                  <option key={rev.id} value={rev.id}>
+                    {rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'} [{rev.academic_degree || 'Titulação'}]
+                  </option>
                 ))}
               </select>
             </div>
+
+            {/* FICHA DE AFINIDADE DO PARECERISTA SELECIONADO */}
+            {selectedReviewerProfile && (
+              <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl text-xs space-y-1.5 animate-fadeIn">
+                <p className="font-bold text-indigo-950 flex items-center gap-1">
+                  <UserCheck className="w-3.5 h-3.5 text-indigo-600" /> Afinidade Temática do Parecerista:
+                </p>
+                <p className="text-[11px] text-slate-700">
+                  <strong>Eixos:</strong> {(selectedReviewerProfile.thematic_axes || []).join('; ') || 'Geral'}
+                </p>
+                <p className="text-[11px] text-slate-700">
+                  <strong>Escolas/Autores:</strong> {(selectedReviewerProfile.theoretical_schools || []).join(', ') || '-'}
+                </p>
+                <p className="text-[11px] text-slate-700">
+                  <strong>Palavras-chave:</strong> {selectedReviewerProfile.keywords || '-'}
+                </p>
+              </div>
+            )}
+
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Prazo Limite para Parecer *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Prazo Limite para Devolução do Parecer *</label>
               <input type="date" required value={assignDeadline} onChange={(e) => setAssignDeadline(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
             </div>
-            <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setAssignModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button><button type="button" disabled={!selectedReviewerId || !assignDeadline} onClick={handleAssignReviewer} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">Confirmar Atribuição</button></div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setAssignModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
+              <button type="button" disabled={!selectedReviewerId || !assignDeadline} onClick={handleAssignReviewer} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">Confirmar Atribuição</button>
+            </div>
           </div>
         </div>
       )}
