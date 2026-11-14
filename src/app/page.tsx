@@ -8,7 +8,7 @@ import {
   Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2, ShieldAlert,
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, 
   Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter, ExternalLink,
-  Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, Code, ThumbsUp, ThumbsDown, BookOpen,
+  Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, EyeOff, Code, ThumbsUp, ThumbsDown, BookOpen,
   Sparkles
 } from 'lucide-react'
 
@@ -45,8 +45,6 @@ function SubmitModal({
 
   const isReview = newSection === 'Resenhas'
   const isClinical = newSection === 'Relatos de Experiência Clínica'
-  const isEssay = newSection === 'Ensaios Teóricos'
-  const isScientific = newSection === 'Artigos Científicos'
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -130,11 +128,23 @@ function SubmitModal({
           <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
             <h4 className="text-xs font-bold text-slate-800">Identificação Acadêmica do Autor Principal</h4>
             <div className="grid md:grid-cols-3 gap-2">
-              <input type="text" required value={authorInstitution} onChange={(e) => setAuthorInstitution(e.target.value)} placeholder="Filiação Institucional *" className="px-3 py-1.5 text-xs border rounded-lg bg-white" />
-              <input type="url" value={authorLattes} onChange={(e) => setAuthorLattes(e.target.value)} placeholder="Link Lattes" className="px-3 py-1.5 text-xs border rounded-lg bg-white" />
-              <input type="text" value={authorOrcid} onChange={(e) => setAuthorOrcid(e.target.value)} placeholder="ORCID (0000-...)" className="px-3 py-1.5 text-xs border rounded-lg bg-white" />
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Filiação Institucional *</label>
+                <input type="text" required value={authorInstitution} onChange={(e) => setAuthorInstitution(e.target.value)} placeholder="Universidade / Instituição" className="w-full px-3 py-1.5 text-xs border rounded-lg bg-white" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Link Lattes</label>
+                <input type="url" value={authorLattes} onChange={(e) => setAuthorLattes(e.target.value)} placeholder="http://lattes..." className="w-full px-3 py-1.5 text-xs border rounded-lg bg-white" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">ORCID</label>
+                <input type="text" value={authorOrcid} onChange={(e) => setAuthorOrcid(e.target.value)} placeholder="0000-0000-..." className="w-full px-3 py-1.5 text-xs border rounded-lg bg-white" />
+              </div>
             </div>
-            <textarea rows={2} required value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Mini-biografia acadêmica (titulação e área) *" className="w-full px-3 py-1.5 text-xs border rounded-lg bg-white" />
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Mini-biografia acadêmica *</label>
+              <textarea rows={2} required value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Titulação, trajetória e área de atuação..." className="w-full px-3 py-1.5 text-xs border rounded-lg bg-white" />
+            </div>
           </div>
 
           {/* Coautores */}
@@ -466,6 +476,7 @@ export default function Home() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [fullName, setFullName] = useState('')
   const [institution, setInstitution] = useState('')
   const [phone, setPhone] = useState('')
@@ -515,13 +526,19 @@ export default function Home() {
   const [verifyResult, setVerifyResult] = useState<any>(null)
   const [checkingCode, setCheckingCode] = useState(false)
 
-  // Meu Perfil
+  // Meu Perfil Completo
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [profileInst, setProfileInst] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [profileLattes, setProfileLattes] = useState('')
   const [profileOrcid, setProfileOrcid] = useState('')
+  const [profileDegree, setProfileDegree] = useState('Especialista')
+  const [profilePsicanalise, setProfilePsicanalise] = useState('Psicanalista com atuação clínica')
+  const [profileBio, setProfileBio] = useState('')
+  const [profileKeywords, setProfileKeywords] = useState('')
+  const [profileSchools, setProfileSchools] = useState<string[]>([])
+  const [profileAxes, setProfileAxes] = useState<string[]>([])
   const [savingProfile, setSavingProfile] = useState(false)
 
   // Submissão do Autor
@@ -558,10 +575,15 @@ export default function Home() {
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
   const [assignDeadline, setAssignDeadline] = useState('')
 
-  // Solicitar Correções
+  // Solicitar Correções ao Autor
   const [requestChangesModalArticle, setRequestChangesModalArticle] = useState<any>(null)
   const [changesReasonText, setChangesReasonText] = useState('')
   const [savingChanges, setSavingChanges] = useState(false)
+
+  // Solicitar Correções ao Parecerista
+  const [requestReviewerChangesModal, setRequestReviewerChangesModal] = useState<any>(null)
+  const [reviewerChangesText, setReviewerChangesText] = useState('')
+  const [savingReviewerChanges, setSavingReviewerChanges] = useState(false)
 
   // Recusa
   const [rejectionModalArticle, setRejectionModalArticle] = useState<any>(null)
@@ -612,11 +634,15 @@ export default function Home() {
         setProfile(data)
         if (isFirstLoad) {
           const isEd = data.role === 'editor' || data.role === 'editor_adjunto'
-          setViewMode(
-            isEd ? 'editor' : 
-            data.role === 'council' ? 'council' : 
-            data.role === 'reviewer' ? 'reviewer' : 'author'
-          )
+          if (data.reviewer_status === 'pending') {
+            setViewMode('author')
+          } else {
+            setViewMode(
+              isEd ? 'editor' : 
+              data.role === 'council' ? 'council' : 
+              data.role === 'reviewer' ? 'reviewer' : 'author'
+            )
+          }
         }
         setAuthorInstitution(data.institution || '')
         setAuthorLattes(data.lattes_url || '')
@@ -720,67 +746,7 @@ export default function Home() {
     }
   }
 
-  // Votação do Conselho Editorial
-  const handleCastCouncilVote = async (candidate: any, voteType: 'favoravel' | 'desfavoravel') => {
-    try {
-      const existingVotes = candidate.council_votes || []
-      const filteredVotes = existingVotes.filter((v: any) => v.user_id !== session?.user?.id)
-
-      const newVote = {
-        user_id: session?.user?.id,
-        user_name: profile?.full_name || 'Membro do Conselho',
-        user_role: profile?.role,
-        vote: voteType,
-        created_at: new Date().toISOString()
-      }
-
-      const updatedVotes = [...filteredVotes, newVote]
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ council_votes: updatedVotes })
-        .eq('id', candidate.id)
-
-      if (error) throw error
-
-      alert('Seu voto foi registrado com sucesso!')
-      fetchAllData()
-    } catch (err: any) {
-      alert(`Erro ao registrar voto: ${err.message}`)
-    }
-  }
-
-  // Homologação Final pelo Editor
-  const handleApproveReviewer = async (candidate: any) => {
-    if (!window.confirm(`Homologar "${candidate.full_name}" como Parecerista Ad-hoc Oficial da revista?`)) return
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          role: 'reviewer',
-          reviewer_status: 'approved'
-        })
-        .eq('id', candidate.id)
-
-      if (error) throw error
-
-      await sendEmailNotification({
-        to: candidate.email,
-        subject: 'Homologação Aprovada - Banco de Pareceristas da Revista Saber Psicanalítico',
-        title: 'Bem-vindo(a) ao Corpo de Pareceristas Ad-hoc',
-        message: `Prezado(a) ${candidate.full_name},\n\nTemos a satisfação de comunicar que sua inscrição para integrar o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416) foi HOMOLOGADA com parecer favorável do Conselho Editorial.\n\nSeu cadastro encontra-se plenamente ativo em nosso sistema.\n\n--- INFORMAÇÕES GERAIS DE FUNCIONAMENTO ---\n1. Convites de Avaliação: Conforme a afinidade temática dos manuscritos recebidos, você receberá um e-mail com o resumo da obra e o prazo sugerido (geralmente 21 dias).\n2. Aceite e Recusa: Ao acessar o portal com seu login e senha, você poderá aceitar ou recusar formalmente o convite.\n3. Avaliação Duplo-Cega: Os textos são anonimizados. Seu parecer circunstanciado e eventuais arquivos com comentários deverão manter rigoroso anonimato.\n4. Certificação Oficial: A cada parecer finalizado, o sistema emite automaticamente a Declaração Oficial Timbrada com código digital de verificação para comprovação no Lattes e em bancas acadêmicas.\n\nAgradecemos sua valorosa contribuição para o fortalecimento da transmissão e do rigor científico na Psicanálise.`,
-        actionText: 'Acessar Área do Parecerista',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
-      })
-
-      alert(`Parecerista "${candidate.full_name}" homologado com sucesso! O e-mail com orientações foi enviado.`)
-      fetchAllData()
-    } catch (err: any) {
-      alert(`Erro ao homologar parecerista: ${err.message}`)
-    }
-  }
-
+  // Validador com Anonimato Blindado
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
     if (!code) return
@@ -792,31 +758,8 @@ export default function Home() {
       const prefix = (parts.length >= 3 ? parts[2] : code.replace(/^ASP-(ACE|REC|PAR)-/i, '')).trim().toUpperCase()
       const cleanCode = prefix.replace(/[^A-Z0-9]/g, '')
 
-      const { data: rpcData, error: rpcError } = await supabase.rpc('verify_document', { code })
-      if (!rpcError && rpcData && rpcData.valid) {
-        setVerifyResult(rpcData)
-        setCheckingCode(false)
-        return
-      }
-
       if (code.includes('ASP-ACE')) {
-        let found = allArticles.find((a) => {
-          const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-          const idRaw = (a.id || '').toUpperCase()
-          return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
-        })
-
-        if (!found) {
-          const { data: arts } = await supabase.from('articles').select('*, author:author_id(full_name)')
-          if (arts) {
-            found = arts.find((a: any) => {
-              const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-              const idRaw = (a.id || '').toUpperCase()
-              return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
-            })
-          }
-        }
-
+        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
         if (found) {
           setVerifyResult({
             valid: true,
@@ -832,23 +775,7 @@ export default function Home() {
       }
 
       if (code.includes('ASP-REC')) {
-        let found = allArticles.find((a) => {
-          const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-          const idRaw = (a.id || '').toUpperCase()
-          return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
-        })
-
-        if (!found) {
-          const { data: arts } = await supabase.from('articles').select('*, author:author_id(full_name)')
-          if (arts) {
-            found = arts.find((a: any) => {
-              const idClean = (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-              const idRaw = (a.id || '').toUpperCase()
-              return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
-            })
-          }
-        }
-
+        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
         if (found) {
           setVerifyResult({
             valid: true,
@@ -864,32 +791,16 @@ export default function Home() {
       }
 
       if (code.includes('ASP-PAR')) {
-        let foundRev = allReviews.find((r) => {
-          const idClean = (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-          const idRaw = (r.id || '').toUpperCase()
-          return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
-        })
-
-        if (!foundRev) {
-          const { data: revs } = await supabase.from('reviews').select('*, reviewer:reviewer_id(full_name), article:article_id(title)')
-          if (revs) {
-            foundRev = revs.find((r: any) => {
-              const idClean = (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-              const idRaw = (r.id || '').toUpperCase()
-              return idClean.startsWith(cleanCode) || idRaw.startsWith(cleanCode)
-            })
-          }
-        }
-
+        let foundRev = allReviews.find((r) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
         if (foundRev) {
           const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
           setVerifyResult({
             valid: true,
             type: 'Declaração de Atuação como Parecerista Ad-hoc',
-            title: foundRev.article?.title || 'Avaliação por Pares',
+            title: null, // Anonimato 100% blindado
             person: revPerson?.full_name || 'Parecerista Registrado',
             date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
-            role: 'Parecerista Ad-hoc',
+            role: 'Parecerista Ad-hoc (Avaliação Duplo-Cega por Pares)',
           })
           setCheckingCode(false)
           return
@@ -904,13 +815,102 @@ export default function Home() {
     }
   }
 
+  // Votação Colegiada
+  const handleCastCouncilVote = async (candidate: any, voteType: 'favoravel' | 'desfavoravel') => {
+    try {
+      const existingVotes = candidate.council_votes || []
+      const filteredVotes = existingVotes.filter((v: any) => v.user_id !== session?.user?.id)
+
+      const newVote = {
+        user_id: session?.user?.id,
+        user_name: profile?.full_name || 'Membro do Conselho',
+        user_role: profile?.role,
+        vote: voteType,
+        created_at: new Date().toISOString()
+      }
+
+      const updatedVotes = [...filteredVotes, newVote]
+      const { error } = await supabase.from('profiles').update({ council_votes: updatedVotes }).eq('id', candidate.id)
+      if (error) throw error
+
+      alert('Seu voto foi registrado com sucesso!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    }
+  }
+
+  // Homologação Final pelo Editor
+  const handleApproveReviewer = async (candidate: any) => {
+    if (!window.confirm(`Homologar "${candidate.full_name}" como Parecerista Ad-hoc Oficial?`)) return
+
+    try {
+      const { error } = await supabase.from('profiles').update({
+        role: 'reviewer',
+        reviewer_status: 'approved'
+      }).eq('id', candidate.id)
+
+      if (error) throw error
+
+      await sendEmailNotification({
+        to: candidate.email,
+        subject: 'Homologação Aprovada - Banco de Pareceristas (Revista Saber Psicanalítico)',
+        title: 'Bem-vindo(a) ao Corpo de Pareceristas Ad-hoc',
+        message: `Prezado(a) ${candidate.full_name},\n\nTemos a satisfação de comunicar que sua inscrição para integrar o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416) foi HOMOLOGADA com parecer favorável do Conselho Editorial.\n\nSeu cadastro encontra-se plenamente ativo em nosso sistema.\n\n--- INFORMAÇÕES GERAIS DE FUNCIONAMENTO ---\n1. Convites de Avaliação: Conforme a afinidade temática dos manuscritos recebidos, você receberá um e-mail com o resumo da obra e o prazo sugerido (geralmente 21 dias).\n2. Aceite e Recusa: Ao acessar o portal, você poderá aceitar ou recusar formalmente o convite. O arquivo completo do texto só fica disponível para download após você clicar em Aceitar.\n3. Avaliação Duplo-Cega: Os textos são anonimizados. Seu parecer circunstanciado e eventuais arquivos com comentários deverão manter rigoroso anonimato.\n4. Certificação Oficial: A cada parecer finalizado, o sistema emite automaticamente a Declaração Oficial Timbrada com código digital de verificação para comprovação no Lattes e em bancas acadêmicas.\n\nAgradecemos sua valorosa contribuição para o fortalecimento da transmissão e do rigor científico na Psicanálise.`,
+        actionText: 'Acessar Área do Parecerista',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
+      alert(`Parecerista "${candidate.full_name}" homologado com sucesso!`)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    }
+  }
+
+  // Abrir Modal Meu Perfil Completo
   const handleOpenProfileModal = () => {
     setProfileName(profile?.full_name || '')
     setProfileInst(profile?.institution || '')
     setProfilePhone(profile?.phone || '')
     setProfileLattes(profile?.lattes_url || '')
     setProfileOrcid(profile?.orcid || '')
+    setProfileDegree(profile?.academic_degree || 'Especialista')
+    setProfilePsicanalise(profile?.psicanalise_profile || 'Psicanalista com atuação clínica')
+    setProfileBio(profile?.mini_bio || '')
+    setProfileKeywords(profile?.keywords || '')
+    setProfileSchools(profile?.theoretical_schools || [])
+    setProfileAxes(profile?.thematic_axes || [])
     setShowProfileModal(true)
+  }
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!session) return
+    setSavingProfile(true)
+    try {
+      const { error } = await supabase.from('profiles').update({
+        full_name: profileName,
+        institution: profileInst,
+        phone: profilePhone,
+        lattes_url: profileLattes,
+        orcid: profileOrcid,
+        academic_degree: profileDegree,
+        psicanalise_profile: profilePsicanalise,
+        mini_bio: profileBio,
+        keywords: profileKeywords,
+        theoretical_schools: profileSchools,
+        thematic_axes: profileAxes,
+      }).eq('id', session.user.id)
+      if (error) throw error
+      alert('Perfil atualizado com sucesso!')
+      setShowProfileModal(false)
+      initUser(session, false)
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
   const sendEmailNotification = async (payload: any) => {
@@ -932,29 +932,6 @@ export default function Home() {
     setCoauthors(updated)
   }
   const handleRemoveCoauthor = (index: number) => setCoauthors(coauthors.filter((_, i) => i !== index))
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!session) return
-    setSavingProfile(true)
-    try {
-      const { error } = await supabase.from('profiles').update({
-        full_name: profileName,
-        institution: profileInst,
-        phone: profilePhone,
-        lattes_url: profileLattes,
-        orcid: profileOrcid,
-      }).eq('id', session.user.id)
-      if (error) throw error
-      alert('Perfil atualizado com sucesso!')
-      setShowProfileModal(false)
-      initUser(session, false)
-    } catch (err: any) {
-      alert(`Erro: ${err.message}`)
-    } finally {
-      setSavingProfile(false)
-    }
-  }
 
   const handleOpenEditUserModal = (targetUser: any) => {
     setEditingUserModal(targetUser)
@@ -980,21 +957,18 @@ export default function Home() {
         role: editUserRole,
       }).eq('id', editingUserModal.id)
       if (error) throw error
-      alert(`Cadastro de "${editUserName}" atualizado com sucesso!`)
+      alert(`Cadastro atualizado!`)
       setEditingUserModal(null)
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro ao salvar usuário: ${err.message}`)
+      alert(`Erro: ${err.message}`)
     } finally {
       setSavingUserEdit(false)
     }
   }
 
   const handleDeleteUser = async (userToDelete: any) => {
-    if (userToDelete.id === session?.user?.id) {
-      alert('Você não pode excluir seu próprio perfil!')
-      return
-    }
+    if (userToDelete.id === session?.user?.id) return alert('Você não pode excluir seu próprio perfil!')
     if (!window.confirm(`Excluir cadastro de "${userToDelete.full_name}"?`)) return
     try {
       const { error } = await supabase.from('profiles').delete().eq('id', userToDelete.id)
@@ -1015,7 +989,7 @@ export default function Home() {
         redirectTo: 'https://revista-saber-portal.vercel.app/redefinir-senha',
       })
       if (error) throw error
-      alert('Link oficial de redefinição enviado para o seu e-mail!')
+      alert('Link oficial enviado para o seu e-mail!')
       setShowForgotModal(false)
       setForgotEmail('')
     } catch (err: any) {
@@ -1026,58 +1000,35 @@ export default function Home() {
   }
 
   const handleExportBackup = () => {
-    if (allArticles.length === 0) return alert('Sem dados para exportação.')
-    const headers = ['ID', 'Titulo', 'Secao', 'Status', 'Data', 'Fasciculo', 'Autor', 'Email', 'ORCID', 'Lattes', 'Coautores', 'Pareceres', 'Justificativa']
+    if (allArticles.length === 0) return alert('Sem dados.')
+    const headers = ['ID', 'Titulo', 'Secao', 'Status', 'Data', 'Autor', 'Email', 'Pareceres']
     const rows = allArticles.map((art) => [
-      art.id,
-      `"${art.title.replace(/"/g, '""')}"`,
-      `"${art.section || 'Artigos Científicos'}"`,
-      `"${art.status}"`,
-      `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`,
-      `"${art.target_issue || getArticleIssue(art)}"`,
-      `"${getAuthorName(art.author_id, art).replace(/"/g, '""')}"`,
-      `"${getAuthorEmail(art.author_id, art)}"`,
-      `"${art.author_orcid || ''}"`,
-      `"${art.author_lattes || ''}"`,
-      `"${(art.coauthors || []).map((c: any) => `${c.name} (${c.institution || ''})`).join('; ').replace(/"/g, '""')}"`,
-      getArticleReviews(art.id).length,
-      `"${(art.rejection_reason || '').replace(/"/g, '""')}"`
+      art.id, `"${art.title.replace(/"/g, '""')}"`, `"${art.section}"`, `"${art.status}"`,
+      `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`, `"${getAuthorName(art.author_id, art)}"`,
+      `"${getAuthorEmail(art.author_id, art)}"`, getArticleReviews(art.id).length
     ])
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = url
-    link.download = `Backup_Revista_Saber_Psicanalitico_${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(link)
+    link.href = URL.createObjectURL(blob)
+    link.download = `Backup_Revista_${new Date().toISOString().split('T')[0]}.csv`
     link.click()
-    document.body.removeChild(link)
   }
 
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !session) return
-    
     if (!termOriginal || !termEthics || !termAnonymous || !termCC || !termAI) {
-      alert('Por favor, confirme as declarações éticas obrigatórias.')
-      return
+      return alert('Confirme as declarações éticas obrigatórias.')
     }
-
     if (newSection === 'Relatos de Experiência Clínica' && !termClinicalPledge) {
-      alert('Para relatos de experiência clínica, é obrigatório confirmar o compromisso de sigilo e descaracterização do paciente.')
-      return
-    }
-
-    if (newSection === 'Resenhas' && !bookReference.trim()) {
-      alert('Por favor, informe a referência bibliográfica completa da obra resenhada.')
-      return
+      return alert('Confirme o compromisso de sigilo e descaracterização do paciente.')
     }
 
     setSubmitting(true)
     try {
       const fileExt = selectedFile.name.split('.').pop()
       const filePath = `artigos/artigo_${session.user.id}_${Date.now()}.${fileExt}`
-
       const { error: uploadError } = await supabase.storage.from('manuscritos').upload(filePath, selectedFile)
       if (uploadError) throw uploadError
 
@@ -1113,32 +1064,13 @@ export default function Home() {
         to: session.user.email,
         subject: 'Confirmação de Submissão - Revista Saber Psicanalítico',
         title: 'Manuscrito Recebido com Sucesso',
-        message: `Prezado(a) ${profile?.full_name},\n\nConfirmamos com satisfação o recebimento do trabalho "${newTitle}" na categoria ${newSection} da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nPróximas etapas do fluxo editorial:\n1. Triagem Inicial (Desk Review): O manuscrito passará pela conferência regimental de adequação ao escopo e verificação de anonimização estrita.\n2. Avaliação por Pares: Sendo aprovado na triagem inicial, o texto será encaminhado para a avaliação duplo-cega por pareceristas ad-hoc especialistas.\n3. Acompanhamento: Solicitamos que acompanhe periodicamente o status de avaliação e eventuais solicitações editoriais diretamente pelo nosso portal.\n\nAgradecemos a confiança em submeter sua produção acadêmica à Revista Saber Psicanalítico.`,
+        message: `Prezado(a) ${profile?.full_name},\n\nConfirmamos o recebimento do trabalho "${newTitle}". Você pode acompanhar o andamento pelo portal.`,
         actionText: 'Acompanhar no Portal',
         actionUrl: 'https://revista-saber-portal.vercel.app',
       })
 
-      sendEmailNotification({
-        to: 'revistasaberpsicanalitico@gmail.com',
-        subject: 'Novo Manuscrito Submetido - Revista Saber Psicanalítico',
-        title: 'Novo Artigo Recebido para Triagem',
-        message: `Novo artigo cadastrado no sistema:\n\n• Título: "${newTitle}"\n• Seção: ${newSection}\n• Autor Principal: ${profile?.full_name} (${session.user.email})\n• Filiação: ${authorInstitution}\n• Coautores: ${coauthors.length}\n\nAcesse a Sala Editorial para realizar a triagem inicial e designação de pareceristas.`,
-        actionText: 'Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app',
-      })
-
-      alert('Artigo submetido com sucesso! Você receberá os detalhes e confirmação em seu e-mail.')
+      alert('Artigo submetido com sucesso!')
       setShowSubmitModal(false)
-      setNewTitle('')
-      setNewTitleEn('')
-      setBookReference('')
-      setNewAbstract('')
-      setNewAbstractEn('')
-      setNewKeywords('')
-      setNewKeywordsEn('')
-      setCoauthors([])
-      setSelectedFile(null)
-      setTermClinicalPledge(false)
       fetchAllData()
     } catch (err: any) {
       alert(`Erro: ${err.message}`)
@@ -1154,7 +1086,6 @@ export default function Home() {
     try {
       const fileExt = revisedFile.name.split('.').pop()
       const filePath = `artigos/revisao_${reSubmitArticle.id}_${Date.now()}.${fileExt}`
-
       const { error: uploadError } = await supabase.storage.from('manuscritos').upload(filePath, revisedFile)
       if (uploadError) throw uploadError
 
@@ -1163,15 +1094,6 @@ export default function Home() {
         status: 'revisao_submetida',
       }).eq('id', reSubmitArticle.id)
       if (updateError) throw updateError
-
-      sendEmailNotification({
-        to: 'revistasaberpsicanalitico@gmail.com',
-        subject: 'Revisão Enviada pelo Autor - Revista Saber Psicanalítico',
-        title: 'Versão Corrigida Recebida',
-        message: `O(A) autor(a) ${getAuthorName(reSubmitArticle.author_id, reSubmitArticle)} enviou a versão revisada/corrigida de "${reSubmitArticle.title}".\n\nAcesse a Sala Editorial para conferir o novo arquivo e dar prosseguimento ao fluxo.`,
-        actionText: 'Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app',
-      })
 
       alert('Versão corrigida enviada com sucesso!')
       setReSubmitArticle(null)
@@ -1196,9 +1118,7 @@ export default function Home() {
         link.href = url
         const clean = articleTitle.replace(/[^a-zA-Z0-9À-ÿ]/g, '_').slice(0, 45)
         link.download = `${fileType}_${clean}.${filePath.split('.').pop() || 'docx'}`
-        document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
       }
     } catch (err: any) {
       alert('Erro ao baixar o arquivo.')
@@ -1211,7 +1131,6 @@ export default function Home() {
       setRejectionReasonText('')
       return
     }
-
     if (status === 'correcoes_pendentes') {
       setRequestChangesModalArticle(allArticles.find((a) => a.id === articleId))
       setChangesReasonText('')
@@ -1219,76 +1138,25 @@ export default function Home() {
     }
 
     try {
-      const target = allArticles.find((a) => a.id === articleId)
-      const authorEmail = getAuthorEmail(target?.author_id, target)
-      const authorName = getAuthorName(target?.author_id, target)
-      const title = target?.title || 'Seu Artigo'
-
       const { error } = await supabase.from('articles').update({ status }).eq('id', articleId)
       if (error) throw error
-
-      if (authorEmail) {
-        if (status === 'ajustes_iniciais') {
-          sendEmailNotification({
-            to: authorEmail,
-            subject: 'Ajuste de Anonimização Solicitado - Revista Saber Psicanalítico',
-            title: 'Ajuste Inicial Necessário',
-            message: `Prezado(a) ${authorName},\n\nDurante a triagem do trabalho "${title}", identificamos marcas que comprometem o sigilo da avaliação duplo-cega.\n\nPor favor, remova qualquer identificação do texto e propriedades do documento, e anexe a versão anonimizada no botão "Enviar Arquivo Corrigido".`,
-            actionText: 'Reenviar Arquivo no Portal',
-            actionUrl: 'https://revista-saber-portal.vercel.app'
-          })
-        } else if (status === 'em_avaliacao') {
-          sendEmailNotification({
-            to: authorEmail,
-            subject: 'Artigo em Avaliação por Pares - Revista Saber Psicanalítico',
-            title: 'Triagem Inicial Concluída',
-            message: `Prezado(a) ${authorName},\n\nComunicamos que seu manuscrito "${title}" foi aprovado na triagem regimental (Desk Review) e entrou na fase oficial de AVALIAÇÃO DUPLO-CEGA POR PARES (Double-Blind Peer Review).\n\nVocê pode acompanhar o andamento em tempo real diretamente pelo portal da revista.`,
-            actionText: 'Acompanhar no Portal',
-            actionUrl: 'https://revista-saber-portal.vercel.app'
-          })
-        } else if (status === 'aceito') {
-          sendEmailNotification({
-            to: authorEmail,
-            subject: 'Parabéns! Artigo Aceito para Publicação - Revista Saber Psicanalítico',
-            title: 'Artigo Aceito para Publicação',
-            message: `Prezado(a) ${authorName},\n\nTemos a satisfação de comunicar que o trabalho "${title}" concluiu o processo de avaliação por pares e foi OFICIALMENTE APROVADO para publicação na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua Declaração Oficial de Aceite timbrada com código digital já se encontra disponível no portal.`,
-            actionText: 'Emitir Carta de Aceite',
-            actionUrl: 'https://revista-saber-portal.vercel.app'
-          })
-        }
-      }
-
-      alert('Status atualizado com sucesso!')
+      alert('Status atualizado!')
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro ao atualizar status: ${err.message}`)
+      alert(`Erro: ${err.message}`)
     }
   }
 
   const handleConfirmRequestChanges = async () => {
-    if (!requestChangesModalArticle || !changesReasonText.trim()) return alert('Por favor, informe as orientações de correção para o autor.')
+    if (!requestChangesModalArticle || !changesReasonText.trim()) return alert('Informe as orientações.')
     setSavingChanges(true)
     try {
-      const emailAut = getAuthorEmail(requestChangesModalArticle.author_id, requestChangesModalArticle)
-      const authorName = getAuthorName(requestChangesModalArticle.author_id, requestChangesModalArticle)
       const { error } = await supabase.from('articles').update({
         status: 'correcoes_pendentes',
         rejection_reason: changesReasonText
       }).eq('id', requestChangesModalArticle.id)
       if (error) throw error
-
-      if (emailAut) {
-        sendEmailNotification({
-          to: emailAut,
-          subject: 'Correções Solicitadas no Manuscrito - Revista Saber Psicanalítico',
-          title: 'Parecer Editorial Disponível com Solicitação de Ajustes',
-          message: `Prezado(a) ${authorName},\n\nInformamos que a rodada de avaliação do artigo "${requestChangesModalArticle.title}" foi concluída.\n\nPara que o manuscrito possa prosseguir, solicitamos a realização de ajustes com base nas recomendações editoriais:\n\n--- ORIENTAÇÕES DA COMISSÃO EDITORIAL ---\n${changesReasonText}\n\nAcesse o portal da revista para consultar os pareceres técnicos e enviar a versão revisada.`,
-          actionText: 'Ver Pareceres e Enviar Correções',
-          actionUrl: 'https://revista-saber-portal.vercel.app'
-        })
-      }
-
-      alert('Correções solicitadas com sucesso! O autor foi notificado.')
+      alert('Correções solicitadas ao autor!')
       setRequestChangesModalArticle(null)
       fetchAllData()
     } catch (err: any) {
@@ -1298,25 +1166,45 @@ export default function Home() {
     }
   }
 
-  const handleConfirmRejection = async () => {
-    if (!rejectionModalArticle || !rejectionReasonText.trim()) return alert('Informe a justificativa editorial.')
-    setSavingRejection(true)
+  // Solicitar Ajustes no Parecer do Parecerista
+  const handleConfirmReviewerChanges = async () => {
+    if (!requestReviewerChangesModal || !reviewerChangesText.trim()) return alert('Informe a orientação para o parecerista.')
+    setSavingReviewerChanges(true)
     try {
-      const emailAut = getAuthorEmail(rejectionModalArticle.author_id, rejectionModalArticle)
-      const authorName = getAuthorName(rejectionModalArticle.author_id, rejectionModalArticle)
-      const { error } = await supabase.from('articles').update({ status: 'recusado', rejection_reason: rejectionReasonText }).eq('id', rejectionModalArticle.id)
+      const { error } = await supabase.from('reviews').update({
+        status: 'ajustes_solicitados',
+        comments_for_author: `${requestReviewerChangesModal.comments_for_author || ''}\n\n[SOLICITAÇÃO DE AJUSTE DA COMISSÃO EDITORIAL]:\n${reviewerChangesText}`
+      }).eq('id', requestReviewerChangesModal.id)
       if (error) throw error
 
-      if (emailAut) {
+      const revProfile = allProfiles.find(p => p.id === requestReviewerChangesModal.reviewer_id)
+      if (revProfile?.email) {
         sendEmailNotification({
-          to: emailAut,
-          subject: 'Comunicação Editorial sobre Manuscrito - Revista Saber Psicanalítico',
-          title: 'Decisão Editorial',
-          message: `Prezado(a) ${authorName},\n\nO processo de avaliação do manuscrito "${rejectionModalArticle.title}" foi finalizado pela Comissão Editorial.\n\nEm face dos pareceres emitidos, comunicamos que o trabalho não foi aceito para publicação neste ciclo.\n\nSua Comunicação Editorial com parecer circunstanciado está disponível no portal.`,
-          actionText: 'Acessar Comunicação no Portal',
+          to: revProfile.email,
+          subject: 'Ajuste Solicitado no Parecer - Revista Saber Psicanalítico',
+          title: 'Solicitação de Ajuste no Parecer Emitido',
+          message: `Prezado(a) ${revProfile.full_name},\n\nA Comissão Editorial apreciou seu parecer e solicita o seguinte ajuste:\n\n${reviewerChangesText}\n\nPor favor, acesse seu painel para atualizar o parecer e reenviar.`,
+          actionText: 'Acessar Painel do Parecerista',
           actionUrl: 'https://revista-saber-portal.vercel.app'
         })
       }
+
+      alert('Ajustes solicitados ao parecerista com sucesso!')
+      setRequestReviewerChangesModal(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSavingReviewerChanges(false)
+    }
+  }
+
+  const handleConfirmRejection = async () => {
+    if (!rejectionModalArticle || !rejectionReasonText.trim()) return alert('Informe a justificativa.')
+    setSavingRejection(true)
+    try {
+      const { error } = await supabase.from('articles').update({ status: 'recusado', rejection_reason: rejectionReasonText }).eq('id', rejectionModalArticle.id)
+      if (error) throw error
       alert('Manuscrito Recusado!')
       setRejectionModalArticle(null)
       fetchAllData()
@@ -1343,9 +1231,9 @@ export default function Home() {
       if (revProfile?.email) {
         sendEmailNotification({
           to: revProfile.email,
-          subject: 'Convite para Avaliação Técnico-Científica - Revista Saber Psicanalítico',
-          title: 'Designação de Manuscrito para Avaliação',
-          message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a atuar como Parecerista Ad-hoc avaliando o manuscrito "${assignModalArticle.title}" submetido à Revista Saber Psicanalítico (ISSN 3086-8416).\n\nPrazo proposto: ${new Date(assignDeadline + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\nPor favor, acesse seu painel para ACEITAR ou RECUSAR o convite de avaliação.`,
+          subject: 'Convite para Avaliação por Pares - Revista Saber Psicanalítico',
+          title: 'Novo Convite de Avaliação',
+          message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a avaliar o manuscrito "${assignModalArticle.title}". Acesse o portal para consultar o resumo e aceitar ou recusar o convite.`,
           actionText: 'Responder Convite no Portal',
           actionUrl: 'https://revista-saber-portal.vercel.app'
         })
@@ -1354,25 +1242,19 @@ export default function Home() {
       setAssignModalArticle(null)
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro ao atribuir parecerista: ${err.message}`)
+      alert(`Erro: ${err.message}`)
     }
   }
 
   const handleRemoveReviewerAssignment = async (reviewId: string, articleId: string) => {
-    if (!window.confirm('Deseja realmente desatribuir este parecerista deste artigo?')) return
+    if (!window.confirm('Desatribuir este parecerista?')) return
     try {
       const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
       if (error) throw error
-
-      const remainingReviews = allReviews.filter((r) => r.article_id === articleId && r.id !== reviewId)
-      if (remainingReviews.length === 0) {
-        await supabase.from('articles').update({ status: 'submetido' }).eq('id', articleId)
-      }
-
       alert('Parecerista desatribuído!')
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro ao desatribuir parecerista: ${err.message}`)
+      alert(`Erro: ${err.message}`)
     }
   }
 
@@ -1380,17 +1262,7 @@ export default function Home() {
     try {
       const { error } = await supabase.from('reviews').update({ status: 'em_andamento' }).eq('id', reviewId)
       if (error) throw error
-
-      sendEmailNotification({
-        to: 'revistasaberpsicanalitico@gmail.com',
-        subject: 'Convite Aceito por Parecerista - Revista Saber Psicanalítico',
-        title: 'Parecerista Confirmado',
-        message: `O(A) parecerista ${profile?.full_name} ACEITOU o convite para avaliar o artigo "${articleTitle}".`,
-        actionText: 'Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
-      })
-
-      alert('Convite aceito! O manuscrito está liberado para sua avaliação.')
+      alert('Convite aceito! O manuscrito foi liberado para download e avaliação.')
       fetchAllData()
     } catch (err: any) {
       alert(`Erro: ${err.message}`)
@@ -1398,20 +1270,10 @@ export default function Home() {
   }
 
   const handleDeclineReviewInvitation = async (reviewId: string, articleTitle: string) => {
-    if (!window.confirm('Confirma a recusa deste convite?')) return
+    if (!window.confirm('Confirma a recusa deste convite? O trabalho deixará de aparecer em seu painel.')) return
     try {
       const { error } = await supabase.from('reviews').update({ status: 'recusado' }).eq('id', reviewId)
       if (error) throw error
-
-      sendEmailNotification({
-        to: 'revistasaberpsicanalitico@gmail.com',
-        subject: 'Convite Recusado por Parecerista - Revista Saber Psicanalítico',
-        title: 'Recusa de Avaliação',
-        message: `O(A) parecerista ${profile?.full_name} comunicou que NÃO PODERÁ avaliar o artigo "${articleTitle}".`,
-        actionText: 'Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
-      })
-
       alert('Recusa registrada.')
       fetchAllData()
     } catch (err: any) {
@@ -1425,8 +1287,6 @@ export default function Home() {
     try {
       const targetArt = allArticles.find((a) => a.id === reviewModalData.article_id)
       const sec = targetArt?.section || 'Artigos Científicos'
-      const isClin = sec === 'Relatos de Experiência Clínica'
-      const isRev = sec === 'Resenhas'
 
       let rPath = reviewModalData.review_file_url || null
       if (reviewFile) {
@@ -1434,15 +1294,7 @@ export default function Home() {
         await supabase.storage.from('manuscritos').upload(rPath, reviewFile)
       }
 
-      let fullComments = ''
-      if (isRev) {
-        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (RESENHA) ---\n• Título e Referência da Obra: ${critTitle}\n• Profundidade Crítica: ${critTheory}\n• Relevância Psicanalítica: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
-      } else if (isClin) {
-        const ethicsText = critClinicalEthics === 'preservado' ? 'Preservado com Rigor' : critClinicalEthics === 'necessita_ajustes' ? 'Necessita Maior Descaracterização' : 'Insuficiente / Risco de Quebra de Sigilo'
-        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (RELATO CLÍNICO) ---\n• Título, Resumo e Palavras-chave: ${critTitle}\n• Rigor Teórico-Conceitual: ${critTheory}\n• Técnica e Clínica: ${critClinical}\n• Sigilo e Descaracterização: ${ethicsText}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
-      } else {
-        fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (${sec.toUpperCase()}) ---\n• Título, Resumo e Palavras-chave: ${critTitle}\n• Rigor Teórico-Conceitual: ${critTheory}\n• Relevância Psicanalítica: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
-      }
+      const fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (${sec.toUpperCase()}) ---\n• Título/Resumo: ${critTitle}\n• Rigor Conceitual: ${critTheory}\n• Relevância: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
 
       await supabase.from('reviews').update({
         recommendation,
@@ -1451,15 +1303,6 @@ export default function Home() {
         review_file_url: rPath,
         status: 'concluido',
       }).eq('id', reviewModalData.id)
-
-      sendEmailNotification({
-        to: 'revistasaberpsicanalitico@gmail.com',
-        subject: 'Parecer Concluído por Avaliador - Revista Saber Psicanalítico',
-        title: 'Novo Parecer Emitido',
-        message: `O(A) parecerista ${profile?.full_name} concluiu a avaliação do trabalho "${targetArt?.title}".\n\n• Categoria: ${sec}\n• Recomendação: ${recommendation.toUpperCase()}`,
-        actionText: 'Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
-      })
 
       alert('Parecer enviado à Comissão Editorial!')
       setReviewModalData(null)
@@ -1476,75 +1319,10 @@ export default function Home() {
     return p.role === mailingTarget
   })
 
-  const handleCopyMailingEmails = () => {
-    const emails = filteredMailingUsers.map((u) => u.email).filter(Boolean).join(', ')
-    navigator.clipboard.writeText(emails)
-    setCopiedMailingEmails(true)
-    setTimeout(() => setCopiedMailingEmails(false), 3000)
-  }
-
-  const handleInsertTag = (openTag: string, closeTag: string, defaultText = '') => {
-    const textarea = textareaRef.current
-    if (!textarea) return
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const text = mailingBody
-    const selected = text.substring(start, end) || defaultText
-    const replacement = `${openTag}${selected}${closeTag}`
-    const newText = text.substring(0, start) + replacement + text.substring(end)
-    setMailingBody(newText)
-    setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + openTag.length, start + openTag.length + selected.length)
-    }, 0)
-  }
-
-  const handleInsertLinkPrompt = () => {
-    const url = window.prompt('Digite a URL do link (ex: https://...):', 'https://')
-    if (url && url !== 'https://') {
-      handleInsertTag(`<a href="${url.trim()}" style="color: #4f46e5; text-decoration: underline;" target="_blank">`, '</a>', 'clique aqui')
-    }
-  }
-
-  const handleInsertImagePrompt = () => {
-    const url = window.prompt('Digite ou cole a URL pública da imagem (ex: do seu site):', 'https://')
-    if (url && url.trim() && url !== 'https://') {
-      const imgHtml = `\n<div style="text-align: center; margin: 16px 0;"><img src="${url.trim()}" alt="Imagem do Comunicado" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: inline-block;" /></div>\n`
-      setMailingBody((prev) => prev + imgHtml)
-    }
-  }
-
-  const handleLoadMailingTemplate = (templateType: 'issue' | 'cfp' | 'clear') => {
-    if (templateType === 'issue') {
-      setMailingSubject('Publicação da Nova Edição - Revista Saber Psicanalítico')
-      setMailingTitle('Nova Edição Disponível para Leitura e Download')
-      setMailingBody(`Prezados(as) pesquisadores(as) e leitores(as),\n\nTemos a satisfação de anunciar a publicação da <strong>nova edição da Revista Saber Psicanalítico</strong> (ISSN 3086-8416).\n\nConvidamos toda a comunidade científica a conferir os artigos, ensaios e relatos clínicos que compõem este número, disponíveis de forma gratuita e aberta.\n\nAcesse e baixe os trabalhos pelo nosso site oficial.\n\n<em>Desejamos a todos uma excelente leitura!</em>`)
-      setMailingActionText('Ler Nova Edição no Site')
-      setMailingActionUrl('https://www.asppsicanalise.com.br/revista')
-    } else if (templateType === 'cfp') {
-      setMailingSubject('Chamada Aberta de Artigos (Call for Papers) - Revista Saber Psicanalítico')
-      setMailingTitle('Submissões Abertas para o Próximo Fascículo')
-      setMailingBody(`Prezados(as) autores(as) e pesquisadores(as),\n\nA <strong>Revista Saber Psicanalítico</strong> (ISSN 3086-8416) está com a chamada aberta para submissão de manuscritos inéditos nas seguintes categorias:\n\n• <strong>Artigos Científicos</strong>\n• <strong>Ensaios Teóricos</strong>\n• <strong>Relatos de Experiência Clínica</strong>\n• <strong>Resenhas</strong>\n\nNosso periódico adota o sistema de avaliação duplo-cega por pares (<em>blind peer review</em>) e é <strong>100% gratuito</strong> (sem cobrança de taxas de submissão ou publicação - APC Free).\n\nSubmeta seu trabalho diretamente pelo nosso portal editorial:`)
-      setMailingActionText('Submeter Artigo no Portal')
-      setMailingActionUrl('https://revista-saber-portal.vercel.app')
-    } else {
-      setMailingSubject('')
-      setMailingTitle('')
-      setMailingBody('')
-      setMailingActionText('Acessar a Revista')
-      setMailingActionUrl('https://www.asppsicanalise.com.br/revista')
-    }
-  }
-
   const handleSendMailing = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!mailingSubject || !mailingBody || filteredMailingUsers.length === 0) {
-      alert('Preencha o assunto, o texto e certifique-se de que há destinatários selecionados.')
-      return
-    }
-
-    if (!window.confirm(`Disparar este comunicado para ${filteredMailingUsers.length} usuários cadastrados?`)) return
-
+    if (!mailingSubject || !mailingBody) return alert('Preencha os campos.')
+    if (!window.confirm(`Disparar para ${filteredMailingUsers.length} usuários?`)) return
     setSendingMailing(true)
     try {
       for (const u of filteredMailingUsers) {
@@ -1569,30 +1347,14 @@ export default function Home() {
 
   const completedReviewers = allProfiles.filter((p) => Array.from(new Set(allReviews.filter((r) => r.status === 'concluido').map((r) => r.reviewer_id))).includes(p.id))
 
-  const handleCopyReviewers = () => {
-    const text = completedReviewers.map((r) => {
-      let line = `• ${r.full_name} (${r.institution || 'ASP'})`
-      if (r.orcid) line += ` - ORCID: ${r.orcid}`
-      if (r.lattes_url) line += ` - Lattes: ${r.lattes_url}`
-      return line
-    }).join('\n')
-    navigator.clipboard.writeText(text)
-    setCopiedThanks(true)
-    setTimeout(() => setCopiedThanks(false), 2500)
-  }
-
   const filteredArticles = allArticles.filter((art) => {
     const q = editorSearch.toLowerCase()
-    const matchesSearch = art.title.toLowerCase().includes(q) || getAuthorName(art.author_id, art).toLowerCase().includes(q) || (art.section || '').toLowerCase().includes(q)
-    const matchesStatus = editorStatusFilter === 'todos' || art.status === editorStatusFilter
-    return matchesSearch && matchesStatus
+    return (art.title.toLowerCase().includes(q) || getAuthorName(art.author_id, art).toLowerCase().includes(q)) && (editorStatusFilter === 'todos' || art.status === editorStatusFilter)
   })
 
   const filteredUsersList = allProfiles.filter((p) => {
     const q = userSearch.toLowerCase()
-    const matchesQuery = (p.full_name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q) || (p.institution || '').toLowerCase().includes(q)
-    const matchesRole = userRoleFilter === 'todos' || p.role === userRoleFilter
-    return matchesQuery && matchesRole
+    return ((p.full_name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q)) && (userRoleFilter === 'todos' || p.role === userRoleFilter)
   })
 
   const isEditorChefe = profile?.role === 'editor'
@@ -1658,18 +1420,48 @@ export default function Home() {
           }} className="space-y-4">
             {!isLogin && (
               <>
-                <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nome completo (Ex: Fulano de Tal)" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg" />
-                <input type="text" required value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="Instituição / Universidade" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg" />
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Nome Completo *</label>
+                  <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ex: Fulano de Tal" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Instituição / Universidade *</label>
+                  <input type="text" required value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="Universidade / Associação" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg" />
+                </div>
               </>
             )}
 
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu.email@exemplo.com" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-semibold text-slate-600">Senha</label>
-                {isLogin && <button type="button" onClick={() => setShowForgotModal(true)} className="text-[11px] text-indigo-600 hover:underline">Esqueci minha senha</button>}
+              <label className="block text-xs font-bold text-slate-700 mb-1">E-mail *</label>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu.email@exemplo.com" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Senha *</label>
+              <div className="relative">
+                <input 
+                  type={showLoginPassword ? 'text' : 'password'} 
+                  required 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  placeholder="••••••••" 
+                  className="w-full px-3 py-2 pr-9 text-sm border border-slate-200 rounded-lg" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+              {isLogin && (
+                <div className="text-right mt-1.5">
+                  <button type="button" onClick={() => setShowForgotModal(true)} className="text-[11px] text-indigo-600 hover:underline">
+                    Esqueci minha senha
+                  </button>
+                </div>
+              )}
             </div>
 
             <button type="submit" disabled={authLoading} className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm">
@@ -1722,7 +1514,7 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <input type="text" value={verifyCodeInput} onChange={(e) => setVerifyCodeInput(e.target.value)} placeholder="Ex: ASP-ACE-1A2B3C4D ou ASP-REC-1A2B3C4D" className="w-full px-3 py-2 text-xs border rounded-lg font-mono uppercase text-center tracking-wider font-bold" />
+                <input type="text" value={verifyCodeInput} onChange={(e) => setVerifyCodeInput(e.target.value)} placeholder="Ex: ASP-ACE-1A2B3C4D ou ASP-PAR-1A2B3C4D" className="w-full px-3 py-2 text-xs border rounded-lg font-mono uppercase text-center tracking-wider font-bold" />
                 <button type="button" disabled={checkingCode || !verifyCodeInput.trim()} onClick={handleVerifyCode} className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold">
                   {checkingCode ? 'Consultando Registro...' : 'Verificar Autenticidade'}
                 </button>
@@ -1767,7 +1559,10 @@ export default function Home() {
             <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border space-y-4">
               <h3 className="text-base font-bold text-slate-900 text-center">Recuperar Senha</h3>
               <form onSubmit={handleForgotPassword} className="space-y-3">
-                <input type="email" required value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="seu.email@exemplo.com" className="w-full px-3 py-2 text-xs border rounded-lg" />
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Seu E-mail *</label>
+                  <input type="email" required value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="seu.email@exemplo.com" className="w-full px-3 py-2 text-xs border rounded-lg" />
+                </div>
                 <div className="flex justify-end gap-2"><button type="button" onClick={() => setShowForgotModal(false)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button><button type="submit" disabled={forgotLoading} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">Enviar Link</button></div>
               </form>
             </div>
@@ -1777,8 +1572,11 @@ export default function Home() {
     )
   }
 
+  // PONTO (F): Se o parecerista recusar, o trabalho some da tela dele!
   const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
-  const myReviewAssignments = allReviews.filter((r) => r.reviewer_id === session?.user?.id)
+  const myReviewAssignments = allReviews
+    .filter((r) => r.reviewer_id === session?.user?.id)
+    .filter((r) => r.status !== 'recusado')
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
@@ -1934,7 +1732,7 @@ export default function Home() {
                     const art = allArticles.find((a) => a.id === rev.article_id)
                     const isCompleted = rev.status === 'concluido'
                     const isPendingInvitation = rev.status === 'convite_pendente'
-                    const isDeclined = rev.status === 'recusado'
+                    const isNeedsAdjustment = rev.status === 'ajustes_solicitados'
                     const sec = art?.section || 'Artigos Científicos'
                     const isReviewSec = sec === 'Resenhas'
                     const isClinicalSec = sec === 'Relatos de Experiência Clínica'
@@ -1954,9 +1752,9 @@ export default function Home() {
 
                               {isCompleted && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">PARECER CONCLUÍDO</span>}
                               {isPendingInvitation && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">CONVITE RECEBIDO</span>}
-                              {!isCompleted && !isPendingInvitation && !isDeclined && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">EM ELABORAÇÃO</span>}
-                              {isDeclined && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">CONVITE RECUSADO</span>}
-                              {!isCompleted && !isDeclined && getDeadlineBadge(rev.deadline)}
+                              {isNeedsAdjustment && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">AJUSTE SOLICITADO PELA COMISSÃO</span>}
+                              {!isCompleted && !isPendingInvitation && !isNeedsAdjustment && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">EM ELABORAÇÃO</span>}
+                              {getDeadlineBadge(rev.deadline)}
                             </div>
                             <h3 className="text-lg font-bold text-slate-900 mt-1">{art?.title}</h3>
                           </div>
@@ -1967,13 +1765,23 @@ export default function Home() {
                                 <Award className="w-3.5 h-3.5" /> Declaração de Parecerista
                               </button>
                             )}
-                            {art && !isDeclined && (
+
+                            {/* PONTO (E): Só libera o arquivo se tiver aceito o convite! */}
+                            {art && !isPendingInvitation && (
                               <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito_Parecer')} className="px-3 py-1.5 text-xs font-medium border rounded-lg text-slate-700 flex items-center gap-1.5 hover:bg-slate-50">
                                 <Download className="w-3.5 h-3.5" /> Baixar Manuscrito
                               </button>
                             )}
                           </div>
                         </div>
+
+                        {/* Aviso de Ajustes Solicitados pela Editoria */}
+                        {isNeedsAdjustment && (
+                          <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50/70 text-rose-900 text-xs space-y-1">
+                            <p className="font-bold flex items-center gap-1.5"><AlertCircle className="w-4 h-4 text-rose-600" /> A Comissão Editorial solicitou ajustes no seu parecer:</p>
+                            <p className="whitespace-pre-line text-[11px] leading-relaxed">{rev.comments_for_author}</p>
+                          </div>
+                        )}
 
                         <div className="p-2.5 rounded-lg border text-[11px] leading-relaxed flex items-center gap-2 bg-slate-50 text-slate-700">
                           <Info className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
@@ -1986,9 +1794,10 @@ export default function Home() {
                         </div>
 
                         {art && (
-                          <div className="text-xs text-slate-600 bg-slate-50/70 p-3 rounded-lg leading-relaxed">
-                            <p className="font-semibold text-slate-800 mb-1">{isReviewSec ? 'Referência da Obra:' : 'Resumo do Trabalho:'}</p>
+                          <div className="text-xs text-slate-600 bg-slate-50/70 p-3 rounded-lg leading-relaxed space-y-1">
+                            <p className="font-semibold text-slate-800">{isReviewSec ? 'Referência da Obra:' : 'Resumo do Trabalho:'}</p>
                             <p className="whitespace-pre-line">{art.abstract}</p>
+                            {art.keywords && <p className="pt-1 text-slate-500 font-medium"><strong>Palavras-chave:</strong> {art.keywords}</p>}
                           </div>
                         )}
 
@@ -1996,7 +1805,7 @@ export default function Home() {
                           <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                             <div>
                               <p className="font-bold text-amber-900 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" /> Deseja avaliar este manuscrito?</p>
-                              <p className="text-[11px] text-amber-800">Prazo para envio do parecer: <strong>{new Date(rev.deadline + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>.</p>
+                              <p className="text-[11px] text-amber-800">Prazo para envio do parecer: <strong>{new Date(rev.deadline + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>. O manuscrito para download será liberado imediatamente após o aceite.</p>
                             </div>
                             <div className="flex items-center gap-2 w-full sm:w-auto">
                               <button type="button" onClick={() => handleAcceptReviewInvitation(rev.id, art?.title || 'Artigo')} className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm">
@@ -2009,10 +1818,10 @@ export default function Home() {
                           </div>
                         )}
 
-                        {!isPendingInvitation && !isDeclined && (
+                        {!isPendingInvitation && (
                           <div className="flex justify-end pt-2 border-t">
                             <button type="button" onClick={() => { setReviewModalData(rev); setRecommendation(rev.recommendation || 'aceitar'); setCommentsAuthor(rev.comments_for_author || ''); setCommentsEditor(rev.confidential_comments_editor || ''); setReviewFile(null); }} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm">
-                              {isCompleted ? 'Editar Parecer Emitido' : 'Preencher Parecer Técnico'}
+                              {isCompleted ? 'Editar Parecer Emitido' : isNeedsAdjustment ? 'Regularizar e Reenviar Parecer' : 'Preencher Parecer Técnico'}
                             </button>
                           </div>
                         )}
@@ -2146,6 +1955,7 @@ export default function Home() {
                                 const isPending = r.status === 'convite_pendente'
                                 const isDeclined = r.status === 'recusado'
                                 const isAcceptedAndWorking = r.status === 'em_andamento' || r.status === 'pendente'
+                                const isNeedsAdj = r.status === 'ajustes_solicitados'
 
                                 return (
                                   <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2.5 rounded border border-slate-200 gap-2">
@@ -2154,18 +1964,25 @@ export default function Home() {
                                       {isPending && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1"><Clock className="w-3 h-3" /> CONVITE PENDENTE</span>}
                                       {isAcceptedAndWorking && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> CONVITE ACEITO</span>}
                                       {isDeclined && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"><ThumbsDown className="w-3 h-3" /> CONVITE RECUSADO</span>}
+                                      {isNeedsAdj && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">AJUSTES SOLICITADOS</span>}
                                       {isCompleted && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1"><Check className="w-3 h-3" /> PARECER CONCLUÍDO</span>}
                                       {!isCompleted && !isDeclined && getDeadlineBadge(r.deadline)}
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       {isCompleted && isFullEditor && (
-                                        <button type="button" onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} className="text-emerald-700 hover:underline font-semibold">
-                                          Declaração de Parecerista
-                                        </button>
+                                        <>
+                                          <button type="button" onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} className="text-emerald-700 hover:underline font-semibold text-[11px]">
+                                            Declaração
+                                          </button>
+                                          {/* PONTO (B): Editor pode solicitar ajustes ao parecerista */}
+                                          <button type="button" onClick={() => { setRequestReviewerChangesModal(r); setReviewerChangesText(''); }} className="text-amber-700 hover:underline font-semibold text-[11px]">
+                                            Solicitar Ajustes
+                                          </button>
+                                        </>
                                       )}
-                                      {isCompleted && r.review_file_url && <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline">Baixar Anexo</button>}
-                                      {isCompleted && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline">Ler Parecer</button>}
+                                      {isCompleted && r.review_file_url && <button type="button" onClick={() => handleDownloadFile(r.review_file_url, art.title, 'Manuscrito_Anotado_Parecerista')} className="text-amber-700 hover:underline text-[11px]">Baixar Anexo</button>}
+                                      {isCompleted && <button type="button" onClick={() => alert(`PARECER CIRCUNSTANCIADO:\n\n${r.comments_for_author}`)} className="text-indigo-600 hover:underline text-[11px]">Ler Parecer</button>}
                                       {isFullEditor && (
                                         <button type="button" onClick={() => handleRemoveReviewerAssignment(r.id, art.id)} className="px-2 py-0.5 text-[11px] text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-medium inline-flex items-center gap-1">
                                           <Trash2 className="w-3 h-3 text-rose-500" /> Remover
@@ -2438,18 +2255,14 @@ export default function Home() {
 
                     <div className="flex flex-col justify-end">
                       <span className="text-[11px] text-slate-500 mb-1">Deseja enviar direto pelo Gmail institucional?</span>
-                      <button type="button" onClick={handleCopyMailingEmails} className="px-3 py-2 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5 shadow-sm text-slate-700">
+                      <button type="button" onClick={() => {
+                        const emails = filteredMailingUsers.map((u) => u.email).filter(Boolean).join(', ')
+                        navigator.clipboard.writeText(emails)
+                        setCopiedMailingEmails(true)
+                        setTimeout(() => setCopiedMailingEmails(false), 3000)
+                      }} className="px-3 py-2 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5 shadow-sm text-slate-700">
                         {copiedMailingEmails ? <><Check className="w-3.5 h-3.5 text-emerald-600" /> Lista Copiada!</> : <><Copy className="w-3.5 h-3.5 text-indigo-600" /> Copiar E-mails Selecionados (Cco)</>}
                       </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-bold text-slate-700">Modelos Prontos com 1 Clique:</span>
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => handleLoadMailingTemplate('issue')} className="px-3 py-1.5 text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg hover:bg-emerald-100">📖 Lançamento de Nova Edição</button>
-                      <button type="button" onClick={() => handleLoadMailingTemplate('cfp')} className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100">📢 Chamada de Artigos (Call for Papers)</button>
-                      <button type="button" onClick={() => handleLoadMailingTemplate('clear')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200">Limpar Campos</button>
                     </div>
                   </div>
 
@@ -2465,59 +2278,15 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-2">
-                        <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => setMailingMode('editor')} className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${mailingMode === 'editor' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                            <Code className="w-3.5 h-3.5" /> Escrever / Editar
-                          </button>
-                          <button type="button" onClick={() => setMailingMode('preview')} className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${mailingMode === 'preview' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                            <Eye className="w-3.5 h-3.5" /> Pré-visualizar E-mail
-                          </button>
-                        </div>
-
-                        {mailingMode === 'editor' && (
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <button type="button" onClick={() => handleInsertTag('<strong>', '</strong>', 'texto em negrito')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Negrito"><Bold className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={() => handleInsertTag('<em>', '</em>', 'texto em itálico')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Itálico"><Italic className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={() => handleInsertTag('<u>', '</u>', 'texto sublinhado')} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold" title="Sublinhado"><Underline className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={handleInsertLinkPrompt} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-bold inline-flex items-center gap-1" title="Inserir Link"><LinkIcon className="w-3.5 h-3.5" /> Link</button>
-                            <button type="button" onClick={handleInsertImagePrompt} className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-xs font-bold inline-flex items-center gap-1" title="Inserir Imagem por Link"><ImageIcon className="w-3.5 h-3.5" /> Imagem (URL)</button>
-                          </div>
-                        )}
-                      </div>
-
-                      {mailingMode === 'editor' ? (
-                        <div>
-                          <textarea ref={textareaRef} required rows={8} value={mailingBody} onChange={(e) => setMailingBody(e.target.value)} placeholder="Escreva a mensagem oficial... Você pode usar a barra acima para aplicar formatações." className="w-full px-3 py-2 text-xs border rounded-lg font-sans leading-relaxed focus:ring-2 focus:ring-indigo-500" />
-                          <p className="text-[11px] text-slate-400">Dica: Selecione qualquer palavra e clique nos botões da barra para aplicar negrito, itálico ou links.</p>
-                        </div>
-                      ) : (
-                        <div className="border border-slate-200 rounded-xl bg-slate-50 p-6 space-y-4">
-                          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-xl mx-auto space-y-4">
-                            <div className="flex items-center justify-between border-b pb-4">
-                              <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-12 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                              <span className="text-[11px] font-bold text-indigo-700">ISSN 3086-8416</span>
-                            </div>
-                            {mailingTitle && <h4 className="text-base font-bold text-slate-900 border-b pb-2">{mailingTitle}</h4>}
-                            <div className="text-xs text-slate-700 leading-relaxed space-y-2 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: mailingBody || '<em>Sua mensagem aparecerá aqui formatada em tempo real...</em>' }} />
-                            {mailingActionText && (
-                              <div className="pt-3 text-center">
-                                <span className="inline-block px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm">{mailingActionText}</span>
-                              </div>
-                            )}
-                            <div className="pt-4 border-t text-[10px] text-slate-400 text-center">
-                              Associação Saber Psicanalítico (ASP) • Rua Visconde de Inhaúma, 1361 — Caruaru/PE
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Mensagem Oficial *</label>
+                      <textarea ref={textareaRef} required rows={7} value={mailingBody} onChange={(e) => setMailingBody(e.target.value)} placeholder="Escreva a mensagem oficial..." className="w-full px-3 py-2 text-xs border rounded-lg font-sans leading-relaxed" />
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Texto do Botão no E-mail (Opcional):</label>
-                        <input type="text" value={mailingActionText} onChange={(e) => setMailingActionText(e.target.value)} placeholder="Ex: Ler Nova Edição" className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
+                        <input type="text" value={mailingActionText} onChange={(e) => setMailingActionText(e.target.value)} placeholder="Ex: Acessar a Revista" className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
                       </div>
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">Link de Destino do Botão (URL):</label>
@@ -2559,7 +2328,350 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* MODAIS INTEGRADOS */}
+      {/* MODAL: MEU PERFIL COMPLETO (PONTO C) */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[95] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border space-y-4 max-h-[92vh] overflow-y-auto my-6">
+            <div className="flex justify-between items-start border-b pb-2">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Meu Perfil Cadastral</h3>
+                <p className="text-xs text-slate-500">Mantenha sua titulação, áreas temáticas e percurso atualizados.</p>
+              </div>
+              <button type="button" onClick={() => setShowProfileModal(false)}><X className="w-5 h-5" /></button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Nome Completo *</label>
+                  <input type="text" required value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Instituição / Filiação *</label>
+                  <input type="text" required value={profileInst} onChange={(e) => setProfileInst(e.target.value)} className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Titulação Máxima *</label>
+                  <select value={profileDegree} onChange={(e) => setProfileDegree(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded-lg bg-white">
+                    <option value="Graduação">Graduação</option>
+                    <option value="Especialização">Especialização</option>
+                    <option value="Mestrado">Mestrado</option>
+                    <option value="Doutorado">Doutorado</option>
+                    <option value="Pós-Doutorado">Pós-Doutorado</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Telefone / WhatsApp</label>
+                  <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">ORCID</label>
+                  <input type="text" value={profileOrcid} onChange={(e) => setProfileOrcid(e.target.value)} placeholder="0000-..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Link do Currículo Lattes</label>
+                <input type="url" value={profileLattes} onChange={(e) => setProfileLattes(e.target.value)} placeholder="http://lattes.cnpq.br/..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Mini-biografia e Formação em Psicanálise</label>
+                <textarea rows={3} value={profileBio} onChange={(e) => setProfileBio(e.target.value)} placeholder="Apresente sua trajetória de estudos, escolas ou clínica..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Palavras-chave de Especialidade</label>
+                <input type="text" value={profileKeywords} onChange={(e) => setProfileKeywords(e.target.value)} placeholder="Ex: clínica psicanalítica, psicose, melancolia" className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <button type="button" onClick={() => setShowProfileModal(false)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
+                <button type="submit" disabled={savingProfile} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">
+                  {savingProfile ? 'Salvando...' : 'Salvar Perfil'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SOLICITAR AJUSTES AO PARECERISTA (PONTO B) */}
+      {requestReviewerChangesModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[85]">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
+            <div>
+              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded uppercase">Comissão Editorial</span>
+              <h3 className="text-base font-bold text-slate-900 mt-1">Solicitar Ajustes ao Parecerista</h3>
+              <p className="text-xs text-slate-500">
+                Parecerista: <strong>{getReviewerName(requestReviewerChangesModal.reviewer_id)}</strong>
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Descreva o que o parecerista deve corrigir ou anonimizar *:</label>
+              <textarea 
+                required 
+                rows={5} 
+                value={reviewerChangesText} 
+                onChange={(e) => setReviewerChangesText(e.target.value)} 
+                placeholder="Ex: Identificamos que o arquivo anexado contém seu nome nos comentários do Word. Por favor, remova os dados de autoria e anexe novamente..." 
+                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-amber-500" 
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button type="button" onClick={() => setRequestReviewerChangesModal(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
+              <button 
+                type="button" 
+                disabled={savingReviewerChanges || !reviewerChangesText.trim()} 
+                onClick={handleConfirmReviewerChanges} 
+                className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50"
+              >
+                {savingReviewerChanges ? 'Enviando...' : 'Enviar Solicitação de Ajuste'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SOLICITAR CORREÇÕES AO AUTOR */}
+      {requestChangesModalArticle && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[75]">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
+            <div>
+              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded uppercase">Decisão Editorial</span>
+              <h3 className="text-base font-bold text-slate-900 mt-1">Solicitar Correções ao Autor</h3>
+              <p className="text-xs text-slate-500 line-clamp-1">{requestChangesModalArticle.title}</p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Orientações da Comissão Editorial *:</label>
+              <textarea required rows={6} value={changesReasonText} onChange={(e) => setChangesReasonText(e.target.value)} placeholder="Descreva as correções que o autor deve realizar no texto..." className="w-full px-3 py-2 text-xs border rounded-lg" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button type="button" onClick={() => setRequestChangesModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
+              <button type="button" disabled={savingChanges || !changesReasonText.trim()} onClick={handleConfirmRequestChanges} className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50">
+                {savingChanges ? 'Enviando...' : 'Enviar Solicitação'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ATRIBUIR PARECERISTA */}
+      {assignModalArticle && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Designar Parecerista</h3>
+            <p className="text-xs text-slate-500">Selecione o parecerista cadastrado e determine o prazo para devolução do parecer.</p>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Parecerista Homologado *</label>
+              <select value={selectedReviewerId} onChange={(e) => setSelectedReviewerId(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white">
+                <option value="">-- Escolha um parecerista --</option>
+                {allProfiles.filter((p) => (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') && p.id !== assignModalArticle.author_id).map((rev) => (
+                  <option key={rev.id} value={rev.id}>{rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Prazo Limite para Parecer *</label>
+              <input type="date" required value={assignDeadline} onChange={(e) => setAssignDeadline(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setAssignModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button><button type="button" disabled={!selectedReviewerId || !assignDeadline} onClick={handleAssignReviewer} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">Confirmar Atribuição</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RECUSA COM JUSTIFICATIVA */}
+      {rejectionModalArticle && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Justificativa da Não Aceitação</h3>
+            <p className="text-xs text-slate-500">Insira a fundamentação editorial que constará na comunicação ao autor.</p>
+            <textarea required rows={5} value={rejectionReasonText} onChange={(e) => setRejectionReasonText(e.target.value)} placeholder="Fundamentos para a recusa..." className="w-full px-3 py-2 text-xs border rounded-lg" />
+            <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setRejectionModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button><button type="button" disabled={savingRejection || !rejectionReasonText.trim()} onClick={handleConfirmRejection} className="px-4 py-1.5 text-xs font-semibold bg-rose-600 text-white rounded-lg">{savingRejection ? 'Gravando...' : 'Confirmar Recusa'}</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL COMPLETO DE PARECER (DINÂMICO) */}
+      {reviewModalData && (() => {
+        const currentArt = allArticles.find((a) => a.id === reviewModalData.article_id)
+        const currentSec = currentArt?.section || 'Artigos Científicos'
+        const isCurrentReview = currentSec === 'Resenhas'
+        const isCurrentClinical = currentSec === 'Relatos de Experiência Clínica'
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+            <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border space-y-5 max-h-[92vh] overflow-y-auto">
+              <div className="border-b pb-3 flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">Formulário de Avaliação</span>
+                    <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border">{currentSec}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Parecer Editorial por Pares</h3>
+                  <p className="text-xs text-slate-500 line-clamp-1">{currentArt?.title}</p>
+                </div>
+                <button type="button" onClick={() => setReviewModalData(null)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+              </div>
+
+              <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                <h4 className="font-bold text-slate-800">Critérios de Avaliação Específicos:</h4>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">{isCurrentReview ? 'Título e Referência:' : 'Título e Resumo:'}</label>
+                    <select value={critTitle} onChange={(e) => setCritTitle(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
+                      <option value="satisfatorio">Satisfatório</option>
+                      <option value="necessita_ajustes">Necessita Ajustes</option>
+                      <option value="insatisfatorio">Insatisfatório</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">{isCurrentReview ? 'Profundidade Crítica:' : 'Rigor Conceitual:'}</label>
+                    <select value={critTheory} onChange={(e) => setCritTheory(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
+                      <option value="consistente">Consistente</option>
+                      <option value="regular">Regular</option>
+                      <option value="fragil">Frágil</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">{isCurrentClinical ? 'Técnica e Clínica:' : 'Relevância Psicanalítica:'}</label>
+                    <select value={critClinical} onChange={(e) => setCritClinical(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
+                      <option value="alta">Alta</option>
+                      <option value="media">Média</option>
+                      <option value="baixa">Baixa</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Recomendação Editorial Conclusiva *</label>
+                <select value={recommendation} onChange={(e) => setRecommendation(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-semibold">
+                  <option value="aceitar">Aceitar sem restrições</option>
+                  <option value="correcoes_obrigatorias">Aceitar com correções (obrigatórias)</option>
+                  <option value="rejeitar">Recusar manuscrito</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Parecer Circunstanciado (Enviado ao autor) *</label>
+                <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Apresente suas análises e fundamentos..." className="w-full px-3 py-2 text-xs border rounded-lg" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Comentários Confidenciais à Editoria (Opcional)</label>
+                <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas à editoria..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
+              </div>
+
+              <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                <label className="block text-xs font-bold text-slate-800">Anexar Manuscrito com Apontamentos (.docx ou .doc - opcional):</label>
+                <input type="file" accept=".docx,.doc" onChange={(e) => setReviewFile(e.target.files?.[0] || null)} className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 border border-slate-200 rounded-lg p-1 bg-white" />
+                <p className="text-[11px] text-amber-800 font-medium">Lembrete: Certifique-se de que o autor do comentário no Word esteja anônimo ("Parecerista").</p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t">
+                <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600">Voltar</button>
+                <button type="submit" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 shadow-sm">
+                  {submittingReview ? 'Enviando...' : 'Concluir e Enviar Parecer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* MODAL: EDIÇÃO DE USUÁRIO */}
+      {editingUserModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[85]">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
+            <div className="flex justify-between items-start border-b pb-2">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Editar Cadastro de Usuário</h3>
+                <p className="text-xs text-slate-500">{editingUserModal.email}</p>
+              </div>
+              <button type="button" onClick={() => setEditingUserModal(null)}><X className="w-5 h-5" /></button>
+            </div>
+
+            <form onSubmit={handleSaveUserByEditor} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Nome Completo *</label>
+                <input type="text" required value={editUserName} onChange={(e) => setEditUserName(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Função no Sistema *</label>
+                <select value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
+                  <option value="author">Autor</option>
+                  <option value="reviewer">Parecerista</option>
+                  <option value="council">Conselho Editorial</option>
+                  <option value="editor_adjunto">Editor-Adjunto</option>
+                  <option value="editor">Editor-Chefe</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Filiação Institucional</label>
+                <input type="text" value={editUserInst} onChange={(e) => setEditUserInst(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Link Lattes</label>
+                  <input type="url" value={editUserLattes} onChange={(e) => setEditUserLattes(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">ORCID</label>
+                  <input type="text" value={editUserOrcid} onChange={(e) => setEditUserOrcid(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded-lg" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Telefone / WhatsApp</label>
+                <input type="tel" value={editUserPhone} onChange={(e) => setEditUserPhone(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <button type="button" onClick={() => setEditingUserModal(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
+                <button type="submit" disabled={savingUserEdit} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
+                  {savingUserEdit ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AGRADECIMENTO PARECERISTAS */}
+      {showReviewerThankModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border space-y-4">
+            <h3 className="text-lg font-bold text-slate-900">Quadro de Pareceristas que Concluíram Avaliações</h3>
+            <p className="text-xs text-slate-500">Relação de pareceristas atuantes para compor a folha de expediente do fascículo.</p>
+            <div className="bg-slate-50 p-4 rounded-xl border max-h-72 overflow-y-auto space-y-2.5 text-xs">
+              {completedReviewers.map((rev) => (
+                <div key={rev.id} className="bg-white p-3 rounded-lg border space-y-1">
+                  <p className="font-bold text-slate-900">{rev.full_name} ({rev.institution || 'ASP'})</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                    {rev.orcid && <span>ORCID: <strong>{rev.orcid}</strong></span>}
+                    {rev.lattes_url && <a href={rev.lattes_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Lattes</a>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button type="button" onClick={() => setShowReviewerThankModal(false)} className="px-4 py-2 text-xs text-slate-600">Fechar</button>
+              <button type="button" onClick={() => {
+                const text = completedReviewers.map((r) => `• ${r.full_name} (${r.institution || 'ASP'})`).join('\n')
+                navigator.clipboard.writeText(text)
+                setCopiedThanks(true)
+                setTimeout(() => setCopiedThanks(false), 2500)
+              }} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5">
+                {copiedThanks ? <><Check className="w-3.5 h-3.5" /> Relação Copiada!</> : <><Copy className="w-3.5 h-3.5" /> Copiar Dados para Expediente</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1, 2 e 3 */}
       <SubmitModal
         show={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
@@ -2631,279 +2743,6 @@ export default function Home() {
         getAuthorName={getAuthorName}
         getArticleIssue={getArticleIssue}
       />
-
-      {/* MODAL: EDIÇÃO DE USUÁRIO */}
-      {editingUserModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[85]">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
-            <div className="flex justify-between items-start border-b pb-2">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Editar Cadastro de Usuário</h3>
-                <p className="text-xs text-slate-500">{editingUserModal.email}</p>
-              </div>
-              <button type="button" onClick={() => setEditingUserModal(null)}><X className="w-5 h-5" /></button>
-            </div>
-
-            <form onSubmit={handleSaveUserByEditor} className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Nome Completo *</label>
-                <input type="text" required value={editUserName} onChange={(e) => setEditUserName(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Função no Sistema *</label>
-                <select value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
-                  <option value="author">Autor</option>
-                  <option value="reviewer">Parecerista</option>
-                  <option value="council">Conselho Editorial</option>
-                  <option value="editor_adjunto">Editor-Adjunto</option>
-                  <option value="editor">Editor-Chefe</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Filiação Institucional</label>
-                <input type="text" value={editUserInst} onChange={(e) => setEditUserInst(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Link Lattes</label>
-                  <input type="url" value={editUserLattes} onChange={(e) => setEditUserLattes(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded-lg" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">ORCID</label>
-                  <input type="text" value={editUserOrcid} onChange={(e) => setEditUserOrcid(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded-lg" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Telefone / WhatsApp</label>
-                <input type="tel" value={editUserPhone} onChange={(e) => setEditUserPhone(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t">
-                <button type="button" onClick={() => setEditingUserModal(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
-                <button type="submit" disabled={savingUserEdit} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
-                  {savingUserEdit ? 'Salvando...' : 'Salvar Alterações'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: SOLICITAR CORREÇÕES */}
-      {requestChangesModalArticle && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[75]">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
-            <div>
-              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded uppercase">Decisão Editorial</span>
-              <h3 className="text-base font-bold text-slate-900 mt-1">Solicitar Correções ao Autor</h3>
-              <p className="text-xs text-slate-500 line-clamp-1">{requestChangesModalArticle.title}</p>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Orientações da Comissão Editorial e Síntese dos Pareceres *:</label>
-              <textarea required rows={6} value={changesReasonText} onChange={(e) => setChangesReasonText(e.target.value)} placeholder="Descreva detalhadamente as correções que o autor deve realizar no texto..." className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-amber-500" />
-            </div>
-            <div className="flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setRequestChangesModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
-              <button type="button" disabled={savingChanges || !changesReasonText.trim()} onClick={handleConfirmRequestChanges} className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50">
-                {savingChanges ? 'Enviando...' : 'Enviar Solicitação de Correções'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: MEU PERFIL PESSOAL */}
-      {showProfileModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
-            <div className="flex justify-between items-start border-b pb-2"><h3 className="text-base font-bold text-slate-900">Meu Perfil</h3><button type="button" onClick={() => setShowProfileModal(false)}><X className="w-5 h-5" /></button></div>
-            <form onSubmit={handleSaveProfile} className="space-y-3">
-              <input type="text" required value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Nome Completo *" className="w-full px-3 py-2 text-xs border rounded-lg" />
-              <input type="text" required value={profileInst} onChange={(e) => setProfileInst(e.target.value)} placeholder="Filiação Institucional *" className="w-full px-3 py-2 text-xs border rounded-lg" />
-              <input type="url" value={profileLattes} onChange={(e) => setProfileLattes(e.target.value)} placeholder="Link do Currículo Lattes" className="w-full px-3 py-2 text-xs border rounded-lg" />
-              <input type="text" value={profileOrcid} onChange={(e) => setProfileOrcid(e.target.value)} placeholder="Identificador ORCID" className="w-full px-3 py-2 text-xs border rounded-lg" />
-              <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="Telefone / WhatsApp" className="w-full px-3 py-2 text-xs border rounded-lg" />
-              <div className="flex justify-end gap-2 pt-2 border-t"><button type="button" onClick={() => setShowProfileModal(false)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button><button type="submit" disabled={savingProfile} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">{savingProfile ? 'Salvando...' : 'Salvar'}</button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL ATRIBUIR PARECERISTA */}
-      {assignModalArticle && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Designar Parecerista</h3>
-            <p className="text-xs text-slate-500">Selecione o parecerista cadastrado e determine o prazo para devolução do parecer.</p>
-            <select value={selectedReviewerId} onChange={(e) => setSelectedReviewerId(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white">
-              <option value="">-- Escolha um parecerista --</option>
-              {allProfiles.filter((p) => (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') && p.id !== assignModalArticle.author_id).map((rev) => (
-                <option key={rev.id} value={rev.id}>{rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'}</option>
-              ))}
-            </select>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Prazo Limite para Parecer:</label>
-              <input type="date" required value={assignDeadline} onChange={(e) => setAssignDeadline(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white" />
-            </div>
-            <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setAssignModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button><button type="button" disabled={!selectedReviewerId || !assignDeadline} onClick={handleAssignReviewer} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg">Confirmar Atribuição</button></div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL RECUSA COM JUSTIFICATIVA */}
-      {rejectionModalArticle && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Justificativa da Não Aceitação</h3>
-            <p className="text-xs text-slate-500">Insira a fundamentação editorial que constará na comunicação ao autor.</p>
-            <textarea required rows={5} value={rejectionReasonText} onChange={(e) => setRejectionReasonText(e.target.value)} placeholder="Fundamentos para a recusa..." className="w-full px-3 py-2 text-xs border rounded-lg" />
-            <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setRejectionModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button><button type="button" disabled={savingRejection || !rejectionReasonText.trim()} onClick={handleConfirmRejection} className="px-4 py-1.5 text-xs font-semibold bg-rose-600 text-white rounded-lg">{savingRejection ? 'Gravando...' : 'Confirmar Recusa'}</button></div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL COMPLETO DE PARECER (DINÂMICO) */}
-      {reviewModalData && (() => {
-        const currentArt = allArticles.find((a) => a.id === reviewModalData.article_id)
-        const currentSec = currentArt?.section || 'Artigos Científicos'
-        const isCurrentReview = currentSec === 'Resenhas'
-        const isCurrentClinical = currentSec === 'Relatos de Experiência Clínica'
-        const isCurrentEssay = currentSec === 'Ensaios Teóricos'
-
-        return (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
-            <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border space-y-5 max-h-[92vh] overflow-y-auto">
-              <div className="border-b pb-3 flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">Formulário de Avaliação</span>
-                    <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border">{currentSec}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">Parecer Editorial por Pares</h3>
-                  <p className="text-xs text-slate-500 line-clamp-1">{currentArt?.title}</p>
-                </div>
-                <button type="button" onClick={() => setReviewModalData(null)} className="text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
-              </div>
-
-              <div className="p-3 rounded-xl border text-xs leading-relaxed space-y-1 bg-indigo-50/60 border-indigo-100 text-indigo-950">
-                <p className="font-bold flex items-center gap-1.5"><Info className="w-4 h-4 text-indigo-600 flex-shrink-0" /> Diretrizes Avaliativas para: {currentSec}</p>
-                {isCurrentReview && <p className="text-[11px]">Avalie a qualidade da leitura crítica e síntese da obra. <strong>Lembrete: resenhas não possuem resumo bilíngue ou palavras-chave.</strong></p>}
-                {isCurrentClinical && <p className="text-[11px]">Avalie a consistência metapsicológica articulada ao caso clínico. <strong>Atenção redobrada: certifique-se de que o sigilo analítico e a descaracterização do paciente foram preservados com rigor.</strong></p>}
-                {isCurrentEssay && <p className="text-[11px]">Avalie a solidez teórica e a originalidade reflexiva. <strong>Não cobre metodologia empírica de pesquisa de campo neste ensaio.</strong></p>}
-                {!isCurrentReview && !isCurrentClinical && !isCurrentEssay && <p className="text-[11px]">Avalie a clareza do problema de pesquisa, rigor metodológico, discussão teórica/clínica e ineditismo científico.</p>}
-              </div>
-
-              <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-                <h4 className="font-bold text-slate-800">Critérios de Avaliação Específicos:</h4>
-                <div className="grid sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">{isCurrentReview ? 'Título e Referência:' : 'Título e Resumo:'}</label>
-                    <select value={critTitle} onChange={(e) => setCritTitle(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
-                      <option value="satisfatorio">Satisfatório</option>
-                      <option value="necessita_ajustes">Necessita Ajustes</option>
-                      <option value="insatisfatorio">Insatisfatório</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">{isCurrentReview ? 'Profundidade Crítica:' : 'Rigor Conceitual:'}</label>
-                    <select value={critTheory} onChange={(e) => setCritTheory(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
-                      <option value="consistente">Consistente</option>
-                      <option value="regular">Regular</option>
-                      <option value="fragil">Frágil</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">{isCurrentClinical ? 'Técnica e Clínica:' : 'Relevância Psicanalítica:'}</label>
-                    <select value={critClinical} onChange={(e) => setCritClinical(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium">
-                      <option value="alta">Alta</option>
-                      <option value="media">Média</option>
-                      <option value="baixa">Baixa</option>
-                    </select>
-                  </div>
-                </div>
-
-                {isCurrentClinical && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <label className="block text-[11px] font-bold text-amber-900 mb-1">Sigilo Analítico e Descaracterização do Paciente *:</label>
-                    <select value={critClinicalEthics} onChange={(e) => setCritClinicalEthics(e.target.value)} className="w-full px-2.5 py-1.5 text-xs border rounded bg-white font-medium text-slate-800">
-                      <option value="preservado">Preservado com Rigor (Sem dados identificáveis)</option>
-                      <option value="necessita_ajustes">Necessita Maior Descaracterização</option>
-                      <option value="insuficiente">Insuficiente / Risco de Quebra de Sigilo</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Recomendação Editorial Conclusiva *</label>
-                <select value={recommendation} onChange={(e) => setRecommendation(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-semibold">
-                  <option value="aceitar">Aceitar sem restrições</option>
-                  <option value="correcoes_obrigatorias">Aceitar com correções (obrigatórias)</option>
-                  <option value="rejeitar">Recusar manuscrito</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Parecer Circunstanciado (Enviado ao autor) *</label>
-                <textarea required rows={5} value={commentsAuthor} onChange={(e) => setCommentsAuthor(e.target.value)} placeholder="Apresente suas análises, fundamentos teóricos e apontamentos..." className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Comentários Confidenciais à Editoria (Opcional - Não visível ao autor)</label>
-                <textarea rows={2} value={commentsEditor} onChange={(e) => setCommentsEditor(e.target.value)} placeholder="Observações sigilosas aos editores..." className="w-full px-3 py-2 text-xs border rounded-lg bg-slate-50" />
-              </div>
-
-              <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-                <label className="block text-xs font-bold text-slate-800">Anexar Manuscrito com Apontamentos / Marcações (.docx ou .doc - opcional):</label>
-                <input type="file" accept=".docx,.doc" onChange={(e) => setReviewFile(e.target.files?.[0] || null)} className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 border border-slate-200 rounded-lg p-1 bg-white" />
-                <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-3 text-[11px] text-amber-950 space-y-1 leading-relaxed">
-                  <p className="font-bold text-amber-900 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" /> Anonimato no Word:</p>
-                  <p>Utilize <em>Revisão &gt; Novo Comentário</em> e certifique-se de que seu nome de usuário nas opções do Word esteja como <strong>"Parecerista"</strong> ou <strong>"Avaliador"</strong> para garantir o duplo-cego.</p>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t">
-                <button type="button" onClick={() => setReviewModalData(null)} className="px-4 py-2 text-xs text-slate-600">Voltar</button>
-                <button type="submit" disabled={submittingReview || !commentsAuthor} onClick={handleSubmitReview} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 shadow-sm">
-                  {submittingReview ? 'Enviando...' : 'Concluir e Enviar Parecer'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
-
-      {/* MODAL AGRADECIMENTO PARECERISTAS */}
-      {showReviewerThankModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border space-y-4">
-            <h3 className="text-lg font-bold text-slate-900">Quadro de Pareceristas que Concluíram Avaliações</h3>
-            <p className="text-xs text-slate-500">Relação de pareceristas atuantes para compor a folha de expediente do fascículo.</p>
-            
-            <div className="bg-slate-50 p-4 rounded-xl border max-h-72 overflow-y-auto space-y-2.5 text-xs">
-              {completedReviewers.map((rev) => (
-                <div key={rev.id} className="bg-white p-3 rounded-lg border space-y-1">
-                  <p className="font-bold text-slate-900">{rev.full_name} ({rev.institution || 'ASP'})</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-                    {rev.orcid && <span>ORCID: <strong>{rev.orcid}</strong></span>}
-                    {rev.lattes_url && (
-                      <a href={rev.lattes_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline inline-flex items-center gap-0.5">
-                        Lattes <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setShowReviewerThankModal(false)} className="px-4 py-2 text-xs text-slate-600">Fechar</button>
-              <button type="button" onClick={handleCopyReviewers} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5">
-                {copiedThanks ? <><Check className="w-3.5 h-3.5" /> Relação Copiada!</> : <><Copy className="w-3.5 h-3.5" /> Copiar Dados para Expediente</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
