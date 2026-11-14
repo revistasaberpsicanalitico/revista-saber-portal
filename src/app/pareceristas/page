@@ -5,16 +5,18 @@ import { supabase } from '@/lib/supabase'
 import { 
   UserCheck, ShieldCheck, Mail, Lock, User, Building, 
   ExternalLink, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight,
-  BookOpen, HeartHandshake, Award, Sparkles, Check
+  BookOpen, Award, Sparkles, Check, Eye, EyeOff, FileText, Scale
 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ChamadaPareceristas() {
+  const [step, setStep] = useState<'edital' | 'formulario'>('edital')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Campos do Formulário
+  // Campos
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,14 +29,14 @@ export default function ChamadaPareceristas() {
   const [miniBio, setMiniBio] = useState('')
   const [keywords, setKeywords] = useState('')
 
-  // Checkboxes de Escolas Teóricas
+  // Escolas Teóricas
   const [schools, setSchools] = useState<string[]>([])
   const schoolOptions = [
     'Sigmund Freud', 'Jacques Lacan', 'Donald Winnicott', 
     'Sándor Ferenczi', 'Melanie Klein', 'Wilfred Bion', 'Françoise Dolto', 'Outros'
   ]
 
-  // Checkboxes de Eixos Temáticos (Máximo 3)
+  // Eixos Temáticos (Máximo 3)
   const [axes, setAxes] = useState<string[]>([])
   const axeOptions = [
     'Fundamentos, História e Epistemologia da Psicanálise',
@@ -49,21 +51,16 @@ export default function ChamadaPareceristas() {
     'Psicanálise, Cultura, Arte e Política'
   ]
 
-  // Termos éticos
   const [termsAccepted, setTermsAccepted] = useState(false)
 
   const handleToggleSchool = (school: string) => {
-    if (schools.includes(school)) {
-      setSchools(schools.filter((s) => s !== school))
-    } else {
-      setSchools([...schools, school])
-    }
+    if (schools.includes(school)) setSchools(schools.filter((s) => s !== school))
+    else setSchools([...schools, school])
   }
 
   const handleToggleAxe = (axe: string) => {
-    if (axes.includes(axe)) {
-      setAxes(axes.filter((a) => a !== axe))
-    } else {
+    if (axes.includes(axe)) setAxes(axes.filter((a) => a !== axe))
+    else {
       if (axes.length >= 3) {
         alert('Você pode selecionar no máximo 3 eixos temáticos prioritários.')
         return
@@ -89,7 +86,6 @@ export default function ChamadaPareceristas() {
     setLoading(true)
 
     try {
-      // 1. Cadastra usuário na autenticação do Supabase
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -108,7 +104,6 @@ export default function ChamadaPareceristas() {
       const userId = authData.user?.id
       if (!userId) throw new Error('Não foi possível obter identificador de usuário.')
 
-      // 2. Grava ou atualiza os dados completos em 'profiles' com reviewer_status = 'pending'
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         full_name: fullName,
@@ -124,49 +119,48 @@ export default function ChamadaPareceristas() {
         thematic_axes: axes,
         keywords,
         mini_bio: miniBio,
-        reviewer_status: 'pending' // Fica aguardando homologação do editor
+        reviewer_status: 'pending',
+        council_votes: []
       })
 
       if (profileError) throw profileError
 
-      // 3. Notifica por e-mail (usando a rota nativa que já existe no portal)
+      // Disparo de e-mails de notificação
       try {
-        // Confirmação para o candidato
         await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: email,
-            subject: 'Inscrição Recebida - Banco de Pareceristas Ad-hoc (Revista Saber Psicanalítico)',
-            title: 'Candidatura Registrada com Sucesso',
-            message: `Prezado(a) ${fullName},\n\nConfirmamos o recebimento de sua inscrição para o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSuas áreas de domínio e trajetória cadastrada serão homologadas pela Comissão Editorial. Assim que homologado(a), você poderá ser convidado(a) a emitir pareceres circunstanciados em manuscritos com temática afim.\n\nAgradecemos sua valorosa disposição em colaborar com o rigor e a difusão científica no campo psicanalítico.`,
-            actionText: 'Acessar o Portal',
+            subject: 'Inscrição Registrada - Banco de Pareceristas (Revista Saber Psicanalítico)',
+            title: 'Candidatura Recebida',
+            message: `Prezado(a) ${fullName},\n\nConfirmamos o recebimento de sua inscrição para o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua ficha foi encaminhada para apreciação colegiada do Conselho Editorial.\n\nIMPORTANTE: Enquanto aguarda a homologação, seu acesso ao portal já está liberado na condição de AUTOR, permitindo que você submeta trabalhos científicos normalmente.\n\nAgradecemos sua disposição em fortalecer a produção e a divulgação científica no campo da Psicanálise.`,
+            actionText: 'Acessar o Portal da Revista',
             actionUrl: 'https://revista-saber-portal.vercel.app'
           })
         })
 
-        // Notificação para o Editor-Chefe
         await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: 'revistasaberpsicanalitico@gmail.com',
-            subject: 'Nova Inscrição de Parecerista Ad-hoc - Revista Saber Psicanalítico',
-            title: 'Novo(a) Parecerista Candidato(a)',
-            message: `Novo cadastro recebido para o Banco de Pareceristas:\n\n• Nome: ${fullName}\n• Titulação: ${academicDegree}\n• Instituição: ${institution}\n• E-mail: ${email}\n• Eixos: ${axes.join(', ')}\n• Palavras-chave: ${keywords}\n\nAcesse a Sala Editorial para conferir e homologar a candidatura.`,
+            subject: 'Nova Inscrição de Parecerista - Revista Saber Psicanalítico',
+            title: 'Nova Candidatura ao Banco de Pareceristas',
+            message: `Novo cadastro recebido:\n\n• Nome: ${fullName}\n• Titulação: ${academicDegree}\n• Instituição: ${institution}\n• E-mail: ${email}\n• Eixos: ${axes.join(', ')}\n\nAcesse a aba "Candidaturas Pareceristas" na Sala Editorial para registrar o voto do conselho.`,
             actionText: 'Sala Editorial',
             actionUrl: 'https://revista-saber-portal.vercel.app'
           })
         })
-      } catch (errMail) {
-        console.warn('E-mail notification error:', errMail)
+      } catch (eMail) {
+        console.warn('Erro envio e-mail:', eMail)
       }
 
       setSuccess(true)
     } catch (err: any) {
-      let msg = err.message || 'Erro ao processar candidatura.'
+      let msg = err.message || 'Erro ao processar inscrição.'
       if (msg.includes('already registered')) {
-        msg = 'Este e-mail já possui cadastro no portal. Faça login na página inicial para atualizar seu perfil.'
+        msg = 'Este e-mail já possui cadastro no portal. Faça login na página inicial para atualizar seus dados em Meu Perfil.'
       }
       setErrorMessage(msg)
     } finally {
@@ -183,20 +177,19 @@ export default function ChamadaPareceristas() {
           </div>
           <h2 className="text-xl font-bold text-slate-900">Inscrição Enviada com Sucesso!</h2>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Agradecemos seu interesse em integrar o Banco de Pareceristas Ad-hoc da <strong>Revista Saber Psicanalítico</strong>.
-            Enviamos uma confirmação para o e-mail <strong>{email}</strong>.
+            Sua candidatura foi registrada no Banco de Pareceristas Ad-hoc da <strong>Revista Saber Psicanalítico</strong>. Enviamos a confirmação para <strong>{email}</strong>.
           </p>
-          <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-950 text-left space-y-1.5">
-            <p className="font-bold flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-indigo-600" /> Próximos Passos:</p>
-            <p>1. A Comissão Editorial fará a homologação do seu perfil.</p>
-            <p>2. Os convites para avaliação serão enviados conforme a correspondência temática dos artigos recebidos.</p>
-            <p>3. Todas as avaliações concluídas conferem <strong>Declaração Oficial Timbrada</strong> para comprovação no Lattes.</p>
+          <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-950 text-left space-y-2">
+            <p className="font-bold flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-indigo-600" /> Acesso Imediato Liberado:</p>
+            <p>1. Seu login e senha já estão ativos como <strong>Autor</strong>, permitindo que você submeta artigos e relatos clínicos a qualquer momento.</p>
+            <p>2. O Conselho Editorial apreciará sua ficha de parecerista e você receberá uma notificação assim que homologado.</p>
+            <p>3. Todas as avaliações por pares concluídas conferem <strong>Declaração Oficial Timbrada</strong> para comprovação no Lattes.</p>
           </div>
           <Link
             href="/"
             className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm"
           >
-            Ir para a Página Inicial do Portal
+            Acessar o Portal da Revista
           </Link>
         </div>
       </main>
@@ -221,291 +214,368 @@ export default function ChamadaPareceristas() {
         </div>
       </header>
 
-      {/* Conteúdo Principal */}
+      {/* Conteúdo */}
       <main className="max-w-4xl mx-auto px-4 py-8 flex-1 space-y-8">
         
-        {/* Banner do Edital */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 rounded-2xl shadow-lg space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 rounded-full text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5" /> Chamada Pública Aberta • Fluxo Contínuo
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight">
-            Banco de Pareceristas Ad-Hoc
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-            A Revista Saber Psicanalítico, vinculada à Associação Saber Psicanalítico (ASP), convida pesquisadores(as), 
-            docentes e psicanalistas com trajetória clínica ou institucional a integrarem nossa rede de avaliadores por pares (<em>double-blind review</em>).
-          </p>
-          <div className="pt-2 flex flex-wrap gap-4 text-[11px] text-indigo-200 border-t border-white/10">
-            <span>• Reconhecimento Curricular com Certificação</span>
-            <span>• Processo 100% Eletrônico</span>
-            <span>• Prazos Médios de 21 dias</span>
-          </div>
-        </div>
-
-        {/* Formulário Integrado */}
-        <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-8 space-y-6">
-          <div className="border-b pb-4">
-            <h3 className="text-lg font-bold text-slate-900">Formulário de Inscrição e Cadastro</h3>
-            <p className="text-xs text-slate-500">
-              Preencha os campos abaixo. Ao enviar, sua conta será criada diretamente em nosso portal editorial.
-            </p>
-          </div>
-
-          {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{errorMessage}</span>
+        {/* ETAPA 1: EDITAL DA CHAMADA PÚBLICA */}
+        {step === 'edital' && (
+          <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-10 space-y-8">
+            <div className="border-b pb-6 space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-bold border border-amber-200">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Fluxo Contínuo de Credenciamento
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 tracking-tight">
+                Chamada Pública para Cadastro de Pareceristas Ad-Hoc
+              </h2>
+              <p className="text-xs text-slate-500">
+                Associação Saber Psicanalítico (ASP) • Revista Científica Semestral (ISSN 3086-8416)
+              </p>
             </div>
-          )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Bloco 1: Dados de Acesso e Identificação */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
-                <User className="w-4 h-4 text-indigo-600" /> 1. Identificação e Acesso ao Portal
-              </h4>
+            <div className="prose prose-sm text-slate-700 leading-relaxed space-y-6 text-xs sm:text-[13px]">
+              <p className="text-justify">
+                A <strong>Revista Saber Psicanalítico</strong> torna pública a abertura permanente de inscrições para composição de seu <strong>Banco de Pareceristas Ad-hoc</strong>, com a finalidade de qualificar e expandir a rede de avaliadores responsáveis pela revisão por pares anônima (<em>double-blind peer review</em>) dos manuscritos submetidos ao periódico.
+              </p>
 
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Nome Completo *</label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Seu nome completo"
-                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">E-mail para Contato e Login *</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu.email@exemplo.com"
-                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-indigo-600" /> 1. Quem pode se inscrever?
+                </h4>
+                <p>
+                  Podem se inscrever profissionais, pesquisadores(as), docentes e psicanalistas que possuam graduação concluída em qualquer área do conhecimento e apresentem trajetória compatível com o campo da Psicanálise e suas interfaces.
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-slate-600">
+                  <li><strong>Psicólogos(as)</strong> com formação ou atuação orientada pela Psicanálise;</li>
+                  <li><strong>Psicanalistas</strong> graduados em diferentes áreas, com percurso formativo em escolas, cartéis, sociedades ou prática clínica;</li>
+                  <li><strong>Pesquisadores(as) e docentes</strong> que desenvolvam estudos nas interfaces entre Psicanálise, Filosofia, Educação, Ciências Humanas e Sociais;</li>
+                  <li>A formação em Psicologia <em>não</em> é obrigatória, assim como não é restrita à titulação acadêmica de mestre ou doutor.</li>
+                </ul>
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Senha de Acesso ao Portal *</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Telefone / WhatsApp *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(00) 00000-0000"
-                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Instituição / Afiliação Principal *</label>
-                  <input
-                    type="text"
-                    required
-                    value={institution}
-                    onChange={(e) => setInstitution(e.target.value)}
-                    placeholder="Ex: Consultório Particular / USP"
-                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-indigo-600" /> 2. Critérios e Certificação Curricular
+                </h4>
+                <p>
+                  A cada parecer circunstanciado concluído, o sistema emite automaticamente uma <strong>Declaração Oficial Timbrada de Parecerista Ad-hoc</strong> assinada digitalmente com código de autenticidade, com validade formal para comprovação no Currículo Lattes e progressão acadêmica.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-indigo-600" /> 3. Compromissos Éticos e Anonimato
+                </h4>
+                <p>
+                  Os avaliadores comprometem-se com o sigilo rigoroso das obras recebidas, a declaração de conflitos de interesses e a emissão de pareceres construtivos no prazo médio de 21 dias após o aceite do convite.
+                </p>
               </div>
             </div>
 
-            {/* Bloco 2: Formação e Qualificação */}
-            <div className="space-y-3 pt-3 border-t">
-              <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-indigo-600" /> 2. Formação Acadêmica e Trajetória Psicanalítica
-              </h4>
-
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Maior Titulação Concluída *</label>
-                  <select
-                    value={academicDegree}
-                    onChange={(e) => setAcademicDegree(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border rounded-lg bg-white"
-                  >
-                    <option value="Graduação">Graduação</option>
-                    <option value="Especialização">Especialização / Pós-Graduação Lato Sensu</option>
-                    <option value="Mestrado">Mestrado</option>
-                    <option value="Doutorado">Doutorado</option>
-                    <option value="Pós-Doutorado">Pós-Doutorado</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Relação Principal com a Psicanálise *</label>
-                  <select
-                    value={psicanaliseProfile}
-                    onChange={(e) => setPsicanaliseProfile(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border rounded-lg bg-white"
-                  >
-                    <option value="Psicanalista com atuação clínica">Psicanalista com atuação clínica</option>
-                    <option value="Pesquisador(a) / Docente universitário(a)">Pesquisador(a) / Docente universitário(a)</option>
-                    <option value="Psicólogo(a) / Profissional de saúde mental">Psicólogo(a) / Profissional de saúde mental</option>
-                    <option value="Profissional de área afim com estudos em Psicanálise">Profissional de área afim com estudos em Psicanálise</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Link do Currículo Lattes *</label>
-                  <input
-                    type="url"
-                    required
-                    value={lattesUrl}
-                    onChange={(e) => setLattesUrl(e.target.value)}
-                    placeholder="http://lattes.cnpq.br/..."
-                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">ORCID iD (Opcional, porém recomendável)</label>
-                  <input
-                    type="text"
-                    value={orcid}
-                    onChange={(e) => setOrcid(e.target.value)}
-                    placeholder="0000-0000-0000-0000"
-                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  Mini-biografia e Percurso Formativo em Psicanálise * (Máx. 1.500 caracteres)
-                </label>
-                <textarea
-                  required
-                  rows={4}
-                  maxLength={1500}
-                  value={miniBio}
-                  onChange={(e) => setMiniBio(e.target.value)}
-                  placeholder="Apresente de forma concisa seu percurso de transmissão em Psicanálise (escolas, cartéis, sociedades, clínica particular, docência ou grupos de pesquisa dos quais participa)..."
-                  className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500 leading-relaxed"
-                />
-              </div>
-            </div>
-
-            {/* Bloco 3: Áreas de Domínio Técnico */}
-            <div className="space-y-3 pt-3 border-t">
-              <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-indigo-600" /> 3. Especialidades e Referenciais de Avaliação
-              </h4>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1.5">
-                  Quais escolas ou autores orientam prioritariamente seus estudos? (Marque quantos desejar)
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {schoolOptions.map((sch) => (
-                    <label key={sch} className="flex items-center gap-2 text-xs text-slate-700 p-2 rounded-lg border hover:bg-slate-50 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={schools.includes(sch)}
-                        onChange={() => handleToggleSchool(sch)}
-                        className="rounded text-indigo-600"
-                      />
-                      <span>{sch}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[11px] font-semibold text-slate-700">
-                    Eixos Temáticos prioritários para emissão de pareceres *
-                  </label>
-                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                    {axes.length}/3 selecionados
-                  </span>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-2">
-                  {axeOptions.map((axe) => (
-                    <label key={axe} className={`flex items-start gap-2 text-xs p-2.5 rounded-lg border cursor-pointer transition ${
-                      axes.includes(axe) ? 'bg-indigo-50/70 border-indigo-300 font-semibold text-indigo-950' : 'hover:bg-slate-50 text-slate-700'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={axes.includes(axe)}
-                        onChange={() => handleToggleAxe(axe)}
-                        className="mt-0.5 rounded text-indigo-600"
-                      />
-                      <span className="leading-snug">{axe}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  Palavras-chave de Especialidade * (3 a 5 termos separados por vírgula)
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  placeholder="Ex: melancolia, pulsão de morte, escuta analítica, psicose ordinária"
-                  className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-
-            {/* Bloco 4: Declarações Éticas */}
-            <div className="pt-3 border-t">
-              <label className="flex items-start gap-2.5 p-3.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer text-xs text-slate-700 leading-relaxed">
-                <input
-                  type="checkbox"
-                  required
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="mt-1 rounded text-indigo-600"
-                />
-                <span>
-                  Declaro que as informações prestadas são verídicas e comprometo-me a atuar sob os princípios de 
-                  <strong> sigilo estrito, imparcialidade e ética construtiva</strong> na avaliação por pares às cegas. 
-                  Autorizo o uso desses dados exclusivamente para a gestão editorial da Revista Saber Psicanalítico (ASP), nos termos da LGPD.
-                </span>
-              </label>
-            </div>
-
-            {/* Botão de Envio */}
-            <div className="flex justify-end pt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 transition"
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-6 border-t">
+              <Link
+                href="/"
+                className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 text-center"
               >
-                {loading ? 'Processando Inscrição...' : <><UserCheck className="w-4 h-4" /> Concluir Inscrição no Banco de Pareceristas</>}
+                Fechar e Voltar ao Portal
+              </Link>
+              <button
+                type="button"
+                onClick={() => { setStep('formulario'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs rounded-lg flex items-center justify-center gap-2 shadow"
+              >
+                <span>Avançar para o Formulário de Cadastro</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-          </form>
-        </div>
+          </div>
+        )}
+
+        {/* ETAPA 2: FORMULÁRIO DE CADASTRO */}
+        {step === 'formulario' && (
+          <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-8 space-y-6">
+            <div className="flex justify-between items-start border-b pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Formulário de Inscrição de Parecerista</h3>
+                <p className="text-xs text-slate-500">
+                  Preencha as informações para apreciação colegiada do Conselho Editorial.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep('edital')}
+                className="text-xs font-semibold text-indigo-700 hover:underline flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Ler Edital Novamente
+              </button>
+            </div>
+
+            {errorMessage && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              
+              {/* Bloco 1 */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-indigo-600" /> 1. Identificação e Dados de Acesso
+                </h4>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Nome Completo *</label>
+                    <input
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Seu nome completo"
+                      className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">E-mail para Contato e Login *</label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="seu.email@exemplo.com"
+                      className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Senha de Acesso ao Portal *</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="w-full px-3 py-2 pr-9 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Telefone / WhatsApp *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="(00) 00000-0000"
+                      className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Instituição / Afiliação Principal *</label>
+                    <input
+                      type="text"
+                      required
+                      value={institution}
+                      onChange={(e) => setInstitution(e.target.value)}
+                      placeholder="Ex: Consultório Particular / Universidade"
+                      className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bloco 2 */}
+              <div className="space-y-3 pt-3 border-t">
+                <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-indigo-600" /> 2. Formação Acadêmica e Trajetória Psicanalítica
+                </h4>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Maior Titulação Concluída *</label>
+                    <select
+                      value={academicDegree}
+                      onChange={(e) => setAcademicDegree(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium"
+                    >
+                      <option value="Graduação">Graduação</option>
+                      <option value="Especialização">Especialização / Pós-Graduação Lato Sensu</option>
+                      <option value="Mestrado">Mestrado</option>
+                      <option value="Doutorado">Doutorado</option>
+                      <option value="Pós-Doutorado">Pós-Doutorado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Relação com a Psicanálise *</label>
+                    <select
+                      value={psicanaliseProfile}
+                      onChange={(e) => setPsicanaliseProfile(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium"
+                    >
+                      <option value="Psicanalista com atuação clínica">Psicanalista com atuação clínica</option>
+                      <option value="Pesquisador(a) / Docente universitário(a)">Pesquisador(a) / Docente universitário(a)</option>
+                      <option value="Psicólogo(a) / Profissional de saúde mental">Psicólogo(a) / Profissional de saúde mental</option>
+                      <option value="Profissional de área afim com estudos em Psicanálise">Profissional de área afim com estudos em Psicanálise</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Link do Currículo Lattes *</label>
+                    <input
+                      type="url"
+                      required
+                      value={lattesUrl}
+                      onChange={(e) => setLattesUrl(e.target.value)}
+                      placeholder="http://lattes.cnpq.br/..."
+                      className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">ORCID iD (Opcional)</label>
+                    <input
+                      type="text"
+                      value={orcid}
+                      onChange={(e) => setOrcid(e.target.value)}
+                      placeholder="0000-0000-0000-0000"
+                      className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Mini-biografia e Percurso Formativo em Psicanálise * (Máx. 1.500 caracteres)
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    maxLength={1500}
+                    value={miniBio}
+                    onChange={(e) => setMiniBio(e.target.value)}
+                    placeholder="Apresente de forma concisa seu percurso de transmissão em Psicanálise (escolas, cartéis, sociedades, clínica particular, docência ou grupos de pesquisa dos quais participa)..."
+                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500 leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              {/* Bloco 3 */}
+              <div className="space-y-3 pt-3 border-t">
+                <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-indigo-600" /> 3. Especialidades e Referenciais Teóricos
+                </h4>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Quais autores orientam prioritariamente seus estudos? (Marque as opções aplicáveis)
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {schoolOptions.map((sch) => (
+                      <label key={sch} className="flex items-center gap-2 text-xs text-slate-700 p-2 rounded-lg border hover:bg-slate-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={schools.includes(sch)}
+                          onChange={() => handleToggleSchool(sch)}
+                          className="rounded text-indigo-600"
+                        />
+                        <span>{sch}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-xs font-bold text-slate-700">
+                      Eixos Temáticos prioritários para avaliação *
+                    </label>
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                      {axes.length}/3 selecionados
+                    </span>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {axeOptions.map((axe) => (
+                      <label key={axe} className={`flex items-start gap-2 text-xs p-2.5 rounded-lg border cursor-pointer transition ${
+                        axes.includes(axe) ? 'bg-indigo-50/70 border-indigo-300 font-semibold text-indigo-950' : 'hover:bg-slate-50 text-slate-700'
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={axes.includes(axe)}
+                          onChange={() => handleToggleAxe(axe)}
+                          className="mt-0.5 rounded text-indigo-600"
+                        />
+                        <span className="leading-snug">{axe}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Palavras-chave de Especialidade * (3 a 5 termos separados por vírgula)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                    placeholder="Ex: melancolia, escuta clínica, psicose, pulsão de morte"
+                    className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Bloco 4 */}
+              <div className="pt-3 border-t">
+                <label className="flex items-start gap-2.5 p-3.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer text-xs text-slate-700 leading-relaxed">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-1 rounded text-indigo-600"
+                  />
+                  <span>
+                    Declaro a veracidade dos dados informados e comprometo-me com o <strong>sigilo estrito, imparcialidade e ética construtiva</strong> na avaliação por pares duplo-cega. Autorizo o uso dessas informações exclusivamente pela Revista Saber Psicanalítico (ASP) nos termos da LGPD.
+                  </span>
+                </label>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep('edital')}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
+                >
+                  Voltar ao Edital
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 transition"
+                >
+                  {loading ? 'Processando Inscrição...' : <><UserCheck className="w-4 h-4" /> Concluir Inscrição de Parecerista</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </main>
 
-      {/* Rodapé Oficial */}
-      <footer className="bg-white border-t border-slate-200 py-6 mt-12 text-xs text-slate-500 text-center space-y-1">
+      <footer className="bg-white border-t border-slate-200 py-6 text-xs text-slate-500 text-center space-y-1">
         <p className="font-bold text-slate-700">Revista Saber Psicanalítico (ISSN 3086-8416)</p>
         <p>Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85</p>
       </footer>
