@@ -23,27 +23,29 @@ const formatRole = (role: string) => {
   }
 }
 
-// Opções Padronizadas de Cruzamento
+// 12 EIXOS TEMÁTICOS AMPLIADOS DA PSICANÁLISE
+const axeOptionsGlobal = [
+  'Fundamentos, História e Epistemologia da Psicanálise',
+  'Metapsicologia e Teoria das Pulsões',
+  'Clínica Psicanalítica, Técnica e Transferência',
+  'Psicopatologia, Sofrimento Psíquico e Sintoma',
+  'Infância, Parentalidade e Adolescência',
+  'Corpo, Psicossomática e Manifestações Contemporâneas',
+  'Sexualidade, Gênero e Relações Familiares',
+  'Saúde Mental, Atenção Psicossocial e Instituições',
+  'Psicanálise, Relações Étnico-Raciais e Decolonialidade',
+  'Psicanálise e Educação',
+  'Psicanálise, Filosofia e Ciências Humanas',
+  'Psicanálise, Arte, Literatura e Política'
+]
+
 const schoolOptionsGlobal = [
   'Sigmund Freud', 'Jacques Lacan', 'Donald Winnicott', 
   'Sándor Ferenczi', 'Melanie Klein', 'Wilfred Bion', 'Françoise Dolto', 'Outros'
 ]
 
-const axeOptionsGlobal = [
-  'Fundamentos, História e Epistemologia da Psicanálise',
-  'Metapsicologia e Conceitos Fundamentais',
-  'Clínica Psicanalítica e Técnica',
-  'Psicopatologia e Sofrimento Psíquico',
-  'Infância, Adolescência e Juventudes',
-  'Sexualidade, Gênero e Relações Familiares',
-  'Saúde Mental e Atenção Psicossocial',
-  'Psicanálise e Educação',
-  'Psicanálise, Filosofia e Ciências Humanas',
-  'Psicanálise, Cultura, Arte e Política'
-]
-
 // ============================================================================
-// MODAL: CHAMADA PÚBLICA E CADASTRO DE PARECERISTAS (NA PÁGINA PRINCIPAL)
+// MODAL: CHAMADA PÚBLICA E CADASTRO DE PARECERISTAS
 // ============================================================================
 function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => void }) {
   const [step, setStep] = useState<'edital' | 'formulario'>('edital')
@@ -73,11 +75,12 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
     setSchools(schools.includes(s) ? schools.filter(x => x !== s) : [...schools, s])
   }
 
+  // LIMITE DE ATÉ 5 EIXOS
   const handleToggleAxe = (a: string) => {
     if (axes.includes(a)) {
       setAxes(axes.filter(x => x !== a))
     } else {
-      if (axes.length >= 3) return alert('Selecione no máximo 3 eixos temáticos prioritários.')
+      if (axes.length >= 5) return alert('Você pode selecionar no máximo 5 eixos temáticos prioritários.')
       setAxes([...axes, a])
     }
   }
@@ -334,14 +337,15 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
               </div>
             </div>
 
+            {/* SELEÇÃO DE ATÉ 5 EIXOS */}
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-bold text-slate-700">Eixos Temáticos prioritários para avaliação *</label>
-                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{axes.length}/3 selecionados</span>
+                <label className="text-xs font-bold text-slate-700">Eixos Temáticos prioritários para avaliação * (Selecione até 5)</label>
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{axes.length}/5 selecionados</span>
               </div>
               <div className="grid sm:grid-cols-2 gap-1.5">
                 {axeOptionsGlobal.map((ax) => (
-                  <label key={ax} className={`flex items-start gap-1.5 p-2 border rounded cursor-pointer text-[11px] ${axes.includes(ax) ? 'bg-indigo-50 border-indigo-300 font-semibold' : 'bg-white'}`}>
+                  <label key={ax} className={`flex items-start gap-1.5 p-2 border rounded cursor-pointer text-[11px] ${axes.includes(ax) ? 'bg-indigo-50 border-indigo-300 font-semibold text-indigo-950' : 'bg-white'}`}>
                     <input type="checkbox" checked={axes.includes(ax)} onChange={() => handleToggleAxe(ax)} className="mt-0.5 rounded text-indigo-600" />
                     <span className="leading-tight">{ax}</span>
                   </label>
@@ -377,10 +381,11 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
 }
 
 // ============================================================================
-// MODAL 1: SUBMISSÃO DINÂMICA
+// MODAL 1: SUBMISSÃO DINÂMICA (COM SELEÇÃO DE EIXO TEMÁTICO PELO AUTOR)
 // ============================================================================
 function SubmitModal({
   show, onClose, onSubmit, newSection, setNewSection,
+  newThematicAxis, setNewThematicAxis,
   newTitle, setNewTitle, newTitleEn, setNewTitleEn,
   bookReference, setBookReference,
   newAbstract, setNewAbstract, newAbstractEn, setNewAbstractEn,
@@ -412,14 +417,26 @@ function SubmitModal({
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Seção Editorial *</label>
-            <select value={newSection} onChange={(e) => setNewSection(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
-              <option value="Artigos Científicos">Artigos Científicos (2.000 a 8.000 palavras)</option>
-              <option value="Ensaios Teóricos">Ensaios Teóricos (1.500 a 6.000 palavras)</option>
-              <option value="Relatos de Experiência Clínica">Relatos de Experiência Clínica (2.000 a 5.000 palavras)</option>
-              <option value="Resenhas">Resenhas (1.000 a 1.500 palavras)</option>
-            </select>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Seção Editorial *</label>
+              <select value={newSection} onChange={(e) => setNewSection(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
+                <option value="Artigos Científicos">Artigos Científicos (2.000 a 8.000 palavras)</option>
+                <option value="Ensaios Teóricos">Ensaios Teóricos (1.500 a 6.000 palavras)</option>
+                <option value="Relatos de Experiência Clínica">Relatos de Experiência Clínica (2.000 a 5.000 palavras)</option>
+                <option value="Resenhas">Resenhas (1.000 a 1.500 palavras)</option>
+              </select>
+            </div>
+
+            {/* SELEÇÃO DO EIXO TEMÁTICO PELO AUTOR */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Eixo Temático Principal do Trabalho *</label>
+              <select value={newThematicAxis} onChange={(e) => setNewThematicAxis(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
+                {axeOptionsGlobal.map((ax) => (
+                  <option key={ax} value={ax}>{ax}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {isClinical && (
@@ -617,7 +634,14 @@ function ArticleDetailsModal({ article, onClose, getAuthorName, getAuthorEmail, 
       <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border space-y-5 max-h-[92vh] overflow-y-auto my-6">
         <div className="flex justify-between items-start border-b pb-3">
           <div>
-            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{article.section || 'Artigos Científicos'}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{article.section || 'Artigos Científicos'}</span>
+              {article.thematic_axis && (
+                <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Eixo: {article.thematic_axis}
+                </span>
+              )}
+            </div>
             <h3 className="text-base font-bold text-slate-900 mt-1">{article.title}</h3>
             {article.title_en && !isReview && <p className="text-xs text-slate-500 italic">Title (EN): {article.title_en}</p>}
           </div>
@@ -877,7 +901,7 @@ export default function Home() {
   const [verifyResult, setVerifyResult] = useState<any>(null)
   const [checkingCode, setCheckingCode] = useState(false)
 
-  // Meu Perfil Completo com Eixos e Escolas (PONTO 3)
+  // Meu Perfil Completo com Eixos (até 5) e Escolas
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [profileInst, setProfileInst] = useState('')
@@ -895,6 +919,7 @@ export default function Home() {
   // Submissão do Autor
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [newSection, setNewSection] = useState('Artigos Científicos')
+  const [newThematicAxis, setNewThematicAxis] = useState(axeOptionsGlobal[0])
   const [newTitle, setNewTitle] = useState('')
   const [newTitleEn, setNewTitleEn] = useState('')
   const [bookReference, setBookReference] = useState('')
@@ -1225,7 +1250,7 @@ export default function Home() {
     }
   }
 
-  // Abrir Modal Meu Perfil Completo com Eixos e Escolas
+  // Abrir Modal Meu Perfil Completo com Eixos (até 5) e Escolas
   const handleOpenProfileModal = () => {
     setProfileName(profile?.full_name || '')
     setProfileInst(profile?.institution || '')
@@ -1358,9 +1383,9 @@ export default function Home() {
 
   const handleExportBackup = () => {
     if (allArticles.length === 0) return alert('Sem dados.')
-    const headers = ['ID', 'Titulo', 'Secao', 'Status', 'Data', 'Autor', 'Email', 'Pareceres']
+    const headers = ['ID', 'Titulo', 'Secao', 'Eixo', 'Status', 'Data', 'Autor', 'Email', 'Pareceres']
     const rows = allArticles.map((art) => [
-      art.id, `"${art.title.replace(/"/g, '""')}"`, `"${art.section}"`, `"${art.status}"`,
+      art.id, `"${art.title.replace(/"/g, '""')}"`, `"${art.section}"`, `"${art.thematic_axis || '-'}"`, `"${art.status}"`,
       `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`, `"${getAuthorName(art.author_id, art)}"`,
       `"${getAuthorEmail(art.author_id, art)}"`, getArticleReviews(art.id).length
     ])
@@ -1398,6 +1423,7 @@ export default function Home() {
       const { error: insertError } = await supabase.from('articles').insert({
         author_id: session.user.id,
         section: newSection,
+        thematic_axis: newThematicAxis,
         title: newTitle,
         title_en: finalTitleEn,
         abstract: finalAbstract,
@@ -1720,14 +1746,73 @@ export default function Home() {
   const isCouncil = profile?.role === 'council'
   const canAccessEditorialRoom = isFullEditor || isCouncil
 
-  // Pareceristas Homologados Elegíveis para Designação
+  // PARECERISTAS HOMOLOGADOS E APROVADOS
   const eligibleReviewers = allProfiles.filter((p) => 
     (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') && 
     p.reviewer_status === 'approved' &&
     p.id !== assignModalArticle?.author_id
   )
 
+  // ALGORITMO INTELIGENTE DE AFINIDADE TEMÁTICA
+  const getReviewerAffinity = (rev: any, art: any) => {
+    if (!art) return { score: 0, tag: '⚪', label: 'Disponível', matches: [] }
+    let score = 0
+    const matches: string[] = []
+
+    // 1. Cruzamento de Eixo Temático (50 pontos)
+    const artAxis = art.thematic_axis
+    if (artAxis && rev.thematic_axes?.includes(artAxis)) {
+      score += 50
+      matches.push(`Eixo: ${artAxis}`)
+    }
+
+    // 2. Cruzamento de Palavras-chave (30 pontos)
+    const artKeywords = (art.keywords || '').toLowerCase().split(/[,;]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 3)
+    const revKeywords = (rev.keywords || '').toLowerCase().split(/[,;]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 3)
+    const commonKeywords = artKeywords.filter((k: string) => 
+      revKeywords.some((rk: string) => rk.includes(k) || k.includes(rk))
+    )
+    if (commonKeywords.length > 0) {
+      score += Math.min(30, commonKeywords.length * 15)
+      matches.push(`Termos: ${commonKeywords.join(', ')}`)
+    }
+
+    // 3. Cruzamento Teórico (20 pontos)
+    const artText = `${art.title} ${art.abstract} ${art.keywords}`.toLowerCase()
+    const revSchools = rev.theoretical_schools || []
+    const matchedSchools = revSchools.filter((s: string) => 
+      artText.includes(s.toLowerCase().replace('sigmund ', '').replace('jacques ', '').replace('donald ', '').replace('sándor ', ''))
+    )
+    if (matchedSchools.length > 0) {
+      score += 20
+      matches.push(`Autores: ${matchedSchools.join(', ')}`)
+    }
+
+    let tag = '⚪'
+    let label = 'Disponível'
+    if (score >= 60) {
+      tag = '🟢'
+      label = 'Alta Afinidade'
+    } else if (score >= 30) {
+      tag = '🟡'
+      label = 'Compatível'
+    }
+
+    const sameInst = rev.institution && art.author_institution && 
+      rev.institution.trim().toLowerCase() === art.author_institution.trim().toLowerCase()
+
+    return { score, tag, label, matches, sameInst }
+  }
+
+  // ORDENAÇÃO DOS PARECERISTAS POR AFINIDADE
+  const sortedEligibleReviewers = [...eligibleReviewers].sort((a, b) => {
+    const scoreA = getReviewerAffinity(a, assignModalArticle).score
+    const scoreB = getReviewerAffinity(b, assignModalArticle).score
+    return scoreB - scoreA
+  })
+
   const selectedReviewerProfile = allProfiles.find(p => p.id === selectedReviewerId)
+  const selectedAffinity = selectedReviewerProfile && assignModalArticle ? getReviewerAffinity(selectedReviewerProfile, assignModalArticle) : null
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Carregando Revista Saber Psicanalítico...</div>
@@ -2036,8 +2121,15 @@ export default function Home() {
                       <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                         <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                           <div className="space-y-2 flex-1">
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{art.section || 'Artigos Científicos'}</span>
-                            <span className="ml-2 text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{art.section || 'Artigos Científicos'}</span>
+                              {art.thematic_axis && (
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  {art.thematic_axis}
+                                </span>
+                              )}
+                              <span className="text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
+                            </div>
                             <h3 className="text-lg font-bold text-slate-800">{art.title}</h3>
                             <p className="text-sm text-slate-600 line-clamp-3">{art.abstract}</p>
                           </div>
@@ -2092,13 +2184,12 @@ export default function Home() {
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h2 className="text-xl font-bold text-slate-800">Trabalhos Atribuídos para Avaliação</h2>
-                {/* PONTO 2: Termo em itálico limpo, sem asteriscos literais */}
                 <p className="text-sm text-slate-500">
                   Avaliação Duplo-Cega <span className="italic font-medium text-slate-600">(Double-Blind Peer Review)</span> considerando as diretrizes regimentais de cada seção.
                 </p>
               </div>
 
-              {/* PONTO 1: AVISO EXPLÍCITO DE CANDIDATURA PENDENTE NO CONSELHO EDITORIAL */}
+              {/* AVISO DE CANDIDATURA PENDENTE NO CONSELHO EDITORIAL */}
               {isReviewerPending && (
                 <div className="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-5 text-amber-950 space-y-3 shadow-sm">
                   <div className="flex items-center gap-2.5">
@@ -2157,6 +2248,12 @@ export default function Home() {
                                 isEssaySec ? 'bg-purple-50 text-purple-700 border-purple-200' :
                                 'bg-blue-50 text-blue-700 border-blue-200'
                               }`}>{sec}</span>
+
+                              {art?.thematic_axis && (
+                                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  {art.thematic_axis}
+                                </span>
+                              )}
 
                               {isCompleted && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">PARECER CONCLUÍDO</span>}
                               {isPendingInvitation && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">CONVITE RECEBIDO</span>}
@@ -2286,7 +2383,7 @@ export default function Home() {
               {editorialTab === 'articles' && (
                 <div className="space-y-6">
                   <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                    <input type="text" value={editorSearch} onChange={(e) => setEditorSearch(e.target.value)} placeholder="Pesquise por título, autor ou seção..." className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+                    <input type="text" value={editorSearch} onChange={(e) => setEditorSearch(e.target.value)} placeholder="Pesquise por título, autor, seção ou eixo..." className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
                     <div className="flex gap-1.5 overflow-x-auto text-xs">
                       {['todos', 'submetido', 'ajustes_iniciais', 'em_avaliacao', 'correcoes_pendentes', 'revisao_submetida', 'aceito', 'recusado'].map((status) => (
                         <button key={status} type="button" onClick={() => setEditorStatusFilter(status)} className={`px-3 py-1.5 rounded-lg font-medium capitalize text-xs ${editorStatusFilter === status ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{status.replace('_', ' ')}</button>
@@ -2306,13 +2403,20 @@ export default function Home() {
                         <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700">{art.section || 'Artigos Científicos'}</span>
-                              <span className="ml-2 text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
-                              {isOwnArticle && <span className="ml-2 text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">[Seu Manuscrito - COPE]</span>}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700">{art.section || 'Artigos Científicos'}</span>
+                                {art.thematic_axis && (
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    {art.thematic_axis}
+                                  </span>
+                                )}
+                                <span className="text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
+                                {isOwnArticle && <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">[Seu Manuscrito - COPE]</span>}
+                              </div>
                               <h4 className="text-lg font-bold text-slate-900 mt-1">{art.title}</h4>
                               <p className="text-xs text-slate-500">
                                 Autor: <strong>{getAuthorName(art.author_id, art)}</strong>
-                                {getAuthorEmail(art.author_id, art) ? ` (${getAuthorEmail(art.author_id, art)})` : ''}
+                                {getAuthorEmail(art.author_id, art) ? ` (${getAuthorEmail(art.author_id, art)})` : ''} • Filiação: {art.author_institution || getAuthorInst(art.author_id, art)}
                               </p>
                             </div>
 
@@ -2484,7 +2588,7 @@ export default function Home() {
 
                               <div className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
                                 <div>
-                                  <span className="font-bold text-slate-800">Eixos Temáticos de Atuação:</span>
+                                  <span className="font-bold text-slate-800">Eixos Temáticos (Até 5):</span>
                                   <div className="flex flex-wrap gap-1 mt-1">
                                     {(cand.thematic_axes || []).map((ax: string) => (
                                       <span key={ax} className="px-2 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded text-[10px] font-medium">
@@ -2729,7 +2833,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* MODAL: MEU PERFIL COMPLETO COM EIXOS E ESCOLAS (PONTO 3) */}
+      {/* MODAL: MEU PERFIL COMPLETO COM EIXOS (ATÉ 5) E ESCOLAS */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[95] overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border space-y-4 max-h-[92vh] overflow-y-auto my-6">
@@ -2795,7 +2899,7 @@ export default function Home() {
                 <textarea rows={2} value={profileBio} onChange={(e) => setProfileBio(e.target.value)} placeholder="Apresente sua trajetória de estudos, escolas ou clínica..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
               </div>
 
-              {/* PONTO 3: SELEÇÃO DE ESCOLAS TEÓRICAS NO PERFIL */}
+              {/* SELEÇÃO DE ESCOLAS TEÓRICAS */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">Escolas Teóricas / Autores de Referência:</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -2813,11 +2917,11 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* PONTO 3: SELEÇÃO DE EIXOS TEMÁTICOS NO PERFIL */}
+              {/* SELEÇÃO DE ATÉ 5 EIXOS */}
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="text-[11px] font-bold text-slate-700">Eixos Temáticos de Atuação (Selecione até 3):</label>
-                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">{profileAxes.length}/3</span>
+                  <label className="text-[11px] font-bold text-slate-700">Eixos Temáticos de Atuação (Selecione até 5):</label>
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">{profileAxes.length}/5</span>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-1">
                   {axeOptionsGlobal.map((ax) => (
@@ -2829,7 +2933,7 @@ export default function Home() {
                           if (profileAxes.includes(ax)) {
                             setProfileAxes(profileAxes.filter(x => x !== ax))
                           } else {
-                            if (profileAxes.length >= 3) return alert('Máximo de 3 eixos temáticos.')
+                            if (profileAxes.length >= 5) return alert('Você pode selecionar no máximo 5 eixos temáticos.')
                             setProfileAxes([...profileAxes, ax])
                           }
                         }} 
@@ -2917,14 +3021,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL ATRIBUIR PARECERISTA COM CRUZAMENTO DE AFINIDADE (PONTO 3) */}
+      {/* MODAL ATRIBUIR PARECERISTA COM ALGORITMO DE AFINIDADE TEMÁTICA */}
       {assignModalArticle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
             <div>
-              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase">
-                {assignModalArticle.section}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase">
+                  {assignModalArticle.section}
+                </span>
+                {assignModalArticle.thematic_axis && (
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Eixo: {assignModalArticle.thematic_axis}
+                  </span>
+                )}
+              </div>
               <h3 className="text-base font-bold text-slate-900 mt-1">Designar Parecerista</h3>
               <p className="text-xs text-slate-500 line-clamp-1">{assignModalArticle.title}</p>
             </div>
@@ -2935,32 +3046,53 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Selecione o Parecerista Homologado *</label>
-              <select value={selectedReviewerId} onChange={(e) => setSelectedReviewerId(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white">
-                <option value="">-- Escolha um parecerista ativo --</option>
-                {eligibleReviewers.map((rev) => (
-                  <option key={rev.id} value={rev.id}>
-                    {rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'} [{rev.academic_degree || 'Titulação'}]
-                  </option>
-                ))}
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Selecione o Parecerista (Ordenado por Afinidade Temática) *
+              </label>
+              <select value={selectedReviewerId} onChange={(e) => setSelectedReviewerId(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg bg-white font-medium">
+                <option value="">-- Escolha um parecerista --</option>
+                {sortedEligibleReviewers.map((rev) => {
+                  const af = getReviewerAffinity(rev, assignModalArticle)
+                  return (
+                    <option key={rev.id} value={rev.id}>
+                      {af.tag} [{af.label}] {rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'} [{rev.academic_degree || 'Titulação'}]
+                    </option>
+                  )
+                })}
               </select>
             </div>
 
-            {/* FICHA DE AFINIDADE DO PARECERISTA SELECIONADO */}
-            {selectedReviewerProfile && (
-              <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl text-xs space-y-1.5 animate-fadeIn">
-                <p className="font-bold text-indigo-950 flex items-center gap-1">
-                  <UserCheck className="w-3.5 h-3.5 text-indigo-600" /> Afinidade Temática do Parecerista:
+            {/* FICHA INTELIGENTE DE AFINIDADE */}
+            {selectedReviewerProfile && selectedAffinity && (
+              <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs space-y-2 animate-fadeIn">
+                <div className="flex items-center justify-between border-b border-indigo-200/60 pb-1.5">
+                  <span className="font-bold text-indigo-950 flex items-center gap-1.5">
+                    <UserCheck className="w-3.5 h-3.5 text-indigo-600" /> Compatibilidade: {selectedAffinity.tag} {selectedAffinity.label}
+                  </span>
+                  <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">
+                    Score: {selectedAffinity.score}%
+                  </span>
+                </div>
+
+                {selectedAffinity.matches.length > 0 && (
+                  <div className="text-[11px] text-emerald-800 font-medium space-y-0.5">
+                    <p><strong>Pontos de Cruzamento Identificados:</strong></p>
+                    {selectedAffinity.matches.map((m, idx) => (
+                      <p key={idx} className="pl-2">• {m}</p>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[11px] text-slate-700 pt-1">
+                  <strong>Eixos Cadastrados:</strong> {(selectedReviewerProfile.thematic_axes || []).join('; ') || 'Geral'}
                 </p>
-                <p className="text-[11px] text-slate-700">
-                  <strong>Eixos:</strong> {(selectedReviewerProfile.thematic_axes || []).join('; ') || 'Geral'}
-                </p>
-                <p className="text-[11px] text-slate-700">
-                  <strong>Escolas/Autores:</strong> {(selectedReviewerProfile.theoretical_schools || []).join(', ') || '-'}
-                </p>
-                <p className="text-[11px] text-slate-700">
-                  <strong>Palavras-chave:</strong> {selectedReviewerProfile.keywords || '-'}
-                </p>
+
+                {selectedAffinity.sameInst && (
+                  <div className="p-2 bg-rose-50 border border-rose-200 rounded text-rose-800 text-[10.5px] font-bold flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                    <span>Atenção (COPE): O parecerista e o autor pertencem à mesma instituição ({selectedReviewerProfile.institution}).</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -3119,6 +3251,7 @@ export default function Home() {
                 </div>
               </div>
               <div>
+                <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Telefone / WhatsApp</label>
                 <input type="tel" value={editUserPhone} onChange={(e) => setEditUserPhone(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-lg" />
               </div>
@@ -3171,7 +3304,8 @@ export default function Home() {
         onClose={() => setShowSubmitModal(false)}
         onSubmit={handleSubmitArticle}
         newSection={newSection}
-        setNewSection={setNewSection}
+        newThematicAxis={newThematicAxis}
+        setNewThematicAxis={setNewThematicAxis}
         newTitle={newTitle}
         setNewTitle={setNewTitle}
         newTitleEn={newTitleEn}
