@@ -201,38 +201,39 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
               Concluir e Acessar o Portal
             </button>
           </div>
-        ) : step === 'edital' ? (
+       ) : step === 'edital' ? (
           <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
             <div className="bg-slate-50 p-4 rounded-xl border space-y-2">
               <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
                 <UserCheck className="w-4 h-4 text-indigo-600" /> 1. Quem Pode Participar?
               </h4>
               <p>
-                Profissionais, pesquisadores(as), docentes e psicanalistas com graduação concluída em qualquer área que apresentem trajetória compatível com a Psicanálise e suas interfaces.
+                Profissionais, pesquisadores(as), docentes e psicanalistas com graduação concluída em qualquer área que apresentem percurso formativo em Psicanálise (clínico, institucional ou acadêmico).
               </p>
               <ul className="list-disc pl-5 space-y-0.5 text-slate-600">
-                <li>Psicólogos(as) com formação ou atuação psicanalítica;</li>
-                <li>Psicanalistas com trajetória clínica ou formação em sociedades/escolas;</li>
-                <li>Pesquisadores e docentes de áreas afins (Educação, Filosofia, Ciências Humanas);</li>
-                <li><em>A titulação estrita de mestre/doutor não é obrigatória.</em></li>
+                <li>Psicólogos(as) e Psicanalistas com prática clínica ou formação em escolas/sociedades;</li>
+                <li>Docentes e pesquisadores(as) de áreas afins (Educação, Filosofia, Ciências Humanas);</li>
+                <li><em>A titulação estrita de mestre/doutor não é eliminatória.</em></li>
               </ul>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-xl border space-y-1.5">
-              <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-indigo-600" /> 2. Certificação Oficial no Lattes
+            <div className="bg-amber-50/80 p-4 rounded-xl border border-amber-200 space-y-1.5 text-amber-950">
+              <h4 className="font-bold text-amber-900 flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-amber-700" /> 2. Participação Voluntária e Deliberação Colegiada
               </h4>
               <p>
-                A cada avaliação concluída, o sistema emite uma <strong>Declaração Oficial Timbrada de Parecerista Ad-hoc</strong> com código de autenticidade, com validade formal para comprovação curricular e bancas acadêmicas.
+                • <strong>Gratuidade e Voluntariado:</strong> A atuação é voluntária e não remunerada, 100% gratuita, pautada no compromisso ético com a difusão científica.<br />
+                • <strong>Homologação do Conselho:</strong> O envio desta ficha constitui uma solicitação de ingresso. <em>A inscrição não o(a) torna parecerista automaticamente</em>; o perfil será avaliado e votado pelo <strong>Conselho Editorial</strong>.<br />
+                • <strong>Prazos:</strong> A concessão de pareceres conta com prazo médio de <strong>21 dias</strong> após o aceite do convite.
               </p>
             </div>
 
             <div className="bg-slate-50 p-4 rounded-xl border space-y-1.5">
               <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
-                <Scale className="w-4 h-4 text-indigo-600" /> 3. Avaliação Duplo-Cega
+                <Award className="w-4 h-4 text-indigo-600" /> 3. Certificação Oficial no Lattes e Avaliação Duplo-Cega
               </h4>
               <p>
-                Todas as avaliações são realizadas sob avaliação duplo-cega (<em>Double-Blind Peer Review</em>), garantindo rigor técnico, sigilo e anonimato entre autores e pareceristas.
+                A cada avaliação concluída sob o sistema duplo-cego (<em>Double-Blind Peer Review</em>), o portal emite uma <strong>Declaração Oficial Timbrada com Assinatura Digital e Código Verificador</strong>, válida para comprovação curricular e progressão acadêmica.
               </p>
             </div>
 
