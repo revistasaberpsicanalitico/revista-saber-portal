@@ -23,7 +23,7 @@ const formatRole = (role: string) => {
   }
 }
 
-// 12 EIXOS TEMÁTICOS AMPLIADOS
+// 12 Eixos Temáticos Padronizados
 const axeOptionsGlobal = [
   'Fundamentos, História e Epistemologia da Psicanálise',
   'Metapsicologia e Teoria das Pulsões',
@@ -45,7 +45,7 @@ const schoolOptionsGlobal = [
 ]
 
 // ============================================================================
-// MODAL DE PARECERISTAS (CHAMADA + INSCRIÇÃO ATÉ 5 EIXOS)
+// MODAL: CHAMADA PÚBLICA E CADASTRO DE PARECERISTAS (ATÉ 5 EIXOS)
 // ============================================================================
 function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => void }) {
   const [step, setStep] = useState<'edital' | 'formulario'>('edital')
@@ -101,7 +101,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
       if (authError) throw authError
 
       const userId = authData.user?.id
-      if (!userId) throw new Error('Falha ao obter identificador do usuário.')
+      if (!userId) throw new Error('Não foi possível obter identificador de usuário.')
 
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
@@ -201,18 +201,19 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
               Concluir e Acessar o Portal
             </button>
           </div>
-       ) : step === 'edital' ? (
+        ) : step === 'edital' ? (
           <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
             <div className="bg-slate-50 p-4 rounded-xl border space-y-2">
               <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
                 <UserCheck className="w-4 h-4 text-indigo-600" /> 1. Quem Pode Participar?
               </h4>
               <p>
-                Profissionais, pesquisadores(as), docentes e psicanalistas com graduação concluída em qualquer área que apresentem percurso formativo em Psicanálise (clínico, institucional ou acadêmico).
+                Profissionais, pesquisadores(as), docentes e psicanalistas com graduação concluída em qualquer área que apresentem trajetória compatível com o campo da Psicanálise e suas interfaces.
               </p>
               <ul className="list-disc pl-5 space-y-0.5 text-slate-600">
-                <li>Psicólogos(as) e Psicanalistas com prática clínica ou formação em escolas/sociedades;</li>
-                <li>Docentes e pesquisadores(as) de áreas afins (Educação, Filosofia, Ciências Humanas);</li>
+                <li>Psicólogos(as) com formação ou atuação psicanalítica;</li>
+                <li>Psicanalistas com trajetória clínica ou formação em sociedades/escolas;</li>
+                <li>Pesquisadores e docentes de áreas afins (Educação, Filosofia, Ciências Humanas);</li>
                 <li><em>A titulação estrita de mestre/doutor não é eliminatória.</em></li>
               </ul>
             </div>
@@ -323,6 +324,9 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Mini-biografia e Formação em Psicanálise *</label>
               <textarea required rows={3} maxLength={1500} value={miniBio} onChange={(e) => setMiniBio(e.target.value)} placeholder="Síntese da formação, escolas, grupos ou clínica..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                💡 <strong>Nota de Publicação:</strong> Este resumo constará no cadastro de avaliadores para conhecimento da Comissão Editorial.
+              </p>
             </div>
 
             <div>
@@ -380,7 +384,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
 }
 
 // ============================================================================
-// MODAL DE SUBMISSÃO DINÂMICA
+// MODAL 1: SUBMISSÃO DINÂMICA
 // ============================================================================
 function SubmitModal({
   show, onClose, onSubmit, newSection, setNewSection,
@@ -510,7 +514,10 @@ function SubmitModal({
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Mini-biografia acadêmica *</label>
-              <textarea rows={2} required value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Titulação, trajetória e área de atuação..." className="w-full px-3 py-1.5 text-xs border rounded-lg bg-white" />
+              <textarea rows={2} required value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} placeholder="Ex.: Psicanalista, Mestre em Psicologia pela USP..." className="w-full px-3 py-1.5 text-xs border rounded-lg bg-white" />
+              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                💡 <strong>Nota de Publicação:</strong> Este texto constará nas notas de identificação do artigo publicado no fascículo da revista (titulação, filiação institucional, e-mail/ORCID).
+              </p>
             </div>
           </div>
 
@@ -531,7 +538,9 @@ function SubmitModal({
                   <input type="url" value={co.lattes || ''} onChange={(e) => onUpdateCoauthor(idx, 'lattes', e.target.value)} placeholder="Link Lattes" className="px-2 py-1 text-xs border rounded" />
                   <input type="text" value={co.orcid || ''} onChange={(e) => onUpdateCoauthor(idx, 'orcid', e.target.value)} placeholder="ORCID" className="px-2 py-1 text-xs border rounded" />
                 </div>
-                <textarea rows={1} value={co.bio || ''} onChange={(e) => onUpdateCoauthor(idx, 'bio', e.target.value)} placeholder="Mini-biografia do coautor..." className="w-full px-2 py-1 text-xs border rounded" />
+                <div>
+                  <textarea rows={1} value={co.bio || ''} onChange={(e) => onUpdateCoauthor(idx, 'bio', e.target.value)} placeholder="Mini-biografia do coautor para publicação no fascículo..." className="w-full px-2 py-1 text-xs border rounded" />
+                </div>
               </div>
             ))}
           </div>
@@ -827,7 +836,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
 }
 
 // ============================================================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL (HOME)
 // ============================================================================
 export default function Home() {
   const [session, setSession] = useState<any>(null)
@@ -1119,6 +1128,7 @@ export default function Home() {
     }
   }
 
+  // Validador com Busca Segura via RPC ou Fallback
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
     if (!code) return
@@ -1126,9 +1136,41 @@ export default function Home() {
     setVerifyResult(null)
 
     try {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('verify_document', { code })
+      if (!rpcError && rpcData && rpcData.valid) {
+        setVerifyResult(rpcData)
+        setCheckingCode(false)
+        return
+      }
+
       const parts = code.split('-')
       const prefix = (parts.length >= 3 ? parts[2] : code.replace(/^ASP-(ACE|REC|PAR)-/i, '')).trim().toUpperCase()
       const cleanCode = prefix.replace(/[^A-Z0-9]/g, '')
+
+      if (code.includes('ASP-PAR')) {
+        let foundRev = allReviews.find((r) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
+        if (!foundRev) {
+          const { data: revData } = await supabase
+            .from('reviews')
+            .select('id, updated_at, created_at, reviewer_id')
+            .limit(50)
+          foundRev = (revData || []).find((r: any) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
+        }
+
+        if (foundRev) {
+          const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
+          setVerifyResult({
+            valid: true,
+            type: 'Declaração de Atuação como Parecerista Ad-hoc',
+            title: null,
+            person: revPerson?.full_name || 'Parecerista Registrado',
+            date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR'),
+            role: 'Parecerista Ad-hoc (Avaliação Duplo-Cega por Pares)',
+          })
+          setCheckingCode(false)
+          return
+        }
+      }
 
       if (code.includes('ASP-ACE')) {
         let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
@@ -1138,41 +1180,8 @@ export default function Home() {
             type: 'Declaração Oficial de Aceite para Publicação',
             title: found.title,
             person: getAuthorName(found.author_id, found),
-            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
+            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR'),
             role: 'Autor(a) do Manuscrito',
-          })
-          setCheckingCode(false)
-          return
-        }
-      }
-
-      if (code.includes('ASP-REC')) {
-        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
-        if (found) {
-          setVerifyResult({
-            valid: true,
-            type: 'Comunicação Editorial de Não Aceite',
-            title: found.title,
-            person: getAuthorName(found.author_id, found),
-            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
-            role: 'Autor(a) do Manuscrito',
-          })
-          setCheckingCode(false)
-          return
-        }
-      }
-
-      if (code.includes('ASP-PAR')) {
-        let foundRev = allReviews.find((r) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
-        if (foundRev) {
-          const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
-          setVerifyResult({
-            valid: true,
-            type: 'Declaração de Atuação como Parecerista Ad-hoc',
-            title: null,
-            person: revPerson?.full_name || 'Parecerista Registrado',
-            date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
-            role: 'Parecerista Ad-hoc (Avaliação Duplo-Cega por Pares)',
           })
           setCheckingCode(false)
           return
@@ -2477,6 +2486,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* ABA 2: CANDIDATURAS DE PARECERISTAS */}
               {editorialTab === 'candidates' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -2641,6 +2651,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* ABA 3: QUADRO DE USUÁRIOS */}
               {isFullEditor && editorialTab === 'users' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
@@ -2705,6 +2716,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* ABA 4: MAILING */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
@@ -2861,6 +2873,9 @@ export default function Home() {
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Mini-biografia e Formação em Psicanálise</label>
                 <textarea rows={2} value={profileBio} onChange={(e) => setProfileBio(e.target.value)} placeholder="Apresente sua trajetória de estudos, escolas ou clínica..." className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  💡 <strong>Nota de Publicação:</strong> Este texto constará nas identificações formais de autoria e avaliação editorial.
+                </p>
               </div>
 
               <div>
@@ -3258,7 +3273,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAIS GERAIS */}
+      {/* MODAIS 1, 2, 3 e 4 */}
       <SubmitModal
         show={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
