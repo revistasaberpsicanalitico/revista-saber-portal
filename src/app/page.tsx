@@ -983,6 +983,19 @@ export default function Home() {
   const [showReviewerThankModal, setShowReviewerThankModal] = useState(false)
   const [copiedThanks, setCopiedThanks] = useState(false)
 
+  // FUNÇÃO AUXILIAR DE E-MAIL (DECLARADA NO TOPO DO COMPONENTE HOME)
+  const sendEmailNotification = async (payload: any) => {
+    try {
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+    } catch (e) {
+      console.warn('Falha silenciosa de e-mail:', e)
+    }
+  }
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
@@ -1129,27 +1142,6 @@ export default function Home() {
     }
   }
 
-  // BUSCA ROBUSTA DE CARGA ATIVA DO PARECERISTA (CORRIGIDO PARA PAULO E SAMUEL)
-  const getReviewerActiveCount = (reviewerId: string) => {
-    const revProfile = allProfiles.find(p => p.id === reviewerId)
-    const revEmail = (revProfile?.email || '').trim().toLowerCase()
-    const revName = (revProfile?.full_name || '').trim().toLowerCase()
-
-    return allReviews.filter(r => {
-      const isIdMatch = r.reviewer_id === reviewerId
-      const targetProfile = allProfiles.find(p => p.id === r.reviewer_id)
-      const targetEmail = (targetProfile?.email || '').trim().toLowerCase()
-      const targetName = (targetProfile?.full_name || '').trim().toLowerCase()
-
-      const isEmailMatch = revEmail && targetEmail && revEmail === targetEmail
-      const isNameMatch = revName && targetName && revName === targetName
-
-      const isAssignedOrWorking = ['convite_pendente', 'pendente', 'em_andamento', 'ajustes_solicitados'].includes(r.status)
-
-      return (isIdMatch || isEmailMatch || isNameMatch) && isAssignedOrWorking
-    }).length
-  }
-
   // BOTÃO MANUAL DE LEMBRETE PARA O PARECERISTA (PONTO A)
   const handleSendReviewerReminder = async (r: any, art: any) => {
     const revProfile = allProfiles.find(p => p.id === r.reviewer_id)
@@ -1210,6 +1202,623 @@ export default function Home() {
       alert(`Erro ao estender prazo: ${e.message}`)
     }
   }
+
+  // Validador com Busca Segura via RPC ou Fallback
+  const handleVerifyCode = async () => {
+    const code = verifyCodeInput.trim().toUpperCase()
+    if (!code) return
+    setCheckingCode(true)
+    setVerifyResult(null)
+
+    try {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('verify_document', { code })
+      if (!rpcError && rpcData && rpcData.valid) {
+        setVerifyResult(rpcData)
+        setCheckingCode(false)
+        return
+      }
+
+      const parts = code.split('-')
+      const prefix = (parts.length >= 3 ? parts[2] : code.replace(/^ASP-(ACE|REC|PAR)-/i, '')).trim().toUpperCase()
+      const cleanCode = prefix.replace(/[^A-Z0-9]/g, '')
+
+      if (code.includes('ASP-PAR')) {
+        let foundRev = allReviews.find((r) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
+        if (!foundRev) {
+          const { data: revData } = await supabase
+            .from('reviews')
+            .select('id, updated_at, created_at, reviewer_id')
+            .limit(50)
+          foundRev = (revData || []).find((r: any) => (r.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
+        }
+
+        if (foundRev) {
+          const revPerson = allProfiles.find((p) => p.id === foundRev.reviewer_id)
+          setVerifyResult({
+            valid: true,
+            type: 'Declaração de Atuação como Parecerista Ad-hoc',
+            title: null,
+            person: revPerson?.full_name || 'Parecerista Registrado',
+            date: new Date(foundRev.updated_at || foundRev.created_at).toLocaleDateString('pt-BR'),
+            role: 'Parecerista Ad-hoc (Avaliação Duplo-Cega por Pares)',
+          })
+          setCheckingCode(false)
+          return
+        }
+      }
+
+      if (code.includes('ASP-ACE')) {
+        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
+        if (found) {
+          setVerifyResult({
+            valid: true,
+            type: 'Declaração Oficial de Aceite para Publicação',
+            title: found.title,
+            person: getAuthorName(found.author_id, found),
+            date: new Date(found.updated_at || found.created_at).toLocaleDateString('pt-BR'),
+            role: 'Autor(a) do Manuscrito',
+          })
+          setCheckingCode(false)
+          return
+        }
+      }
+
+      setVerifyResult({ valid: false })
+    } catch (e) {
+      setVerifyResult({ valid: false })
+    } finally {
+      setCheckingCode(false)
+    }
+  }
+
+  const handleCastCouncilVote = async (candidate: any, voteType: 'favoravel' | 'desfavoravel') => {
+    try {
+      const existingVotes = candidate.council_votes || []
+      const filteredVotes = existingVotes.filter((v: any) => v.user_id !== session?.user?.id)
+
+      const newVote = {
+        user_id: session?.user?.id,
+        user_name: profile?.full_name || 'Membro do Conselho',
+        user_role: profile?.role,
+        vote: voteType,
+        created_at: new Date().toISOString()
+      }
+
+      const updatedVotes = [...filteredVotes, newVote]
+      const { error } = await supabase.from('profiles').update({ council_votes: updatedVotes }).eq('id', candidate.id)
+      if (error) throw error
+
+      alert('Seu voto foi registrado com sucesso!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    }
+  }
+
+  const handleApproveReviewer = async (candidate: any) => {
+    if (!window.confirm(`Homologar "${candidate.full_name}" como Parecerista Ad-hoc Oficial?`)) return
+
+    try {
+      const { error } = await supabase.from('profiles').update({
+        role: 'reviewer',
+        reviewer_status: 'approved'
+      }).eq('id', candidate.id)
+
+      if (error) throw error
+
+      await sendEmailNotification({
+        to: candidate.email,
+        subject: 'Homologação Aprovada - Banco de Pareceristas (Revista Saber Psicanalítico)',
+        title: 'Bem-vindo(a) ao Corpo de Pareceristas Ad-hoc',
+        message: `Prezado(a) ${candidate.full_name},\n\nTemos a satisfação de comunicar que sua inscrição para integrar o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416) foi HOMOLOGADA com parecer favorável do Conselho Editorial.\n\nSeu cadastro encontra-se plenamente ativo em nosso sistema.\n\n--- INFORMAÇÕES GERAIS DE FUNCIONAMENTO ---\n1. Convites de Avaliação: Conforme a afinidade temática dos manuscritos recebidos, você receberá um e-mail com o resumo da obra e o prazo sugerido (geralmente 21 dias).\n2. Aceite e Recusa: Ao acessar o portal, você poderá aceitar ou recusar formalmente o convite. O arquivo completo do texto só fica disponível para download após você clicar em Aceitar.\n3. Avaliação Duplo-Cega: Os textos são anonimizados. Seu parecer circunstanciado e eventuais arquivos com comentários deverão manter rigoroso anonimato.\n4. Certificação Oficial: A cada parecer finalizado, o sistema emite automaticamente a Declaração Oficial Timbrada com código digital de verificação para comprovação no Lattes e em bancas acadêmicas.\n\nAgradecemos sua valorosa contribuição para o fortalecimento da transmissão e do rigor científico na Psicanálise.`,
+        actionText: 'Acessar Área do Parecerista',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
+      alert(`Parecerista "${candidate.full_name}" homologado com sucesso!`)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao homologar parecerista: ${err.message}`)
+    }
+  }
+
+  const handleOpenProfileModal = () => {
+    setProfileName(profile?.full_name || '')
+    setProfileInst(profile?.institution || '')
+    setProfilePhone(profile?.phone || '')
+    setProfileLattes(profile?.lattes_url || '')
+    setProfileOrcid(profile?.orcid || '')
+    setProfileDegree(profile?.academic_degree || 'Especialista')
+    setProfilePsicanalise(profile?.psicanalise_profile || 'Psicanalista com atuação clínica')
+    setProfileBio(profile?.mini_bio || '')
+    setProfileKeywords(profile?.keywords || '')
+    setProfileSchools(profile?.theoretical_schools || [])
+    setProfileAxes(profile?.thematic_axes || [])
+    setShowProfileModal(true)
+  }
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!session) return
+    setSavingProfile(true)
+    try {
+      const { error } = await supabase.from('profiles').update({
+        full_name: profileName,
+        institution: profileInst,
+        phone: profilePhone,
+        lattes_url: profileLattes,
+        orcid: profileOrcid,
+        academic_degree: profileDegree,
+        psicanalise_profile: profilePsicanalise,
+        mini_bio: profileBio,
+        keywords: profileKeywords,
+        theoretical_schools: profileSchools,
+        thematic_axes: profileAxes,
+      }).eq('id', session.user.id)
+      if (error) throw error
+      alert('Perfil atualizado com sucesso!')
+      setShowProfileModal(false)
+      initUser(session, false)
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handleAddCoauthor = () => setCoauthors([...coauthors, { name: '', email: '', institution: '', lattes: '', orcid: '', bio: '' }])
+  const handleUpdateCoauthor = (index: number, field: string, value: string) => {
+    const updated = [...coauthors]
+    updated[index][field] = value
+    setCoauthors(updated)
+  }
+  const handleRemoveCoauthor = (index: number) => setCoauthors(coauthors.filter((_, i) => i !== index))
+
+  const handleOpenEditUserModal = (targetUser: any) => {
+    setEditingUserModal(targetUser)
+    setEditUserName(targetUser.full_name || '')
+    setEditUserInst(targetUser.institution || '')
+    setEditUserPhone(targetUser.phone || '')
+    setEditUserLattes(targetUser.lattes_url || '')
+    setEditUserOrcid(targetUser.orcid || '')
+    setEditUserRole(targetUser.role || 'author')
+  }
+
+  const handleSaveUserByEditor = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingUserModal) return
+    setSavingUserEdit(true)
+    try {
+      const { error } = await supabase.from('profiles').update({
+        full_name: editUserName,
+        institution: editUserInst,
+        phone: editUserPhone,
+        lattes_url: editUserLattes,
+        orcid: editUserOrcid,
+        role: editUserRole,
+      }).eq('id', editingUserModal.id)
+      if (error) throw error
+      alert(`Cadastro atualizado!`)
+      setEditingUserModal(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSavingUserEdit(false)
+    }
+  }
+
+  const handleDeleteUser = async (userToDelete: any) => {
+    if (userToDelete.id === session?.user?.id) return alert('Você não pode excluir seu próprio perfil!')
+    if (!window.confirm(`Excluir cadastro de "${userToDelete.full_name}"?`)) return
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', userToDelete.id)
+      if (error) throw error
+      alert('Cadastro excluído!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!forgotEmail) return
+    setForgotLoading(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: 'https://revista-saber-portal.vercel.app/redefinir-senha',
+      })
+      if (error) throw error
+      alert('Link oficial enviado para o seu e-mail!')
+      setShowForgotModal(false)
+      setForgotEmail('')
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setForgotLoading(false)
+    }
+  }
+
+  const handleExportBackup = () => {
+    if (allArticles.length === 0) return alert('Sem dados.')
+    const headers = ['ID', 'Titulo', 'Secao', 'Eixo', 'Status', 'Data', 'Autor', 'Email', 'Pareceres']
+    const rows = allArticles.map((art) => [
+      art.id, `"${art.title.replace(/"/g, '""')}"`, `"${art.section}"`, `"${art.thematic_axis || '-'}"`, `"${art.status}"`,
+      `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`, `"${getAuthorName(art.author_id, art)}"`,
+      `"${getAuthorEmail(art.author_id, art)}"`, getArticleReviews(art.id).length
+    ])
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `Backup_Revista_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+  }
+
+  const handleSubmitArticle = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedFile || !session) return
+    if (!termOriginal || !termEthics || !termAnonymous || !termCC || !termAI) {
+      return alert('Confirme as declarações éticas obrigatórias.')
+    }
+    if (newSection === 'Relatos de Experiência Clínica' && !termClinicalPledge) {
+      return alert('Confirme o compromisso de sigilo e descaracterização do paciente.')
+    }
+
+    setSubmitting(true)
+    try {
+      const fileExt = selectedFile.name.split('.').pop()
+      const filePath = `artigos/artigo_${session.user.id}_${Date.now()}.${fileExt}`
+      const { error: uploadError } = await supabase.storage.from('manuscritos').upload(filePath, selectedFile)
+      if (uploadError) throw uploadError
+
+      const finalTitleEn = newSection === 'Resenhas' ? (newTitleEn.trim() || 'Book Review') : newTitleEn
+      const finalAbstract = newSection === 'Resenhas' ? `[OBRA RESENHADA]:\n${bookReference}` : newAbstract
+      const finalAbstractEn = newSection === 'Resenhas' ? 'Book Review (Abstract not applicable)' : newAbstractEn
+      const finalKeywords = newSection === 'Resenhas' ? 'Resenha Crítica; Psicanálise' : newKeywords
+      const finalKeywordsEn = newSection === 'Resenhas' ? 'Book Review; Psychoanalysis' : newKeywordsEn
+
+      const { error: insertError } = await supabase.from('articles').insert({
+        author_id: session.user.id,
+        section: newSection,
+        thematic_axis: newThematicAxis,
+        title: newTitle,
+        title_en: finalTitleEn,
+        abstract: finalAbstract,
+        abstract_en: finalAbstractEn,
+        keywords: finalKeywords,
+        keywords_en: finalKeywordsEn,
+        author_institution: authorInstitution,
+        author_lattes: authorLattes,
+        author_orcid: authorOrcid,
+        author_bio: authorBio,
+        coauthors: coauthors,
+        file_url: filePath,
+        original_file_url: filePath,
+        term_creative_commons: termCC,
+        term_ai_declaration: termAI,
+        status: 'submetido',
+      })
+      if (insertError) throw insertError
+
+      sendEmailNotification({
+        to: session.user.email,
+        subject: 'Confirmação de Submissão - Revista Saber Psicanalítico',
+        title: 'Manuscrito Recebido com Sucesso',
+        message: `Prezado(a) ${profile?.full_name},\n\nConfirmamos o recebimento do trabalho "${newTitle}". Você pode acompanhar o andamento pelo portal.`,
+        actionText: 'Acompanhar no Portal',
+        actionUrl: 'https://revista-saber-portal.vercel.app',
+      })
+
+      alert('Artigo submetido com sucesso!')
+      setShowSubmitModal(false)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleResubmitArticle = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!revisedFile || !reSubmitArticle) return
+    setSubmittingRevision(true)
+    try {
+      const fileExt = revisedFile.name.split('.').pop()
+      const filePath = `artigos/revisao_${reSubmitArticle.id}_${Date.now()}.${fileExt}`
+      const { error: uploadError } = await supabase.storage.from('manuscritos').upload(filePath, revisedFile)
+      if (uploadError) throw uploadError
+
+      const { error: updateError } = await supabase.from('articles').update({
+        file_url: filePath,
+        status: 'revisao_submetida',
+      }).eq('id', reSubmitArticle.id)
+      if (updateError) throw updateError
+
+      alert('Versão corrigida enviada com sucesso!')
+      setReSubmitArticle(null)
+      setRevisedFile(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSubmittingRevision(false)
+    }
+  }
+
+  const handleDownloadFile = async (filePath: string, articleTitle: string, fileType = 'Manuscrito') => {
+    try {
+      const { data, error } = await supabase.storage.from('manuscritos').createSignedUrl(filePath, 60)
+      if (error) throw error
+      if (data?.signedUrl) {
+        const response = await fetch(data.signedUrl)
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        const clean = articleTitle.replace(/[^a-zA-Z0-9À-ÿ]/g, '_').slice(0, 45)
+        link.download = `${fileType}_${clean}.${filePath.split('.').pop() || 'docx'}`
+        link.click()
+      }
+    } catch (err: any) {
+      alert('Erro ao baixar o arquivo.')
+    }
+  }
+
+  const handleUpdateStatus = async (articleId: string, status: string) => {
+    if (status === 'recusado') {
+      setRejectionModalArticle(allArticles.find((a) => a.id === articleId))
+      setRejectionReasonText('')
+      return
+    }
+    if (status === 'correcoes_pendentes') {
+      setRequestChangesModalArticle(allArticles.find((a) => a.id === articleId))
+      setChangesReasonText('')
+      setAuthorDeadline(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+      return
+    }
+
+    try {
+      const { error } = await supabase.from('articles').update({ status }).eq('id', articleId)
+      if (error) throw error
+      alert('Status atualizado!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    }
+  }
+
+  // SOLICITAR CORREÇÕES AO AUTOR COM PRAZO (PONTO B)
+  const handleConfirmRequestChanges = async () => {
+    if (!requestChangesModalArticle || !changesReasonText.trim() || !authorDeadline) {
+      return alert('Por favor, preencha as orientações e o prazo de entrega.')
+    }
+    setSavingChanges(true)
+    try {
+      const { error } = await supabase.from('articles').update({
+        status: 'correcoes_pendentes',
+        rejection_reason: changesReasonText,
+        revision_deadline: authorDeadline
+      }).eq('id', requestChangesModalArticle.id)
+      if (error) throw error
+
+      const autEmail = getAuthorEmail(requestChangesModalArticle.author_id, requestChangesModalArticle)
+      const autName = getAuthorName(requestChangesModalArticle.author_id, requestChangesModalArticle)
+      const deadlineFmt = new Date(authorDeadline + 'T12:00:00').toLocaleDateString('pt-BR')
+
+      if (autEmail) {
+        sendEmailNotification({
+          to: autEmail,
+          subject: 'Correções Solicitadas no Manuscrito - Revista Saber Psicanalítico',
+          title: 'Parecer Editorial Disponível com Solicitação de Ajustes',
+          message: `Prezado(a) ${autName},\n\nA Comissão Editorial apreciou seu manuscrito "${requestChangesModalArticle.title}" e solicita a realização de ajustes regimentais com base nas orientações abaixo:\n\n${changesReasonText}\n\n⚠️ PRAZO IMPRORROGÁVEL: ${deadlineFmt}\nO não cumprimento do prazo estabelecido implicará no adiamento ou na não publicação do texto no próximo fascículo da revista.`,
+          actionText: 'Ver Detalhes e Enviar Versão Corrigida',
+          actionUrl: 'https://revista-saber-portal.vercel.app'
+        })
+      }
+
+      alert('Correções solicitadas ao autor com prazo estipulado!')
+      setRequestChangesModalArticle(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSavingChanges(false)
+    }
+  }
+
+  const handleConfirmReviewerChanges = async () => {
+    if (!requestReviewerChangesModal || !reviewerChangesText.trim()) return alert('Informe a orientação para o parecerista.')
+    setSavingReviewerChanges(true)
+    try {
+      const { error } = await supabase.from('reviews').update({
+        status: 'ajustes_solicitados',
+        comments_for_author: `${requestReviewerChangesModal.comments_for_author || ''}\n\n[SOLICITAÇÃO DE AJUSTE DA COMISSÃO EDITORIAL]:\n${reviewerChangesText}`
+      }).eq('id', requestReviewerChangesModal.id)
+      if (error) throw error
+
+      const revProfile = allProfiles.find(p => p.id === requestReviewerChangesModal.reviewer_id)
+      if (revProfile?.email) {
+        sendEmailNotification({
+          to: revProfile.email,
+          subject: 'Ajuste Solicitado no Parecer - Revista Saber Psicanalítico',
+          title: 'Solicitação de Ajuste no Parecer Emitido',
+          message: `Prezado(a) ${revProfile.full_name},\n\nA Comissão Editorial apreciou seu parecer e solicita o seguinte ajuste:\n\n${reviewerChangesText}\n\nPor favor, acesse seu painel para atualizar o parecer e reenviar.`,
+          actionText: 'Acessar Painel do Parecerista',
+          actionUrl: 'https://revista-saber-portal.vercel.app'
+        })
+      }
+
+      alert('Ajustes solicitados ao parecerista com sucesso!')
+      setRequestReviewerChangesModal(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSavingReviewerChanges(false)
+    }
+  }
+
+  const handleConfirmRejection = async () => {
+    if (!rejectionModalArticle || !rejectionReasonText.trim()) return alert('Informe a justificativa.')
+    setSavingRejection(true)
+    try {
+      const { error } = await supabase.from('articles').update({ status: 'recusado', rejection_reason: rejectionReasonText }).eq('id', rejectionModalArticle.id)
+      if (error) throw error
+      alert('Manuscrito Recusado!')
+      setRejectionModalArticle(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSavingRejection(false)
+    }
+  }
+
+  const handleAssignReviewer = async () => {
+    if (!selectedReviewerId || !assignModalArticle || !assignDeadline) return alert('Selecione o parecerista e o prazo.')
+    try {
+      const revProfile = allProfiles.find((p) => p.id === selectedReviewerId)
+      const { error } = await supabase.from('reviews').insert({
+        article_id: assignModalArticle.id,
+        reviewer_id: selectedReviewerId,
+        deadline: assignDeadline,
+        status: 'convite_pendente',
+      })
+      if (error) throw error
+      await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
+
+      if (revProfile?.email) {
+        sendEmailNotification({
+          to: revProfile.email,
+          subject: 'Convite para Avaliação por Pares - Revista Saber Psicanalítico',
+          title: 'Novo Convite de Avaliação',
+          message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a avaliar o manuscrito "${assignModalArticle.title}". Acesse o portal para consultar o resumo e aceitar ou recusar o convite.`,
+          actionText: 'Responder Convite no Portal',
+          actionUrl: 'https://revista-saber-portal.vercel.app'
+        })
+      }
+      alert('Convite enviado com sucesso!')
+      setAssignModalArticle(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao atribuir parecerista: ${err.message}`)
+    }
+  }
+
+  const handleRemoveReviewerAssignment = async (reviewId: string, articleId: string) => {
+    if (!window.confirm('Desatribuir este parecerista?')) return
+    try {
+      const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+      if (error) throw error
+      alert('Parecerista desatribuído!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    }
+  }
+
+  const handleAcceptReviewInvitation = async (reviewId: string, articleTitle: string) => {
+    try {
+      const { error } = await supabase.from('reviews').update({ status: 'em_andamento' }).eq('id', reviewId)
+      if (error) throw error
+      alert('Convite aceito! O manuscrito foi liberado para download e avaliação.')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    }
+  }
+
+  const handleDeclineReviewInvitation = async (reviewId: string, articleTitle: string) => {
+    if (!window.confirm('Confirma a recusa deste convite? O trabalho deixará de aparecer em seu painel.')) return
+    try {
+      const { error } = await supabase.from('reviews').update({ status: 'recusado' }).eq('id', reviewId)
+      if (error) throw error
+      alert('Recusa registrada.')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    }
+  }
+
+  // SUBMETER PARECER COM NOTIFICAÇÃO POR EMAIL RESTAURADA (PONTO C & D)
+  const handleSubmitReview = async () => {
+    if (!reviewModalData) return
+    setSubmittingReview(true)
+    try {
+      const targetArt = allArticles.find((a) => a.id === reviewModalData.article_id)
+      const sec = targetArt?.section || 'Artigos Científicos'
+      const isWasAdjustment = reviewModalData.status === 'ajustes_solicitados'
+
+      let rPath = reviewModalData.review_file_url || null
+      if (reviewFile) {
+        rPath = `pareceres/parecer_${reviewModalData.id}_${Date.now()}.${reviewFile.name.split('.').pop()}`
+        await supabase.storage.from('manuscritos').upload(rPath, reviewFile)
+      }
+
+      const fullComments = `--- CRITÉRIOS DE AVALIAÇÃO (${sec.toUpperCase()}) ---\n• Título/Resumo: ${critTitle}\n• Rigor Conceitual: ${critTheory}\n• Relevância: ${critClinical}\n\n--- PARECER CIRCUNSTANCIADO ---\n${commentsAuthor}`
+
+      await supabase.from('reviews').update({
+        recommendation,
+        comments_for_author: fullComments,
+        confidential_comments_editor: commentsEditor,
+        review_file_url: rPath,
+        status: 'concluido',
+      }).eq('id', reviewModalData.id)
+
+      sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: isWasAdjustment ? 'Parecer Ajustado e Reenviado - Revista Saber Psicanalítico' : 'Novo Parecer Emitido - Revista Saber Psicanalítico',
+        title: isWasAdjustment ? 'Parecer Ajustado Concluído' : 'Parecer Técnico Registrado',
+        message: `O(A) parecerista ${profile?.full_name} ${isWasAdjustment ? 'concluiu e reenviou os ajustes solicitados no parecer' : 'emitiu um parecer conclusivo'} para o trabalho "${targetArt?.title}".\n\n• Recomendação: ${recommendation.toUpperCase()}\n• Seção: ${sec}`,
+        actionText: 'Acessar Sala Editorial',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
+      alert('Parecer enviado à Comissão Editorial com sucesso!')
+      setReviewModalData(null)
+      fetchAllData()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
+  const filteredMailingUsers = allProfiles.filter((p) => {
+    if (mailingTarget === 'all') return true
+    return p.role === mailingTarget
+  })
+
+  const handleSendMailing = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!mailingSubject || !mailingBody) return alert('Preencha os campos.')
+    if (!window.confirm(`Disparar para ${filteredMailingUsers.length} usuários?`)) return
+    setSendingMailing(true)
+    try {
+      for (const u of filteredMailingUsers) {
+        if (u.email) {
+          await sendEmailNotification({
+            to: u.email,
+            subject: mailingSubject,
+            title: mailingTitle || mailingSubject,
+            message: `Olá, ${u.full_name || 'Colega'},\n\n${mailingBody}`,
+            actionText: mailingActionText || undefined,
+            actionUrl: mailingActionUrl || undefined
+          })
+        }
+      }
+      alert('Comunicado disparado com sucesso!')
+    } catch (err: any) {
+      alert(`Erro: ${err.message}`)
+    } finally {
+      setSendingMailing(false)
+    }
+  }
+
+  const completedReviewers = allProfiles.filter((p) => Array.from(new Set(allReviews.filter((r) => r.status === 'concluido').map((r) => r.reviewer_id))).includes(p.id))
 
   const filteredArticles = allArticles.filter((art) => {
     const q = editorSearch.toLowerCase()
