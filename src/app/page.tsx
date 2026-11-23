@@ -9,7 +9,7 @@ import {
   Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, 
   Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter, ExternalLink,
   Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, EyeOff, Code, ThumbsUp, ThumbsDown, BookOpen,
-  Sparkles, Scale, Bell, CheckCheck
+  Sparkles, Scale, Bell, CheckCheck, CalendarPlus
 } from 'lucide-react'
 
 const formatRole = (role: string) => {
@@ -23,7 +23,7 @@ const formatRole = (role: string) => {
   }
 }
 
-// 12 Eixos Temáticos Padronizados
+// 12 EIXOS TEMÁTICOS AMPLIADOS
 const axeOptionsGlobal = [
   'Fundamentos, História e Epistemologia da Psicanálise',
   'Metapsicologia e Teoria das Pulsões',
@@ -234,7 +234,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
                 <Award className="w-4 h-4 text-indigo-600" /> 3. Certificação Oficial no Lattes e Avaliação Duplo-Cega
               </h4>
               <p>
-                A cada avaliação concluída sob o sistema duplo-cego (<em>Double-Blind Peer Review</em>), o portal emite uma <strong>Declaração Oficial Timbrada com Assinatura Digital e Código Verificador</strong>, válida para comprovação curricular e progressão acadêmica.
+                A cada avaliação concluída sob o sistema duplo-cego (<em>Double-Blind Peer Review</em>), o portal emite uma <strong>Declaração Oficial Timbrada com Assinatura Digital e Código Verificador</strong>, válida para comprovação curricular e bancas acadêmicas.
               </p>
             </div>
 
@@ -1157,6 +1157,39 @@ export default function Home() {
     }
   }
 
+  // BOTÃO RÁPIDO DE PRORROGAÇÃO (+7 OU +14 DIAS) (FASE 1)
+  const handleExtendDeadline = async (review: any, article: any, daysToAdd: number) => {
+    const baseDate = new Date(review.deadline ? review.deadline + 'T12:00:00' : Date.now())
+    const newDate = new Date(baseDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000)
+    const newDeadlineStr = newDate.toISOString().split('T')[0]
+    const revProfile = allProfiles.find(p => p.id === review.reviewer_id)
+
+    if (!window.confirm(`Prorrogar o prazo de ${revProfile?.full_name || 'parecerista'} por mais ${daysToAdd} dias (Novo Prazo: ${newDate.toLocaleDateString('pt-BR')})?`)) return
+
+    try {
+      const { error } = await supabase.from('reviews').update({
+        deadline: newDeadlineStr
+      }).eq('id', review.id)
+      if (error) throw error
+
+      if (revProfile?.email) {
+        sendEmailNotification({
+          to: revProfile.email,
+          subject: 'Prorrogação de Prazo de Avaliação - Revista Saber Psicanalítico',
+          title: 'Prazo Limite Prorrogado',
+          message: `Prezado(a) ${revProfile.full_name},\n\nComunicamos que o prazo para a conclusão do seu parecer técnico sobre o manuscrito "${article?.title}" foi prorrogado em +${daysToAdd} dias a contar da data de referência.\n\n📅 NOVO PRAZO LIMITE: ${newDate.toLocaleDateString('pt-BR')}.\n\nAgradecemos imensamente sua dedicação e contribuição científica com a Revista Saber Psicanalítico.`,
+          actionText: 'Acessar Painel de Avaliações',
+          actionUrl: 'https://revista-saber-portal.vercel.app'
+        })
+      }
+
+      alert(`Prazo estendido em +${daysToAdd} dias com sucesso!`)
+      fetchAllData()
+    } catch (e: any) {
+      alert(`Erro ao estender prazo: ${e.message}`)
+    }
+  }
+
   // Validador com Busca Segura via RPC ou Fallback
   const handleVerifyCode = async () => {
     const code = verifyCodeInput.trim().toUpperCase()
@@ -1734,7 +1767,6 @@ export default function Home() {
         status: 'concluido',
       }).eq('id', reviewModalData.id)
 
-      // PONTO C & D: Envio de e-mail automático avisando a editoria
       sendEmailNotification({
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: isWasAdjustment ? 'Parecer Ajustado e Reenviado - Revista Saber Psicanalítico' : 'Novo Parecer Emitido - Revista Saber Psicanalítico',
@@ -1809,6 +1841,14 @@ export default function Home() {
     p.id !== assignModalArticle?.author_id
   )
 
+  // FASE 1: CALCULAR QUANTOS ARTIGOS O PARECERISTA TEM ATIVOS NO MOMENTO
+  const getReviewerActiveCount = (reviewerId: string) => {
+    return allReviews.filter(r => 
+      r.reviewer_id === reviewerId && 
+      (r.status === 'em_andamento' || r.status === 'convite_pendente' || r.status === 'ajustes_solicitados')
+    ).length
+  }
+
   const getReviewerAffinity = (rev: any, art: any) => {
     if (!art) return { score: 0, tag: '⚪', label: 'Disponível', matches: [] }
     let score = 0
@@ -1864,6 +1904,7 @@ export default function Home() {
 
   const selectedReviewerProfile = allProfiles.find(p => p.id === selectedReviewerId)
   const selectedAffinity = selectedReviewerProfile && assignModalArticle ? getReviewerAffinity(selectedReviewerProfile, assignModalArticle) : null
+  const selectedActiveCount = selectedReviewerId ? getReviewerActiveCount(selectedReviewerId) : 0
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Carregando Revista Saber Psicanalítico...</div>
@@ -2185,7 +2226,7 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* PONTO B: ORIENTAÇÕES E PRAZO PARA O AUTOR */}
+                        {/* ORIENTAÇÕES E PRAZO PARA O AUTOR */}
                         {art.status === 'correcoes_pendentes' && (
                           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-2">
                             <div className="flex justify-between items-center flex-wrap gap-2">
@@ -2511,8 +2552,6 @@ export default function Home() {
                                 const isDeclined = r.status === 'recusado'
                                 const isAcceptedAndWorking = r.status === 'em_andamento' || r.status === 'pendente'
                                 const isNeedsAdj = r.status === 'ajustes_solicitados'
-                                
-                                // PONTO D: IDENTIFICAÇÃO VISUAL DE QUE O PARECERISTA ATENDEU E REENVIOU O AJUSTE
                                 const isAdjustmentResolved = isCompleted && r.comments_for_author?.includes('[SOLICITAÇÃO DE AJUSTE DA COMISSÃO EDITORIAL]')
 
                                 return (
@@ -2524,7 +2563,6 @@ export default function Home() {
                                       {isDeclined && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"><ThumbsDown className="w-3 h-3" /> CONVITE RECUSADO</span>}
                                       {isNeedsAdj && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">AJUSTES SOLICITADOS</span>}
                                       
-                                      {/* PONTO D: Selo de Ajuste Concluído */}
                                       {isAdjustmentResolved && (
                                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-300 flex items-center gap-1">
                                           <CheckCheck className="w-3.5 h-3.5 text-teal-600" /> PARECER AJUSTADO (REENVIADO)
@@ -2540,16 +2578,34 @@ export default function Home() {
                                     </div>
 
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      {/* PONTO A: BOTÃO MANUAL DE LEMBRETE PARA O PARECERISTA */}
+                                      {/* BOTÕES DE LEMBRETE E PRORROGAÇÃO (+7d / +14d) - FASE 1 */}
                                       {!isCompleted && !isDeclined && isFullEditor && (
-                                        <button 
-                                          type="button" 
-                                          onClick={() => handleSendReviewerReminder(r, art)} 
-                                          className="px-2 py-0.5 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded font-semibold inline-flex items-center gap-1"
-                                          title="Enviar lembrete amigável de prazo por e-mail"
-                                        >
-                                          <Bell className="w-3 h-3 text-amber-600" /> Enviar Lembrete
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                          <button 
+                                            type="button" 
+                                            onClick={() => handleSendReviewerReminder(r, art)} 
+                                            className="px-2 py-0.5 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded font-semibold inline-flex items-center gap-1 shadow-sm"
+                                            title="Enviar lembrete cordial de prazo"
+                                          >
+                                            <Bell className="w-3 h-3 text-amber-600" /> Lembrete
+                                          </button>
+                                          <button 
+                                            type="button" 
+                                            onClick={() => handleExtendDeadline(r, art, 7)} 
+                                            className="px-2 py-0.5 text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded font-semibold inline-flex items-center gap-0.5 shadow-sm"
+                                            title="Prorrogar prazo em 7 dias com e-mail de aviso"
+                                          >
+                                            +7d
+                                          </button>
+                                          <button 
+                                            type="button" 
+                                            onClick={() => handleExtendDeadline(r, art, 14)} 
+                                            className="px-2 py-0.5 text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded font-semibold inline-flex items-center gap-0.5 shadow-sm"
+                                            title="Prorrogar prazo em 14 dias com e-mail de aviso"
+                                          >
+                                            +14d
+                                          </button>
+                                        </div>
                                       )}
 
                                       {isCompleted && isFullEditor && (
@@ -2732,7 +2788,8 @@ export default function Home() {
                                   <button
                                     type="button"
                                     onClick={() => handleApproveReviewer(cand)}
-                                    className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shadow"
+                                    className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold text-xs rounded-lg flex items-center gap-1.
+                                5 shadow"
                                   >
                                     <Check className="w-3.5 h-3.5" /> Homologar e Ativar Parecerista
                                   </button>
@@ -2907,7 +2964,7 @@ export default function Home() {
 
       {/* MODAL: MEU PERFIL COMPLETO COM EIXOS (ATÉ 5) E ESCOLAS */}
       {showProfileModal && (
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[95] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[95] overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border space-y-4 max-h-[92vh] overflow-y-auto my-6">
             <div className="flex justify-between items-start border-b pb-2">
               <div>
@@ -3133,9 +3190,11 @@ export default function Home() {
                 <option value="">-- Escolha um parecerista --</option>
                 {sortedEligibleReviewers.map((rev) => {
                   const af = getReviewerAffinity(rev, assignModalArticle)
+                  const activeCount = getReviewerActiveCount(rev.id)
+                  const cargaBadge = activeCount === 0 ? '🟢 Livre (0 ativas)' : activeCount === 1 ? '🟡 1 ativa' : `🟠 ${activeCount} ativas`
                   return (
                     <option key={rev.id} value={rev.id}>
-                      {af.tag} [{af.label}] {rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'} [{rev.academic_degree || 'Titulação'}]
+                      {af.tag} [{af.label}] {rev.full_name} ({formatRole(rev.role)}) - {rev.institution || 'ASP'} [{cargaBadge}]
                     </option>
                   )
                 })}
@@ -3148,10 +3207,22 @@ export default function Home() {
                   <span className="font-bold text-indigo-950 flex items-center gap-1.5">
                     <UserCheck className="w-3.5 h-3.5 text-indigo-600" /> Compatibilidade: {selectedAffinity.tag} {selectedAffinity.label}
                   </span>
-                  <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">
-                    Score: {selectedAffinity.score}%
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold bg-white text-slate-700 border px-2 py-0.5 rounded">
+                      Carga: {selectedActiveCount} {selectedActiveCount === 1 ? 'artigo ativo' : 'artigos ativos'}
+                    </span>
+                    <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">
+                      Score: {selectedAffinity.score}%
+                    </span>
+                  </div>
                 </div>
+
+                {selectedActiveCount >= 3 && (
+                  <div className="p-2 bg-amber-50 border border-amber-300 rounded text-amber-900 text-[10.5px] font-semibold flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                    <span>Atenção: Este avaliador já possui {selectedActiveCount} avaliações em andamento. Considere designar outro colega para evitar sobrecarga.</span>
+                  </div>
+                )}
 
                 {selectedAffinity.matches.length > 0 && (
                   <div className="text-[11px] text-emerald-800 font-medium space-y-0.5">
