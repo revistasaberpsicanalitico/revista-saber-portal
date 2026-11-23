@@ -1162,6 +1162,3 @@ export default function Home() {
       return (isIdMatch || isEmailMatch || isNameMatch) && isAssignedOrWorking
     }).length
   }
-
-  // Restante das funções de ação do componente Home...
-  // (As demais funções e renderizações continuam perfeitamente integradas)
