@@ -7,8 +7,9 @@ import {
   UserCheck, Download, Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2,
   Award, Ban, Search, X, AlertCircle, Clock, FileSpreadsheet, Edit3, Plus,
   Printer, Info, Copy, Check, Megaphone, ExternalLink, Eye, EyeOff, ThumbsUp,
-  ThumbsDown, Sparkles, Scale, Bell, CheckCheck
+  ThumbsDown, Sparkles, Scale, Bell, CheckCheck, BarChart3
 } from 'lucide-react'
+import IndicadoresCapesTab from '@/components/IndicadoresCapesTab'
 
 const formatRole = (role: string) => {
   switch (role) {
@@ -906,7 +907,7 @@ export default function Home() {
   const [profile, setProfile] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor' | 'council'>('author')
   const [loading, setLoading] = useState(true)
-  const [editorialTab, setEditorialTab] = useState<'articles' | 'candidates' | 'users' | 'mailing'>('articles')
+  const [editorialTab, setEditorialTab] = useState<'articles' | 'candidates' | 'users' | 'mailing' | 'indicadores'>('articles')
   const [showSpamNotice, setShowSpamNotice] = useState(true)
 
   const [showPareceristasModal, setShowPareceristasModal] = useState(false)
@@ -2693,6 +2694,10 @@ export default function Home() {
                     </button>
                   </>
                 )}
+
+                <button type="button" onClick={() => setEditorialTab('indicadores')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'indicadores' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                  <BarChart3 className="w-4 h-4 text-emerald-600" /> Indicadores Qualis/CAPES
+                </button>
               </div>
 
               {editorialTab === 'articles' && (
@@ -3199,6 +3204,17 @@ export default function Home() {
                     </div>
                   </form>
                 </div>
+              )}
+
+              {/* ABA 5: INDICADORES QUALIS/CAPES */}
+              {editorialTab === 'indicadores' && (
+                <IndicadoresCapesTab
+                  articles={allArticles}
+                  reviews={allReviews}
+                  profiles={allProfiles}
+                  getAuthorName={getAuthorName}
+                  getAuthorInst={getAuthorInst}
+                />
               )}
             </div>
           )}
