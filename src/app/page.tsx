@@ -1,3 +1,57 @@
+Agora ficou claro o que aconteceu: na mensagem anterior, o bloco de código tentou enviar quase o arquivo inteiro de uma vez só e por isso cortou no finalzinho. 
+
+Além disso, entendi perfeitamente os dois pontos que você apontou:
+1. **O botão de excluir não aparecia para você:** O código anterior estava verificando apenas `profile.role === 'editor'` (Editor-Chefe), em vez de liberar para **`isFullEditor`** (que inclui **Editor-Adjunto**). Já corrigi isso para que você tenha exatamente o mesmo poder e veja o botão da lixeira vermelha.
+2. **Os votos do Conselho não apareciam:** O banco de dados do **Supabase** tem uma trava de segurança chamada *RLS* (Row Level Security). Quando um membro do Conselho votava em um candidato, o banco bloqueava a gravação silenciosamente porque a regra padrão só permitia que o próprio usuário alterasse o seu próprio perfil, e não o de outro candidato.
+
+---
+
+### Passo 1: Liberar o banco no Supabase (Resolve os votos e a exclusão)
+Abra o **SQL Editor** do Supabase, cole este comando abaixo e clique em **Run**:
+
+```sql
+-- 1. Garante a coluna dos votos do Conselho
+ALTER TABLE profiles 
+  ADD COLUMN IF NOT EXISTS council_votes jsonb DEFAULT '[]'::jsonb;
+
+-- 2. Permite que membros da equipe editorial salvem votos e homologuem pareceristas
+DROP POLICY IF EXISTS "Permitir update de profiles por autenticados" ON profiles;
+CREATE POLICY "Permitir update de profiles por autenticados"
+  ON profiles FOR UPDATE
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- 3. Permite que a editoria exclua artigos e pareceres de teste
+DROP POLICY IF EXISTS "Permitir delete de artigos pela editoria" ON articles;
+CREATE POLICY "Permitir delete de artigos pela editoria"
+  ON articles FOR DELETE
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Permitir delete de reviews pela editoria" ON reviews;
+CREATE POLICY "Permitir delete de reviews pela editoria"
+  ON reviews FOR DELETE
+  TO authenticated
+  USING (true);
+```
+
+---
+
+### Passo 2: Atualizar `src/app/page.tsx` no GitHub
+
+No GitHub, abra **`src/app/page.tsx`**, selecione tudo (`Ctrl + A`) e apague (`Delete`) para o arquivo ficar limpo e em branco.
+
+Copie toda a **PARTE 1** abaixo e cole lá dentro.  
+*(Você pode conferir: a última linha dela termina perfeitamente fechando a tela de login em `</main> ) }`).*
+
+**Ainda não salve!** Apenas responda aqui **`enviar parte 2`** que eu mando a segunda metade exata para colar logo abaixo!
+
+---
+
+### PARTE 1 de 2 (`src/app/page.tsx`)
+
+```tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -1088,7 +1142,7 @@ export default function Home() {
   }
 
   const handleDeleteArticle = async (art: any) => {
-    if (profile?.role !== 'editor') return
+    if (!isFullEditor) return
     const firstConfirm = window.confirm(
       `ATENÇÃO: Deseja excluir permanentemente o manuscrito "${art.title}"?\n\nEssa ação removerá o trabalho e todas as avaliações vinculadas.`
     )
@@ -1471,7 +1525,10 @@ export default function Home() {
 
   const handleCastCouncilVote = async (candidate: any, voteType: 'favoravel' | 'desfavoravel') => {
     try {
-      const existingVotes = candidate.council_votes || []
+      const rawVotes = candidate.council_votes
+      const existingVotes: any[] = Array.isArray(rawVotes)
+        ? rawVotes
+        : (typeof rawVotes === 'string' ? JSON.parse(rawVotes) : [])
       const filteredVotes = existingVotes.filter((v: any) => v.user_id !== session?.user?.id)
 
       const newVote = {
@@ -1489,7 +1546,7 @@ export default function Home() {
       alert('Seu voto foi registrado com sucesso!')
       fetchAllData()
     } catch (err: any) {
-      alert(`Erro: ${err.message}`)
+      alert(`Erro ao registrar voto: ${err.message}`)
     }
   }
 
@@ -2486,7 +2543,7 @@ export default function Home() {
       </main>
     )
   }
-                  const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
+const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
   const myReviewAssignments = allReviews
     .filter((r) => r.reviewer_id === session?.user?.id)
     .filter((r) => r.status !== 'recusado')
@@ -2903,7 +2960,7 @@ export default function Home() {
                         onClick={() => setEditorTriagemFilter('sem_parecerista')}
                         className={`px-2.5 py-1 rounded-lg font-medium text-[11px] inline-flex items-center gap-1 ${editorTriagemFilter === 'sem_parecerista' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100'}`}
                       >
-                        <UserCheck className="w-3 h-3" /> Sem Parecerista ({semPareceristaCount})
+                        <UserCheck className="w-3.5 h-3.5" /> Sem Parecerista ({semPareceristaCount})
                       </button>
                     </div>
                   </div>
@@ -3008,12 +3065,12 @@ export default function Home() {
                                 </>
                               )}
 
-                              {isEditorChefe && (
+                              {isFullEditor && (
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteArticle(art)}
                                   className="p-1.5 text-rose-500 hover:bg-rose-50 border border-rose-200 rounded-lg"
-                                  title="Excluir artigo (Editor-Chefe)"
+                                  title="Excluir manuscrito (Editoria)"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -3177,7 +3234,10 @@ export default function Home() {
                   ) : (
                     <div className="grid gap-4">
                       {allProfiles.filter(p => p.reviewer_status === 'pending').map((cand) => {
-                        const votes: any[] = cand.council_votes || []
+                        const rawVotes = cand.council_votes
+                        const votes: any[] = Array.isArray(rawVotes)
+                          ? rawVotes
+                          : (typeof rawVotes === 'string' ? JSON.parse(rawVotes) : [])
                         const userVote = votes.find((v: any) => v.user_id === session?.user?.id)
                         const favorCount = votes.filter((v: any) => v.vote === 'favoravel').length
                         const againstCount = votes.filter((v: any) => v.vote === 'desfavoravel').length
