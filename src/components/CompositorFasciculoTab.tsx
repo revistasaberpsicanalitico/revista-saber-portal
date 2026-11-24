@@ -142,7 +142,6 @@ export default function CompositorFasciculoTab({
     }))
     .filter((entry) => Boolean(entry.article))
 
-  // Cálculo de Endogenia exclusivo da edição montada
   const checkEndogeny = (art: any) => {
     const mainInst = art.author_institution || getAuthorInst(art.author_id, art)
     const coInsts: string[] = Array.isArray(art.coauthors)
@@ -180,7 +179,6 @@ export default function CompositorFasciculoTab({
     return [mainName, ...coNames].join('; ')
   }
 
-  // Agrupamento mantendo a ordem escolhida dentro de cada seção
   const groupedSections: { section: string; entries: typeof includedEntries }[] = []
   includedEntries.forEach((entry) => {
     const sec = entry.article.section || 'Artigos Científicos'
@@ -189,7 +187,6 @@ export default function CompositorFasciculoTab({
     else groupedSections.push({ section: sec, entries: [entry] })
   })
 
-  // Texto pronto do Sumário para Word / Canva / Wix
   const buildPlainSumario = () => {
     const lines: string[] = [
       'REVISTA SABER PSICANALÍTICO — ISSN 3086-8416',
@@ -219,13 +216,13 @@ export default function CompositorFasciculoTab({
     })
 
     lines.push('Entidade Mantenedora: Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85')
+    lines.push('Contato: revista@asppsicanalise.com.br • www.asppsicanalise.com.br')
     return lines.join('\n')
   }
 
-  // Caderno completo de Metadados + Notas de Autoria + Datas (DOAJ/PePSIC)
   const buildMetadataBooklet = () => {
     const blocks: string[] = [
-      `CADERNO DE METADADOS E DIAGRAMACÃO — ${issueTitle.toUpperCase()}`,
+      `CADERNO DE METADADOS E DIAGRAMAÇÃO — ${issueTitle.toUpperCase()}`,
       `Revista Saber Psicanalítico (ISSN 3086-8416)`,
       `Gerado em ${new Date().toLocaleDateString('pt-BR')}`,
       '====================================================================',
@@ -268,7 +265,6 @@ export default function CompositorFasciculoTab({
     return blocks.join('\n')
   }
 
-  // Expediente de Pareceristas
   const completedReviewerIds = Array.from(
     new Set(reviews.filter((r) => r.status === 'concluido').map((r) => r.reviewer_id))
   )
@@ -292,7 +288,6 @@ export default function CompositorFasciculoTab({
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho e Ações Rápidas */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200 uppercase">
@@ -348,7 +343,6 @@ export default function CompositorFasciculoTab({
         </div>
       </div>
 
-      {/* Configuração do Fascículo */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
         <div className="grid md:grid-cols-3 gap-3 text-xs">
           <div>
@@ -386,7 +380,6 @@ export default function CompositorFasciculoTab({
           </div>
         </div>
 
-        {/* Opção de Editorial no Sumário */}
         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-center gap-3 text-xs">
           <label className="flex items-center gap-2 font-bold text-slate-800 cursor-pointer whitespace-nowrap">
             <input
@@ -425,7 +418,6 @@ export default function CompositorFasciculoTab({
         </div>
       </div>
 
-      {/* Termômetro de Endogenia exclusivo desta edição */}
       <div className={`p-4 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
         totalIncluded === 0
           ? 'bg-slate-50 border-slate-200 text-slate-600'
@@ -462,7 +454,6 @@ export default function CompositorFasciculoTab({
         </span>
       </div>
 
-      {/* Lista Ordenável de Artigos Aceitos */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-3">
           <div>
@@ -568,7 +559,6 @@ export default function CompositorFasciculoTab({
         )}
       </div>
 
-      {/* Modal de Pré-visualização e Impressão A4 do Sumário Oficial */}
       {showPrintModal && (
         <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[95] overflow-y-auto flex flex-col items-center p-3 sm:p-6">
           <style>{`
@@ -621,6 +611,7 @@ export default function CompositorFasciculoTab({
                   <p className="text-xs font-semibold text-indigo-900 uppercase tracking-wide">ISSN 3086-8416</p>
                   <p className="text-xs font-semibold text-slate-700">{issueTitle}</p>
                   <p className="text-[11px] text-slate-500">{issueSubtitle}</p>
+                  <p className="text-[11px] text-slate-400">revista@asppsicanalise.com.br</p>
                 </div>
               </div>
 
@@ -685,7 +676,7 @@ export default function CompositorFasciculoTab({
               </div>
               <div className="text-center sm:text-right space-y-0.5">
                 <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-                <p>www.asppsicanalise.com.br • revistasaberpsicanalitico@gmail.com</p>
+                <p>www.asppsicanalise.com.br • revista@asppsicanalise.com.br</p>
               </div>
             </div>
           </div>
