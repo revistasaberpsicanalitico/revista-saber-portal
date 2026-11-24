@@ -7,9 +7,10 @@ import {
   UserCheck, Download, Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2,
   Award, Ban, Search, X, AlertCircle, Clock, FileSpreadsheet, Edit3, Plus,
   Printer, Info, Copy, Check, Megaphone, ExternalLink, Eye, EyeOff, ThumbsUp,
-  ThumbsDown, Sparkles, Scale, Bell, CheckCheck, BarChart3
+  ThumbsDown, Sparkles, Scale, Bell, CheckCheck, BarChart3, BookOpen, FileSearch
 } from 'lucide-react'
 import IndicadoresCapesTab from '@/components/IndicadoresCapesTab'
+import CompositorFasciculoTab from '@/components/CompositorFasciculoTab'
 
 const formatRole = (role: string) => {
   switch (role) {
@@ -907,7 +908,7 @@ export default function Home() {
   const [profile, setProfile] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'author' | 'reviewer' | 'editor' | 'council'>('author')
   const [loading, setLoading] = useState(true)
-  const [editorialTab, setEditorialTab] = useState<'articles' | 'candidates' | 'users' | 'mailing' | 'indicadores'>('articles')
+  const [editorialTab, setEditorialTab] = useState<'articles' | 'candidates' | 'users' | 'mailing' | 'indicadores' | 'fasciculo'>('articles')
   const [showSpamNotice, setShowSpamNotice] = useState(true)
 
   const [showPareceristasModal, setShowPareceristasModal] = useState(false)
@@ -1010,6 +1011,11 @@ export default function Home() {
   const [revisedFile, setRevisedFile] = useState<File | null>(null)
   const [submittingRevision, setSubmittingRevision] = useState(false)
 
+  // CopySpider (%)
+  const [copySpiderModalArticle, setCopySpiderModalArticle] = useState<any>(null)
+  const [copySpiderScoreInput, setCopySpiderScoreInput] = useState('')
+  const [savingCopySpider, setSavingCopySpider] = useState(false)
+
   // Parecerista
   const [assignModalArticle, setAssignModalArticle] = useState<any>(null)
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
@@ -1050,6 +1056,35 @@ export default function Home() {
   // ==========================================
   // FUNÇÕES AUXILIARES
   // ==========================================
+  const handleSaveCopySpiderScore = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!copySpiderModalArticle) return
+    const normalized = copySpiderScoreInput.trim().replace(',', '.').replace('%', '')
+    const num = parseFloat(normalized)
+    if (isNaN(num) || num < 0 || num > 100) {
+      return alert('Informe um percentual válido entre 0 e 100 (ex: 4.5).')
+    }
+    setSavingCopySpider(true)
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .update({
+          plagiarism_score: num,
+          plagiarism_checked_at: new Date().toISOString()
+        })
+        .eq('id', copySpiderModalArticle.id)
+      if (error) throw error
+      alert(`Similaridade de ${num.toFixed(1)}% registrada com sucesso!`)
+      setCopySpiderModalArticle(null)
+      setCopySpiderScoreInput('')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao salvar CopySpider: ${err.message}. Verifique se você já rodou o SQL no Supabase.`)
+    } finally {
+      setSavingCopySpider(false)
+    }
+  }
+
   const handleAddCoauthor = () => {
     setCoauthors([...coauthors, { name: '', email: '', institution: '', lattes: '', orcid: '', bio: '' }])
   }
@@ -1543,11 +1578,12 @@ export default function Home() {
 
   const handleExportBackup = () => {
     if (allArticles.length === 0) return alert('Sem dados.')
-    const headers = ['ID', 'Titulo', 'Secao', 'Eixo', 'Status', 'Data', 'Autor', 'Email', 'Pareceres']
+    const headers = ['ID', 'Titulo', 'Secao', 'Eixo', 'Status', 'Data', 'Autor', 'Email', 'Pareceres', 'CopySpider_%']
     const rows = allArticles.map((art) => [
       art.id, `"${art.title.replace(/"/g, '""')}"`, `"${art.section}"`, `"${art.thematic_axis || '-'}"`, `"${art.status}"`,
       `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`, `"${getAuthorName(art.author_id, art)}"`,
-      `"${getAuthorEmail(art.author_id, art)}"`, getArticleReviews(art.id).length
+      `"${getAuthorEmail(art.author_id, art)}"`, getArticleReviews(art.id).length,
+      art.plagiarism_score !== null && art.plagiarism_score !== undefined ? art.plagiarism_score : ''
     ])
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -2698,6 +2734,10 @@ export default function Home() {
                 <button type="button" onClick={() => setEditorialTab('indicadores')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'indicadores' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                   <BarChart3 className="w-4 h-4 text-emerald-600" /> Indicadores Qualis/CAPES
                 </button>
+
+                <button type="button" onClick={() => setEditorialTab('fasciculo')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'fasciculo' ? 'border-purple-600 text-purple-700 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                  <BookOpen className="w-4 h-4 text-purple-600" /> Compositor de Fascículo
+                </button>
               </div>
 
               {editorialTab === 'articles' && (
@@ -2727,6 +2767,7 @@ export default function Home() {
                       const isPostReviewRevision = Boolean(art.revision_deadline || revs.some((r) => r.status === 'concluido'))
                       const isOwnArticle = art.author_id === session?.user?.id
                       const hasRevision = art.original_file_url && art.original_file_url !== art.file_url
+                      const hasPlagiarismScore = art.plagiarism_score !== null && art.plagiarism_score !== undefined
 
                       return (
                         <div key={art.id} className={`bg-white p-6 rounded-xl border shadow-sm space-y-4 ${isRevisionResubmitted ? 'border-teal-400 ring-1 ring-teal-200' : 'border-slate-200'}`}>
@@ -2740,6 +2781,21 @@ export default function Home() {
                                   </span>
                                 )}
                                 <span className="text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
+                                {hasPlagiarismScore && (
+                                  <span
+                                    className={`px-2 py-0.5 rounded text-[11px] font-bold border inline-flex items-center gap-1 ${
+                                      Number(art.plagiarism_score) <= 15
+                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        : Number(art.plagiarism_score) <= 25
+                                          ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                          : 'bg-rose-50 text-rose-800 border-rose-300'
+                                    }`}
+                                    title={art.plagiarism_checked_at ? `Verificado em ${new Date(art.plagiarism_checked_at).toLocaleString('pt-BR')}` : 'Verificação CopySpider'}
+                                  >
+                                    <FileSearch className="w-3 h-3" />
+                                    CopySpider: {Number(art.plagiarism_score).toFixed(1)}%
+                                  </span>
+                                )}
                                 {isRevisionResubmitted && (
                                   <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-teal-100 text-teal-900 border border-teal-300 inline-flex items-center gap-1 animate-pulse">
                                     <CheckCheck className="w-3.5 h-3.5 text-teal-700" />
@@ -2768,6 +2824,19 @@ export default function Home() {
 
                               {isFullEditor && !isOwnArticle && (
                                 <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCopySpiderModalArticle(art)
+                                      setCopySpiderScoreInput(hasPlagiarismScore ? String(art.plagiarism_score) : '')
+                                    }}
+                                    className="px-2.5 py-1.5 text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg flex items-center gap-1"
+                                    title="Registrar percentual de similaridade do CopySpider"
+                                  >
+                                    <FileSearch className="w-3.5 h-3.5 text-indigo-600" />
+                                    {hasPlagiarismScore ? `CopySpider (${Number(art.plagiarism_score).toFixed(1)}%)` : 'Registrar CopySpider'}
+                                  </button>
+
                                   <button type="button" onClick={() => { setAssignModalArticle(art); setSelectedReviewerId(''); setAssignDeadline(new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) }} className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center gap-1">
                                     <UserCheck className="w-3.5 h-3.5" /> Atribuir Parecerista
                                   </button>
@@ -3216,6 +3285,19 @@ export default function Home() {
                   getAuthorInst={getAuthorInst}
                 />
               )}
+
+              {/* ABA 6: COMPOSITOR DE FASCÍCULO */}
+              {editorialTab === 'fasciculo' && (
+                <CompositorFasciculoTab
+                  articles={allArticles}
+                  profiles={allProfiles}
+                  reviews={allReviews}
+                  getAuthorName={getAuthorName}
+                  getAuthorEmail={getAuthorEmail}
+                  getAuthorInst={getAuthorInst}
+                  getArticleIssue={getArticleIssue}
+                />
+              )}
             </div>
           )}
         </main>
@@ -3250,6 +3332,55 @@ export default function Home() {
           if (session) initUser(session, false)
         }}
       />
+
+      {/* MODAL: REGISTRAR % COPYSPIDER */}
+      {copySpiderModalArticle && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[85]">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border space-y-4">
+            <div className="flex justify-between items-start border-b pb-2">
+              <div>
+                <span className="text-[10.5px] font-bold uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">Triagem Anti-Plágio</span>
+                <h3 className="text-base font-bold text-slate-900 mt-1">Registrar Resultado CopySpider</h3>
+                <p className="text-xs text-slate-500 line-clamp-1">{copySpiderModalArticle.title}</p>
+              </div>
+              <button type="button" onClick={() => setCopySpiderModalArticle(null)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <form onSubmit={handleSaveCopySpiderScore} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Percentual de Similaridade (%):</label>
+                <input
+                  type="text"
+                  required
+                  value={copySpiderScoreInput}
+                  onChange={(e) => setCopySpiderScoreInput(e.target.value)}
+                  placeholder="Ex: 4.8"
+                  className="w-full px-3 py-2 text-sm border rounded-lg font-bold"
+                />
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-xl border text-[11px] space-y-1 text-slate-600">
+                <p>🟢 <strong>Até 15%:</strong> Similaridade natural (apto à avaliação)</p>
+                <p>🟡 <strong>15% a 25%:</strong> Conferir citações manualmente</p>
+                <p>🔴 <strong>Acima de 25%:</strong> Solicitar revisão ou recusar</p>
+              </div>
+
+              {copySpiderModalArticle.plagiarism_checked_at && (
+                <p className="text-[11px] text-slate-500">
+                  Última verificação salva em: {new Date(copySpiderModalArticle.plagiarism_checked_at).toLocaleString('pt-BR')}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <button type="button" onClick={() => setCopySpiderModalArticle(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
+                <button type="submit" disabled={savingCopySpider} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
+                  {savingCopySpider ? 'Salvando...' : 'Salvar Verificação'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: MEU PERFIL COMPLETO COM EIXOS (ATÉ 5) E ESCOLAS */}
       {showProfileModal && (
