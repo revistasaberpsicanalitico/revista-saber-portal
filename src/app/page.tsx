@@ -1,15 +1,28 @@
+Sim, você tem toda razão — o arquivo `src/app/page.tsx` é bem grande e acabou atingindo o limite de tamanho da resposta antes do final.
+
+Para garantir que **não falte nenhuma linha**, vou enviar o arquivo completo dividido em **2 partes**.
+
+### Como fazer (bem simples):
+1. No GitHub, abra `src/app/page.tsx`, clique no lápis para editar, selecione tudo (`Ctrl + A`) e apague (`Delete`).
+2. Copie a **PARTE 1** abaixo e cole lá dentro.
+3. **Ainda não salve (`Commit`)!** Deixe a aba aberta e responda aqui: **`enviar parte 2`**.
+4. Eu vou te mandar a **PARTE 2** para você colar logo abaixo da última linha da Parte 1, e só então salvar no GitHub.
+
+---
+
+### PARTE 1 de 2 (copie tudo abaixo e cole em `src/app/page.tsx`)
+
+```tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { 
-  User, Lock, Mail, Building, Phone, ArrowRight, Upload, FileText, 
-  LogOut, ShieldCheck, Users, UserCheck, Download, MessageSquare, 
-  Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2, ShieldAlert,
-  Award, Ban, Search, X, AlertCircle, KeyRound, Clock, FileSpreadsheet, 
-  Edit3, Plus, Printer, Info, CheckSquare, Copy, Check, Megaphone, UserCog, Filter, ExternalLink,
-  Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Eye, EyeOff, Code, ThumbsUp, ThumbsDown, BookOpen,
-  Sparkles, Scale, Bell, CheckCheck, CalendarPlus
+import {
+  Lock, Mail, ArrowRight, Upload, FileText, LogOut, ShieldCheck, Users,
+  UserCheck, Download, Send, CheckCircle2, AlertTriangle, RefreshCw, Trash2,
+  Award, Ban, Search, X, AlertCircle, Clock, FileSpreadsheet, Edit3, Plus,
+  Printer, Info, Copy, Check, Megaphone, ExternalLink, Eye, EyeOff, ThumbsUp,
+  ThumbsDown, Sparkles, Scale, Bell, CheckCheck
 } from 'lucide-react'
 
 const formatRole = (role: string) => {
@@ -23,7 +36,6 @@ const formatRole = (role: string) => {
   }
 }
 
-// 12 Eixos Temáticos Padronizados
 const axeOptionsGlobal = [
   'Fundamentos, História e Epistemologia da Psicanálise',
   'Metapsicologia e Teoria das Pulsões',
@@ -40,14 +52,24 @@ const axeOptionsGlobal = [
 ]
 
 const schoolOptionsGlobal = [
-  'Sigmund Freud', 'Jacques Lacan', 'Donald Winnicott', 
+  'Sigmund Freud', 'Jacques Lacan', 'Donald Winnicott',
   'Sándor Ferenczi', 'Melanie Klein', 'Wilfred Bion', 'Françoise Dolto', 'Outros'
 ]
 
 // ============================================================================
 // MODAL DE PARECERISTAS (CHAMADA + INSCRIÇÃO ATÉ 5 EIXOS)
 // ============================================================================
-function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => void }) {
+function PareceristasModal({
+  show,
+  onClose,
+  loggedUser,
+  onLoggedSuccess
+}: {
+  show: boolean
+  onClose: () => void
+  loggedUser?: { session: any; profile: any } | null
+  onLoggedSuccess?: () => void
+}) {
   const [step, setStep] = useState<'edital' | 'formulario'>('edital')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -59,7 +81,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
   const [password, setPassword] = useState('')
   const [institution, setInstitution] = useState('')
   const [phone, setPhone] = useState('')
-  const [academicDegree, setAcademicDegree] = useState('Especialista')
+  const [academicDegree, setAcademicDegree] = useState('Especialização')
   const [lattesUrl, setLattesUrl] = useState('')
   const [orcid, setOrcid] = useState('')
   const [psicanaliseProfile, setPsicanaliseProfile] = useState('Psicanalista com atuação clínica')
@@ -68,6 +90,46 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
   const [schools, setSchools] = useState<string[]>([])
   const [axes, setAxes] = useState<string[]>([])
   const [termsAccepted, setTermsAccepted] = useState(false)
+
+  const isLoggedIn = Boolean(loggedUser?.session?.user?.id)
+
+  useEffect(() => {
+    if (show) {
+      setStep('edital')
+      setSuccess(false)
+      setErrMsg(null)
+      if (loggedUser?.profile) {
+        const p = loggedUser.profile
+        setFullName(p.full_name || '')
+        setEmail(p.email || loggedUser.session?.user?.email || '')
+        setInstitution(p.institution || '')
+        setPhone(p.phone || '')
+        setAcademicDegree(p.academic_degree || 'Especialização')
+        setLattesUrl(p.lattes_url || '')
+        setOrcid(p.orcid || '')
+        setPsicanaliseProfile(p.psicanalise_profile || 'Psicanalista com atuação clínica')
+        setMiniBio(p.mini_bio || '')
+        setKeywords(p.keywords || '')
+        setSchools(p.theoretical_schools || [])
+        setAxes(p.thematic_axes || [])
+      } else {
+        setFullName('')
+        setEmail('')
+        setPassword('')
+        setInstitution('')
+        setPhone('')
+        setAcademicDegree('Especialização')
+        setLattesUrl('')
+        setOrcid('')
+        setPsicanaliseProfile('Psicanalista com atuação clínica')
+        setMiniBio('')
+        setKeywords('')
+        setSchools([])
+        setAxes([])
+      }
+      setTermsAccepted(false)
+    }
+  }, [show, loggedUser])
 
   if (!show) return null
 
@@ -93,20 +155,25 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
 
     setLoading(true)
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName, role: 'reviewer', institution, phone } }
-      })
-      if (authError) throw authError
+      let userId = loggedUser?.session?.user?.id
+      const userEmail = isLoggedIn ? (loggedUser?.profile?.email || loggedUser?.session?.user?.email || email) : email
 
-      const userId = authData.user?.id
+      if (!isLoggedIn) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName, role: 'reviewer', institution, phone } }
+        })
+        if (authError) throw authError
+        userId = authData.user?.id
+      }
+
       if (!userId) throw new Error('Não foi possível obter identificador de usuário.')
 
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         full_name: fullName,
-        email,
+        email: userEmail,
         role: 'reviewer',
         institution,
         phone,
@@ -128,10 +195,10 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: email,
+            to: userEmail,
             subject: 'Inscrição Registrada - Banco de Pareceristas (Revista Saber Psicanalítico)',
             title: 'Candidatura Recebida',
-            message: `Prezado(a) ${fullName},\n\nConfirmamos o recebimento de sua inscrição para o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua ficha foi encaminhada para apreciação colegiada do Conselho Editorial.\n\nIMPORTANTE: Enquanto aguarda a deliberação, seu login já está ativo como AUTOR no portal, permitindo que você submeta trabalhos normalmente.`,
+            message: `Prezado(a) ${fullName},\n\nConfirmamos o recebimento de sua inscrição para o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua ficha foi encaminhada para apreciação colegiada do Conselho Editorial.\n\nIMPORTANTE: Enquanto aguarda a deliberação, seu login continua ativo como AUTOR no portal, permitindo que você submeta trabalhos normalmente.`,
             actionText: 'Acessar o Portal da Revista',
             actionUrl: 'https://revista-saber-portal.vercel.app'
           })
@@ -144,7 +211,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
             to: 'revistasaberpsicanalitico@gmail.com',
             subject: 'Nova Inscrição de Parecerista - Revista Saber Psicanalítico',
             title: 'Nova Candidatura de Parecerista',
-            message: `Novo cadastro recebido:\n\n• Nome: ${fullName}\n• Titulação: ${academicDegree}\n• Instituição: ${institution}\n• E-mail: ${email}\n• Eixos: ${axes.join(', ')}\n\nAcesse a aba "Candidaturas Pareceristas" na Sala Editorial para deliberar.`,
+            message: `Novo cadastro recebido:\n\n• Nome: ${fullName}\n• Titulação: ${academicDegree}\n• Instituição: ${institution}\n• E-mail: ${userEmail}\n• Eixos: ${axes.join(', ')}\n\nAcesse a aba "Candidaturas Pareceristas" na Sala Editorial para deliberar.`,
             actionText: 'Sala Editorial',
             actionUrl: 'https://revista-saber-portal.vercel.app'
           })
@@ -153,11 +220,12 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
         console.warn('Erro e-mail:', errMail)
       }
 
+      if (onLoggedSuccess) onLoggedSuccess()
       setSuccess(true)
     } catch (err: any) {
       let m = err.message || 'Erro ao processar inscrição.'
       if (m.includes('already registered')) {
-        m = 'Este e-mail já está cadastrado no sistema. Faça login para atualizar seus dados em Meu Perfil.'
+        m = 'Este e-mail já está cadastrado no sistema. Faça login como autor e clique em "Inscrever-se como Parecerista".'
       }
       setErrMsg(m)
     } finally {
@@ -194,7 +262,7 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
             </p>
             <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-950 text-left space-y-1.5 max-w-md mx-auto">
               <p className="font-bold flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-indigo-600" /> Acesso Imediato:</p>
-              <p>• Seu login e senha já estão liberados como <strong>Autor</strong> para submeter manuscritos normalmente.</p>
+              <p>• Seu acesso permanece liberado como <strong>Autor</strong> para submeter manuscritos normalmente.</p>
               <p>• Assim que homologado pelo Conselho Editorial, você poderá receber convites para emitir pareceres.</p>
             </div>
             <button type="button" onClick={onClose} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm">
@@ -264,20 +332,30 @@ function PareceristasModal({ show, onClose }: { show: boolean; onClose: () => vo
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">E-mail para Acesso e Contato *</label>
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu.email@exemplo.com" className="w-full px-3 py-1.5 text-xs border rounded-lg" />
+                <input
+                  type="email"
+                  required
+                  disabled={isLoggedIn}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu.email@exemplo.com"
+                  className={`w-full px-3 py-1.5 text-xs border rounded-lg ${isLoggedIn ? 'bg-slate-100 text-slate-600' : ''}`}
+                />
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Senha de Acesso *</label>
-                <div className="relative">
-                  <input type={showPass ? 'text' : 'password'} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 dígitos" className="w-full px-3 py-1.5 pr-8 text-xs border rounded-lg" />
-                  <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-2 top-2 text-slate-400">
-                    {showPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
+            <div className={`grid ${isLoggedIn ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+              {!isLoggedIn && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Senha de Acesso *</label>
+                  <div className="relative">
+                    <input type={showPass ? 'text' : 'password'} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 dígitos" className="w-full px-3 py-1.5 pr-8 text-xs border rounded-lg" />
+                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-2 top-2 text-slate-400">
+                      {showPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Telefone / WhatsApp *</label>
                 <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(00) 00000-0000" className="w-full px-3 py-1.5 text-xs border rounded-lg" />
@@ -714,14 +792,14 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
 
   const authName = article ? getAuthorName(article.author_id, article) : ''
   const issueName = article ? getArticleIssue(article) : ''
-  
+
   const submitDateStr = new Date(article?.created_at || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
   const decisionDateStr = new Date(article?.updated_at || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
   const docDate = new Date(article?.updated_at || review?.updated_at || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-  
+
   const docCode = isAceite ? `ASP-ACE-${(article?.id || '').slice(0, 8).toUpperCase()}` :
                   isRecusa ? `ASP-REC-${(article?.id || '').slice(0, 8).toUpperCase()}` :
-                  `ASP-PAR-${(review?.id || '').slice(0, 8).toUpperCase()}`;
+                  `ASP-PAR-${(review?.id || '').slice(0, 8).toUpperCase()}`
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[90] overflow-y-auto flex flex-col items-center p-3 sm:p-6 print:p-0 print:bg-white">
@@ -738,7 +816,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
       <div className="bg-white w-full max-w-[800px] min-h-[1080px] p-12 sm:p-16 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-12 print:w-full print:min-h-screen border border-slate-200">
         <div>
           <div className="flex items-center justify-between pb-6 border-b border-slate-200 gap-6">
-            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-36 sm:h-44 max-h-48 w-auto object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-36 sm:h-44 max-h-48 w-auto object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             <div className="text-right space-y-1">
               <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-tight">Revista Saber Psicanalítico</h2>
               <p className="text-xs font-semibold text-indigo-900 tracking-wide uppercase">ISSN 3086-8416</p>
@@ -819,7 +897,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
 
         <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-sans">
           <div className="flex items-center gap-3">
-            <img src="/logo-asp.png" alt="ASP" className="h-8 sm:h-9 object-contain opacity-80" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <img src="/logo-asp.png" alt="ASP" className="h-8 sm:h-9 object-contain opacity-80" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             <div>
               <p className="font-bold text-slate-700 text-[11px] whitespace-nowrap">Associação Saber Psicanalítico (ASP)</p>
               <p className="text-slate-500 whitespace-nowrap">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
@@ -908,7 +986,7 @@ export default function Home() {
   const [profilePhone, setProfilePhone] = useState('')
   const [profileLattes, setProfileLattes] = useState('')
   const [profileOrcid, setProfileOrcid] = useState('')
-  const [profileDegree, setProfileDegree] = useState('Especialista')
+  const [profileDegree, setProfileDegree] = useState('Especialização')
   const [profilePsicanalise, setProfilePsicanalise] = useState('Psicanalista com atuação clínica')
   const [profileBio, setProfileBio] = useState('')
   const [profileKeywords, setProfileKeywords] = useState('')
@@ -951,7 +1029,7 @@ export default function Home() {
   const [selectedReviewerId, setSelectedReviewerId] = useState('')
   const [assignDeadline, setAssignDeadline] = useState('')
 
-  // Solicitar Correções ao Autor (COM PRAZO DEFINIDO - PONTO B)
+  // Solicitar Correções ao Autor (COM PRAZO DEFINIDO)
   const [requestChangesModalArticle, setRequestChangesModalArticle] = useState<any>(null)
   const [changesReasonText, setChangesReasonText] = useState('')
   const [authorDeadline, setAuthorDeadline] = useState('')
@@ -984,15 +1062,32 @@ export default function Home() {
   const [copiedThanks, setCopiedThanks] = useState(false)
 
   // ==========================================
-  // FUNÇÕES AUXILIARES DECLARADAS NO TOPO DO HOME
+  // FUNÇÕES AUXILIARES
   // ==========================================
+  const handleAddCoauthor = () => {
+    setCoauthors([...coauthors, { name: '', email: '', institution: '', lattes: '', orcid: '', bio: '' }])
+  }
+
+  const handleUpdateCoauthor = (index: number, field: string, value: string) => {
+    const updated = [...coauthors]
+    updated[index] = { ...updated[index], [field]: value }
+    setCoauthors(updated)
+  }
+
+  const handleRemoveCoauthor = (index: number) => {
+    setCoauthors(coauthors.filter((_, idx) => idx !== index))
+  }
+
   const sendEmailNotification = async (payload: any) => {
     try {
-      await fetch('/api/send-email', {
+      const res = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
+      if (!res.ok) {
+        console.warn('Falha no retorno do servidor de e-mail:', await res.text())
+      }
     } catch (e) {
       console.warn('Falha silenciosa de e-mail:', e)
     }
@@ -1009,12 +1104,14 @@ export default function Home() {
       const targetEmail = (targetProfile?.email || '').trim().toLowerCase()
       const targetName = (targetProfile?.full_name || '').trim().toLowerCase()
 
-      const isEmailMatch = revEmail && targetEmail && revEmail === targetEmail
-      const isNameMatch = revName && targetName && revName === targetName
+      const isEmailMatch = Boolean(revEmail && targetEmail && revEmail === targetEmail)
+      const isNameMatch = Boolean(revName && targetName && revName === targetName)
 
-      const isAssignedOrWorking = ['convite_pendente', 'pendente', 'em_andamento', 'ajustes_solicitados'].includes(r.status)
+      const st = (r.status || '').toString().trim().toLowerCase()
+      const isClosed = ['concluido', 'concluído', 'recusado', 'cancelado', 'finalizado'].includes(st)
+      const articleExists = allArticles.length === 0 || allArticles.some(a => a.id === r.article_id)
 
-      return (isIdMatch || isEmailMatch || isNameMatch) && isAssignedOrWorking
+      return (isIdMatch || isEmailMatch || isNameMatch) && !isClosed && articleExists
     }).length
   }
 
@@ -1062,7 +1159,7 @@ export default function Home() {
       }
 
       if (code.includes('ASP-ACE')) {
-        let found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
+        const found = allArticles.find((a) => (a.id || '').toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(cleanCode))
         if (found) {
           setVerifyResult({
             valid: true,
@@ -1126,8 +1223,8 @@ export default function Home() {
             setViewMode('author')
           } else {
             setViewMode(
-              isEd ? 'editor' : 
-              data.role === 'council' ? 'council' : 
+              isEd ? 'editor' :
+              data.role === 'council' ? 'council' :
               data.role === 'reviewer' ? 'reviewer' : 'author'
             )
           }
@@ -1189,7 +1286,7 @@ export default function Home() {
     if (art?.author?.email) return art.author.email
     const p = allProfiles.find((x) => x.id === authorId)
     if (p?.email) return p.email
-    if (authorId === session?.user?.id && profile?.email) return profile.email
+    if (authorId === session?.user?.id && (profile?.email || session?.user?.email)) return profile?.email || session?.user?.email
     return ''
   }
 
@@ -1241,7 +1338,7 @@ export default function Home() {
     const diffDays = Math.ceil((new Date(r.deadline + 'T23:59:59').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     const deadlineFormatted = new Date(r.deadline + 'T12:00:00').toLocaleDateString('pt-BR')
 
-    let situacao = diffDays > 0 ? `com prazo previsto para ${deadlineFormatted} (restando ${diffDays} dias)` : `com prazo que venceu em ${deadlineFormatted}`
+    const situacao = diffDays > 0 ? `com prazo previsto para ${deadlineFormatted} (restando ${diffDays} dias)` : `com prazo que venceu em ${deadlineFormatted}`
 
     if (!window.confirm(`Enviar lembrete cordial de avaliação para ${revProfile.full_name}?`)) return
 
@@ -1276,7 +1373,7 @@ export default function Home() {
       if (error) throw error
 
       if (revProfile?.email) {
-        sendEmailNotification({
+        await sendEmailNotification({
           to: revProfile.email,
           subject: 'Prorrogação de Prazo de Avaliação - Revista Saber Psicanalítico',
           title: 'Prazo Limite Prorrogado',
@@ -1350,7 +1447,7 @@ export default function Home() {
     setProfilePhone(profile?.phone || '')
     setProfileLattes(profile?.lattes_url || '')
     setProfileOrcid(profile?.orcid || '')
-    setProfileDegree(profile?.academic_degree || 'Especialista')
+    setProfileDegree(profile?.academic_degree || 'Especialização')
     setProfilePsicanalise(profile?.psicanalise_profile || 'Psicanalista com atuação clínica')
     setProfileBio(profile?.mini_bio || '')
     setProfileKeywords(profile?.keywords || '')
@@ -1403,16 +1500,20 @@ export default function Home() {
     if (!editingUserModal) return
     setSavingUserEdit(true)
     try {
-      const { error } = await supabase.from('profiles').update({
+      const updatePayload: any = {
         full_name: editUserName,
         institution: editUserInst,
         phone: editUserPhone,
         lattes_url: editUserLattes,
         orcid: editUserOrcid,
         role: editUserRole,
-      }).eq('id', editingUserModal.id)
+      }
+      if (['reviewer', 'council', 'editor_adjunto', 'editor'].includes(editUserRole)) {
+        updatePayload.reviewer_status = 'approved'
+      }
+      const { error } = await supabase.from('profiles').update(updatePayload).eq('id', editingUserModal.id)
       if (error) throw error
-      alert(`Cadastro atualizado!`)
+      alert('Cadastro atualizado!')
       setEditingUserModal(null)
       fetchAllData()
     } catch (err: any) {
@@ -1516,17 +1617,31 @@ export default function Home() {
       })
       if (insertError) throw insertError
 
-      sendEmailNotification({
-        to: session.user.email,
-        subject: 'Confirmação de Submissão - Revista Saber Psicanalítico',
-        title: 'Manuscrito Recebido com Sucesso',
-        message: `Prezado(a) ${profile?.full_name},\n\nConfirmamos o recebimento do trabalho "${newTitle}". Você pode acompanhar o andamento pelo portal.`,
-        actionText: 'Acompanhar no Portal',
+      const authorEmail = session.user.email || profile?.email
+      if (authorEmail) {
+        await sendEmailNotification({
+          to: authorEmail,
+          subject: 'Confirmação de Submissão - Revista Saber Psicanalítico',
+          title: 'Manuscrito Recebido com Sucesso',
+          message: `Prezado(a) ${profile?.full_name || 'Autor(a)'},\n\nConfirmamos o recebimento do trabalho "${newTitle}" na seção "${newSection}".\n\nVocê pode acompanhar todas as etapas da avaliação diretamente no portal.`,
+          actionText: 'Acompanhar no Portal',
+          actionUrl: 'https://revista-saber-portal.vercel.app',
+        })
+      }
+
+      await sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: 'Nova Submissão Recebida - Revista Saber Psicanalítico',
+        title: 'Novo Manuscrito Submetido',
+        message: `Um novo manuscrito foi submetido ao portal:\n\n• Título: ${newTitle}\n• Seção: ${newSection}\n• Eixo Temático: ${newThematicAxis}\n• Autor: ${profile?.full_name || 'Autor'} (${authorEmail || '-'})\n\nAcesse a Sala Editorial para realizar a triagem inicial.`,
+        actionText: 'Abrir Sala Editorial',
         actionUrl: 'https://revista-saber-portal.vercel.app',
       })
 
       alert('Artigo submetido com sucesso!')
       setShowSubmitModal(false)
+      setSelectedFile(null)
+      setCoauthors([])
       fetchAllData()
     } catch (err: any) {
       alert(`Erro: ${err.message}`)
@@ -1540,6 +1655,11 @@ export default function Home() {
     if (!revisedFile || !reSubmitArticle) return
     setSubmittingRevision(true)
     try {
+      const previousStatus = reSubmitArticle.status
+      const tipoCorrecao = previousStatus === 'ajustes_iniciais'
+        ? 'Ajustes de Anonimização / Triagem Inicial'
+        : 'Correções Solicitadas pós-Parecer'
+
       const fileExt = revisedFile.name.split('.').pop()
       const filePath = `artigos/revisao_${reSubmitArticle.id}_${Date.now()}.${fileExt}`
       const { error: uploadError } = await supabase.storage.from('manuscritos').upload(filePath, revisedFile)
@@ -1550,6 +1670,29 @@ export default function Home() {
         status: 'revisao_submetida',
       }).eq('id', reSubmitArticle.id)
       if (updateError) throw updateError
+
+      const authorEmail = session?.user?.email || profile?.email || getAuthorEmail(reSubmitArticle.author_id, reSubmitArticle)
+      const authorName = profile?.full_name || getAuthorName(reSubmitArticle.author_id, reSubmitArticle)
+
+      if (authorEmail) {
+        await sendEmailNotification({
+          to: authorEmail,
+          subject: 'Versão Revisada Recebida - Revista Saber Psicanalítico',
+          title: 'Reenvio de Manuscrito Confirmado',
+          message: `Prezado(a) ${authorName},\n\nConfirmamos o recebimento da nova versão do manuscrito "${reSubmitArticle.title}" (${tipoCorrecao}).\n\nA Comissão Editorial já foi notificada e dará prosseguimento à análise.`,
+          actionText: 'Acessar o Portal',
+          actionUrl: 'https://revista-saber-portal.vercel.app',
+        })
+      }
+
+      await sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: `Autor Reenviou Correções - ${reSubmitArticle.title}`,
+        title: 'Versão Corrigida Enviada pelo Autor',
+        message: `O(A) autor(a) ${authorName} (${authorEmail || '-'}) enviou uma versão revisada do manuscrito:\n\n• Título: "${reSubmitArticle.title}"\n• Origem da solicitação: ${tipoCorrecao}\n• Seção: ${reSubmitArticle.section || 'Artigos Científicos'}\n\nAcesse a Sala Editorial (aba "Revisão Enviada") para conferir e baixar o arquivo atualizado.`,
+        actionText: 'Conferir na Sala Editorial',
+        actionUrl: 'https://revista-saber-portal.vercel.app',
+      })
 
       alert('Versão corrigida enviada com sucesso!')
       setReSubmitArticle(null)
@@ -1595,8 +1738,46 @@ export default function Home() {
     }
 
     try {
+      const targetArt = allArticles.find((a) => a.id === articleId)
       const { error } = await supabase.from('articles').update({ status }).eq('id', articleId)
       if (error) throw error
+
+      if (targetArt) {
+        const autEmail = getAuthorEmail(targetArt.author_id, targetArt)
+        const autName = getAuthorName(targetArt.author_id, targetArt)
+
+        if (autEmail) {
+          if (status === 'ajustes_iniciais') {
+            await sendEmailNotification({
+              to: autEmail,
+              subject: 'Ajuste de Anonimização Solicitado - Revista Saber Psicanalítico',
+              title: 'Ajuste Inicial Necessário Antes da Avaliação',
+              message: `Prezado(a) ${autName},\n\nNa triagem inicial do manuscrito "${targetArt.title}", verificamos a necessidade de ajustes de anonimização ou formatação para prosseguir à avaliação duplo-cega por pares.\n\nPor favor, remova qualquer identificação dos autores no texto e nas propriedades do arquivo Word e envie novamente a versão anonimizada pelo portal clicando em "Enviar Arquivo Corrigido".`,
+              actionText: 'Enviar Arquivo Anonimizado',
+              actionUrl: 'https://revista-saber-portal.vercel.app',
+            })
+          } else if (status === 'em_avaliacao') {
+            await sendEmailNotification({
+              to: autEmail,
+              subject: 'Manuscrito Encaminhado para Avaliação - Revista Saber Psicanalítico',
+              title: 'Manuscrito em Avaliação Duplo-Cega',
+              message: `Prezado(a) ${autName},\n\nInformamos que seu manuscrito "${targetArt.title}" concluiu a triagem inicial e encontra-se agora em processo de avaliação duplo-cega por pares (Double-Blind Peer Review).\n\nAssim que os pareceres forem consolidados, você será notificado por e-mail.`,
+              actionText: 'Acompanhar no Portal',
+              actionUrl: 'https://revista-saber-portal.vercel.app',
+            })
+          } else if (status === 'aceito') {
+            await sendEmailNotification({
+              to: autEmail,
+              subject: 'Manuscrito Aceito para Publicação! - Revista Saber Psicanalítico',
+              title: 'Parabéns! Artigo Aprovado para Publicação',
+              message: `Prezado(a) ${autName},\n\nTemos a grande satisfação de comunicar que seu trabalho "${targetArt.title}" foi APROVADO PARA PUBLICAÇÃO na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua Carta/Declaração Oficial de Aceite em PDF (com código verificador digital) e os pareceres já estão disponíveis para download no portal.`,
+              actionText: 'Emitir Carta de Aceite no Portal',
+              actionUrl: 'https://revista-saber-portal.vercel.app',
+            })
+          }
+        }
+      }
+
       alert('Status atualizado!')
       fetchAllData()
     } catch (err: any) {
@@ -1622,11 +1803,11 @@ export default function Home() {
       const deadlineFmt = new Date(authorDeadline + 'T12:00:00').toLocaleDateString('pt-BR')
 
       if (autEmail) {
-        sendEmailNotification({
+        await sendEmailNotification({
           to: autEmail,
           subject: 'Correções Solicitadas no Manuscrito - Revista Saber Psicanalítico',
           title: 'Parecer Editorial Disponível com Solicitação de Ajustes',
-          message: `Prezado(a) ${autName},\n\nA Comissão Editorial apreciou seu manuscrito "${requestChangesModalArticle.title}" e solicita a realização de ajustes regimentais com base nas orientações abaixo:\n\n${changesReasonText}\n\n⚠️ PRAZO IMPRORROGÁVEL: ${deadlineFmt}\nO não cumprimento deste prazo acarretará no adiamento ou na não publicação do texto no próximo fascículo.`,
+          message: `Prezado(a) ${autName},\n\nA Comissão Editorial apreciou seu manuscrito "${requestChangesModalArticle.title}" e solicita a realização de ajustes regimentais com base nas orientações abaixo:\n\n${changesReasonText}\n\n⚠️ PRAZO IMPRORROGÁVEL: ${deadlineFmt}\nO não cumprimento deste prazo acarretará no adiamento ou na não publicação do texto no próximo fascículo.\n\nOs pareceres completos também já podem ser consultados no portal.`,
           actionText: 'Ver Detalhes e Enviar Versão Corrigida',
           actionUrl: 'https://revista-saber-portal.vercel.app'
         })
@@ -1654,7 +1835,7 @@ export default function Home() {
 
       const revProfile = allProfiles.find(p => p.id === requestReviewerChangesModal.reviewer_id)
       if (revProfile?.email) {
-        sendEmailNotification({
+        await sendEmailNotification({
           to: revProfile.email,
           subject: 'Ajuste Solicitado no Parecer - Revista Saber Psicanalítico',
           title: 'Solicitação de Ajuste no Parecer Emitido',
@@ -1680,6 +1861,20 @@ export default function Home() {
     try {
       const { error } = await supabase.from('articles').update({ status: 'recusado', rejection_reason: rejectionReasonText }).eq('id', rejectionModalArticle.id)
       if (error) throw error
+
+      const autEmail = getAuthorEmail(rejectionModalArticle.author_id, rejectionModalArticle)
+      const autName = getAuthorName(rejectionModalArticle.author_id, rejectionModalArticle)
+      if (autEmail) {
+        await sendEmailNotification({
+          to: autEmail,
+          subject: 'Resultado da Avaliação Editorial - Revista Saber Psicanalítico',
+          title: 'Comunicação Editorial / Parecer Final',
+          message: `Prezado(a) ${autName},\n\nComunicamos que o manuscrito "${rejectionModalArticle.title}" concluiu as etapas de avaliação e não foi aceito para publicação no presente ciclo editorial.\n\nConsiderações da Editoria:\n${rejectionReasonText}\n\nA comunicação oficial em PDF e os pareceres emitidos encontram-se disponíveis para consulta no portal.`,
+          actionText: 'Acessar o Portal',
+          actionUrl: 'https://revista-saber-portal.vercel.app'
+        })
+      }
+
       alert('Manuscrito Recusado!')
       setRejectionModalArticle(null)
       fetchAllData()
@@ -1704,7 +1899,7 @@ export default function Home() {
       await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
 
       if (revProfile?.email) {
-        sendEmailNotification({
+        await sendEmailNotification({
           to: revProfile.email,
           subject: 'Convite para Avaliação por Pares - Revista Saber Psicanalítico',
           title: 'Novo Convite de Avaliação',
@@ -1737,6 +1932,16 @@ export default function Home() {
     try {
       const { error } = await supabase.from('reviews').update({ status: 'em_andamento' }).eq('id', reviewId)
       if (error) throw error
+
+      await sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: 'Convite Aceito pelo Parecerista - Revista Saber Psicanalítico',
+        title: 'Parecerista Aceitou a Avaliação',
+        message: `O(A) parecerista ${profile?.full_name || 'Avaliador(a)'} ACEITOU o convite para avaliar o manuscrito "${articleTitle}".`,
+        actionText: 'Abrir Sala Editorial',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
       alert('Convite aceito! O manuscrito foi liberado para download e avaliação.')
       fetchAllData()
     } catch (err: any) {
@@ -1749,6 +1954,16 @@ export default function Home() {
     try {
       const { error } = await supabase.from('reviews').update({ status: 'recusado' }).eq('id', reviewId)
       if (error) throw error
+
+      await sendEmailNotification({
+        to: 'revistasaberpsicanalitico@gmail.com',
+        subject: 'Convite Recusado pelo Parecerista - Revista Saber Psicanalítico',
+        title: 'Parecerista Recusou o Convite',
+        message: `O(A) parecerista ${profile?.full_name || 'Avaliador(a)'} RECUSOU o convite para avaliar o manuscrito "${articleTitle}". Acesse a Sala Editorial para designar outro avaliador.`,
+        actionText: 'Abrir Sala Editorial',
+        actionUrl: 'https://revista-saber-portal.vercel.app'
+      })
+
       alert('Recusa registrada.')
       fetchAllData()
     } catch (err: any) {
@@ -1780,7 +1995,7 @@ export default function Home() {
         status: 'concluido',
       }).eq('id', reviewModalData.id)
 
-      sendEmailNotification({
+      await sendEmailNotification({
         to: 'revistasaberpsicanalitico@gmail.com',
         subject: isWasAdjustment ? 'Parecer Ajustado e Reenviado - Revista Saber Psicanalítico' : 'Novo Parecer Emitido - Revista Saber Psicanalítico',
         title: isWasAdjustment ? 'Parecer Ajustado Concluído' : 'Parecer Técnico Registrado',
@@ -1848,14 +2063,15 @@ export default function Home() {
   const isCouncil = profile?.role === 'council'
   const canAccessEditorialRoom = isFullEditor || isCouncil
 
-  const eligibleReviewers = allProfiles.filter((p) => 
-    (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') && 
-    p.reviewer_status === 'approved' &&
+  const eligibleReviewers = allProfiles.filter((p) =>
+    (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') &&
+    p.reviewer_status !== 'pending' &&
+    p.reviewer_status !== 'rejected' &&
     p.id !== assignModalArticle?.author_id
   )
 
   const getReviewerAffinity = (rev: any, art: any) => {
-    if (!art) return { score: 0, tag: '⚪', label: 'Disponível', matches: [] }
+    if (!art) return { score: 0, tag: '⚪', label: 'Disponível', matches: [] as string[], sameInst: false }
     let score = 0
     const matches: string[] = []
 
@@ -1867,7 +2083,7 @@ export default function Home() {
 
     const artKeywords = (art.keywords || '').toLowerCase().split(/[,;]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 3)
     const revKeywords = (rev.keywords || '').toLowerCase().split(/[,;]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 3)
-    const commonKeywords = artKeywords.filter((k: string) => 
+    const commonKeywords = artKeywords.filter((k: string) =>
       revKeywords.some((rk: string) => rk.includes(k) || k.includes(rk))
     )
     if (commonKeywords.length > 0) {
@@ -1877,7 +2093,7 @@ export default function Home() {
 
     const artText = `${art.title} ${art.abstract} ${art.keywords}`.toLowerCase()
     const revSchools = rev.theoretical_schools || []
-    const matchedSchools = revSchools.filter((s: string) => 
+    const matchedSchools = revSchools.filter((s: string) =>
       artText.includes(s.toLowerCase().replace('sigmund ', '').replace('jacques ', '').replace('donald ', '').replace('sándor ', ''))
     )
     if (matchedSchools.length > 0) {
@@ -1895,8 +2111,10 @@ export default function Home() {
       label = 'Compatível'
     }
 
-    const sameInst = rev.institution && art.author_institution && 
+    const sameInst = Boolean(
+      rev.institution && art.author_institution &&
       rev.institution.trim().toLowerCase() === art.author_institution.trim().toLowerCase()
+    )
 
     return { score, tag, label, matches, sameInst }
   }
@@ -1911,6 +2129,8 @@ export default function Home() {
   const selectedAffinity = selectedReviewerProfile && assignModalArticle ? getReviewerAffinity(selectedReviewerProfile, assignModalArticle) : null
   const selectedActiveCount = selectedReviewerId ? getReviewerActiveCount(selectedReviewerId) : 0
 
+  const revisaoEnviadaCount = allArticles.filter((a) => a.status === 'revisao_submetida').length
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Carregando Revista Saber Psicanalítico...</div>
   }
@@ -1920,7 +2140,7 @@ export default function Home() {
       <main className="min-h-screen flex flex-col justify-center items-center p-4 bg-slate-50">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
           <div className="flex flex-col items-center mb-6 space-y-3">
-            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-32 md:h-36 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-32 md:h-36 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             <div className="text-center">
               <h1 className="text-xl font-bold text-slate-800">Revista Saber Psicanalítico</h1>
               <p className="text-xs text-indigo-700 font-semibold tracking-wider uppercase mt-0.5">ISSN 3086-8416</p>
@@ -1928,8 +2148,8 @@ export default function Home() {
           </div>
 
           <div className="flex rounded-lg bg-slate-100 p-1 mb-6">
-            <button type="button" onClick={() => { setIsLogin(true); setAuthMessage(null); }} className={`flex-1 py-2 text-sm font-medium rounded-md ${isLogin ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>Entrar</button>
-            <button type="button" onClick={() => { setIsLogin(false); setAuthMessage(null); }} className={`flex-1 py-2 text-sm font-medium rounded-md ${!isLogin ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>Cadastrar como Autor</button>
+            <button type="button" onClick={() => { setIsLogin(true); setAuthMessage(null) }} className={`flex-1 py-2 text-sm font-medium rounded-md ${isLogin ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>Entrar</button>
+            <button type="button" onClick={() => { setIsLogin(false); setAuthMessage(null) }} className={`flex-1 py-2 text-sm font-medium rounded-md ${!isLogin ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>Cadastrar como Autor</button>
           </div>
 
           {authMessage && (
@@ -1986,13 +2206,13 @@ export default function Home() {
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Senha *</label>
               <div className="relative">
-                <input 
-                  type={showLoginPassword ? 'text' : 'password'} 
-                  required 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  placeholder="••••••••" 
-                  className="w-full px-3 py-2 pr-9 text-sm border border-slate-200 rounded-lg" 
+                <input
+                  type={showLoginPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2 pr-9 text-sm border border-slate-200 rounded-lg"
                 />
                 <button
                   type="button"
@@ -2038,11 +2258,11 @@ export default function Home() {
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col items-center space-y-4">
-            <button type="button" onClick={() => { setShowVerifyModal(true); setVerifyResult(null); setVerifyCodeInput(''); }} className="text-xs text-indigo-700 hover:underline flex items-center gap-1.5 font-semibold">
+            <button type="button" onClick={() => { setShowVerifyModal(true); setVerifyResult(null); setVerifyCodeInput('') }} className="text-xs text-indigo-700 hover:underline flex items-center gap-1.5 font-semibold">
               <Search className="w-3.5 h-3.5" /> Verificar Autenticidade de Documento
             </button>
             <div className="flex flex-col items-center text-center space-y-1">
-              <img src="/logo-asp.png" alt="ASP" className="h-10 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <img src="/logo-asp.png" alt="ASP" className="h-10 object-contain" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               <p className="text-[10px] text-slate-400 whitespace-nowrap">Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85</p>
             </div>
           </div>
@@ -2119,7 +2339,19 @@ export default function Home() {
       </main>
     )
   }
+Aqui está a **PARTE 2 de 2** (final do arquivo).
 
+### Como colar:
+1. No GitHub (onde você já colou a Parte 1), vá até a **última linha** (logo abaixo do `}`) e aperte **`Enter`** para abrir uma linha em branco.
+2. Copie **todo** o código da **PARTE 2** abaixo e cole lá (`Ctrl + V`).
+3. Confira se a última linha do arquivo termina exatamente com `}` e clique no botão verde **`Commit changes...`** para salvar.
+4. Aguarde a **Vercel** finalizar o build e ficar com o status verde (**Ready**).
+
+---
+
+### PARTE 2 de 2 (cole logo abaixo da Parte 1)
+
+```tsx
   const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
   const myReviewAssignments = allReviews
     .filter((r) => r.reviewer_id === session?.user?.id)
@@ -2145,14 +2377,14 @@ export default function Home() {
         <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-4">
-              <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-16 md:h-20 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-16 md:h-20 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               <div>
                 <h1 className="text-lg md:text-xl font-bold text-slate-900 leading-tight">Revista Saber Psicanalítico</h1>
                 <p className="text-xs text-indigo-700 font-semibold tracking-wider">ISSN 3086-8416 • Portal Editorial</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {isFullEditor && (
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg text-xs">
                   <button type="button" onClick={() => setViewMode('editor')} className={`px-2.5 py-1 rounded-md font-medium ${viewMode === 'editor' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Sala Editorial</button>
@@ -2188,15 +2420,36 @@ export default function Home() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
           {viewMode === 'author' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div>
                   <h2 className="text-xl font-bold text-slate-800">Meus Trabalhos Submetidos</h2>
                   <p className="text-sm text-slate-500">Acompanhe em tempo real o status, cartas e revisões.</p>
                 </div>
-                <button type="button" onClick={() => setShowSubmitModal(true)} className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm flex items-center gap-2">
-                  <Upload className="w-4 h-4" /> Submeter Novo Trabalho
-                </button>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {profile?.role === 'author' && profile?.reviewer_status !== 'pending' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPareceristasModal(true)}
+                      className="px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold rounded-lg text-sm flex items-center gap-2 transition"
+                    >
+                      <UserCheck className="w-4 h-4 text-amber-700" /> Inscrever-se como Parecerista
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setShowSubmitModal(true)} className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm flex items-center gap-2">
+                    <Upload className="w-4 h-4" /> Submeter Novo Trabalho
+                  </button>
+                </div>
               </div>
+
+              {isReviewerPending && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-bold">Candidatura ao Banco de Pareceristas em Análise</p>
+                    <p className="text-[11px] text-amber-800">Sua inscrição como parecerista foi enviada para deliberação do Conselho Editorial. Enquanto aguarda a homologação, você pode submeter e acompanhar seus trabalhos normalmente.</p>
+                  </div>
+                </div>
+              )}
 
               {myAuthorArticles.length === 0 ? (
                 <div className="bg-white p-12 text-center rounded-xl border border-slate-200 text-slate-500 text-sm">Nenhum trabalho submetido ainda.</div>
@@ -2227,7 +2480,7 @@ export default function Home() {
                             {art.status === 'aceito' && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'aceite', article: art })} className="px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg flex items-center justify-center gap-1.5"><Award className="w-4 h-4" /> Carta de Aceite (PDF)</button>}
                             {art.status === 'recusado' && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'recusa', article: art })} className="px-3 py-2 text-xs font-semibold bg-rose-600 text-white rounded-lg flex items-center justify-center gap-1.5"><Ban className="w-4 h-4" /> Carta Não Aceite (PDF)</button>}
                             <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, 'Manuscrito')} className="px-3 py-2 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5"><Download className="w-3.5 h-3.5" /> Baixar Manuscrito</button>
-                            {canResubmit && <button type="button" onClick={() => { setReSubmitArticle(art); setRevisedFile(null); }} className="px-3 py-2 text-xs font-semibold bg-amber-600 text-white rounded-lg flex items-center justify-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" /> Enviar Arquivo Corrigido</button>}
+                            {canResubmit && <button type="button" onClick={() => { setReSubmitArticle(art); setRevisedFile(null) }} className="px-3 py-2 text-xs font-semibold bg-amber-600 text-white rounded-lg flex items-center justify-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" /> Enviar Arquivo Corrigido</button>}
                           </div>
                         </div>
 
@@ -2301,9 +2554,9 @@ export default function Home() {
                     <strong>Importante:</strong> O envio do formulário não homologa automaticamente o avaliador. Assim que seu cadastro for aprovado e homologado pela Editoria, você receberá um comunicado oficial por e-mail e este painel estará habilitado para receber convites formais de avaliação.
                   </p>
                   <div className="pt-1 flex items-center gap-2">
-                    <button 
-                      type="button" 
-                      onClick={() => setViewMode('author')} 
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('author')}
                       className="px-3.5 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition"
                     >
                       <Upload className="w-3.5 h-3.5" /> Ir para Meus Trabalhos (Visão de Autor)
@@ -2314,8 +2567,8 @@ export default function Home() {
 
               {myReviewAssignments.length === 0 ? (
                 <div className="bg-white p-12 text-center rounded-xl border border-slate-200 text-slate-400 text-xs">
-                  {isReviewerPending 
-                    ? 'Nenhum manuscrito pode ser atribuído antes da homologação de sua candidatura.' 
+                  {isReviewerPending
+                    ? 'Nenhum manuscrito pode ser atribuído antes da homologação de sua candidatura.'
                     : 'Nenhum manuscrito atribuído para avaliação no momento.'}
                 </div>
               ) : (
@@ -2416,7 +2669,7 @@ export default function Home() {
 
                         {!isPendingInvitation && (
                           <div className="flex justify-end pt-2 border-t">
-                            <button type="button" onClick={() => { setReviewModalData(rev); setRecommendation(rev.recommendation || 'aceitar'); setCommentsAuthor(rev.comments_for_author || ''); setCommentsEditor(rev.confidential_comments_editor || ''); setReviewFile(null); }} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm">
+                            <button type="button" onClick={() => { setReviewModalData(rev); setRecommendation(rev.recommendation || 'aceitar'); setCommentsAuthor(rev.comments_for_author || ''); setCommentsEditor(rev.confidential_comments_editor || ''); setReviewFile(null) }} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm">
                               {isCompleted ? 'Editar Parecer Emitido' : isNeedsAdjustment ? 'Regularizar e Reenviar Parecer' : 'Preencher Parecer Técnico'}
                             </button>
                           </div>
@@ -2447,7 +2700,7 @@ export default function Home() {
                 <button type="button" onClick={() => setEditorialTab('articles')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'articles' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                   <FileText className="w-4 h-4" /> Submissões e Artigos ({allArticles.length})
                 </button>
-                
+
                 <button type="button" onClick={() => setEditorialTab('candidates')} className={`py-3.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap ${editorialTab === 'candidates' ? 'border-amber-500 text-amber-700 bg-amber-50/50' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                   <Award className="w-4 h-4 text-amber-600" />
                   <span>Candidaturas Pareceristas</span>
@@ -2476,7 +2729,14 @@ export default function Home() {
                     <input type="text" value={editorSearch} onChange={(e) => setEditorSearch(e.target.value)} placeholder="Pesquise por título, autor, seção ou eixo..." className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
                     <div className="flex gap-1.5 overflow-x-auto text-xs">
                       {['todos', 'submetido', 'ajustes_iniciais', 'em_avaliacao', 'correcoes_pendentes', 'revisao_submetida', 'aceito', 'recusado'].map((status) => (
-                        <button key={status} type="button" onClick={() => setEditorStatusFilter(status)} className={`px-3 py-1.5 rounded-lg font-medium capitalize text-xs ${editorStatusFilter === status ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{status.replace('_', ' ')}</button>
+                        <button key={status} type="button" onClick={() => setEditorStatusFilter(status)} className={`px-3 py-1.5 rounded-lg font-medium capitalize text-xs whitespace-nowrap inline-flex items-center gap-1.5 ${editorStatusFilter === status ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                          <span>{status === 'revisao_submetida' ? 'Revisão Enviada' : status.replace('_', ' ')}</span>
+                          {status === 'revisao_submetida' && revisaoEnviadaCount > 0 && (
+                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${editorStatusFilter === status ? 'bg-white text-indigo-700' : 'bg-teal-600 text-white'}`}>
+                              {revisaoEnviadaCount}
+                            </span>
+                          )}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -2486,11 +2746,13 @@ export default function Home() {
                       const revs = getArticleReviews(art.id)
                       const isAccepted = art.status === 'aceito'
                       const isRejected = art.status === 'recusado'
+                      const isRevisionResubmitted = art.status === 'revisao_submetida'
+                      const isPostReviewRevision = Boolean(art.revision_deadline || revs.some((r) => r.status === 'concluido'))
                       const isOwnArticle = art.author_id === session?.user?.id
                       const hasRevision = art.original_file_url && art.original_file_url !== art.file_url
 
                       return (
-                        <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <div key={art.id} className={`bg-white p-6 rounded-xl border shadow-sm space-y-4 ${isRevisionResubmitted ? 'border-teal-400 ring-1 ring-teal-200' : 'border-slate-200'}`}>
                           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
                               <div className="flex items-center gap-2 flex-wrap">
@@ -2501,6 +2763,14 @@ export default function Home() {
                                   </span>
                                 )}
                                 <span className="text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
+                                {isRevisionResubmitted && (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-teal-100 text-teal-900 border border-teal-300 inline-flex items-center gap-1 animate-pulse">
+                                    <CheckCheck className="w-3.5 h-3.5 text-teal-700" />
+                                    {isPostReviewRevision
+                                      ? 'CORREÇÕES REENVIADAS PELO AUTOR (PÓS-PARECERES)'
+                                      : 'AJUSTES REENVIADOS PELO AUTOR (ANONIMIZAÇÃO)'}
+                                  </span>
+                                )}
                                 {isOwnArticle && <span className="ml-2 text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">[Seu Manuscrito - COPE]</span>}
                               </div>
                               <h4 className="text-lg font-bold text-slate-900 mt-1">{art.title}</h4>
@@ -2521,7 +2791,7 @@ export default function Home() {
 
                               {isFullEditor && !isOwnArticle && (
                                 <>
-                                  <button type="button" onClick={() => { setAssignModalArticle(art); setSelectedReviewerId(''); setAssignDeadline(new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); }} className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center gap-1">
+                                  <button type="button" onClick={() => { setAssignModalArticle(art); setSelectedReviewerId(''); setAssignDeadline(new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) }} className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center gap-1">
                                     <UserCheck className="w-3.5 h-3.5" /> Atribuir Parecerista
                                   </button>
 
@@ -2538,6 +2808,18 @@ export default function Home() {
                               )}
                             </div>
                           </div>
+
+                          {isRevisionResubmitted && (
+                            <div className="p-3 bg-teal-50/80 border border-teal-200 rounded-lg text-xs text-teal-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <RefreshCw className="w-4 h-4 text-teal-700 flex-shrink-0" />
+                                <span>
+                                  <strong>Nova versão enviada pelo autor</strong> ({isPostReviewRevision ? 'revisão pós-pareceres' : 'ajustes de anonimização'})
+                                  {art.updated_at ? ` em ${new Date(art.updated_at).toLocaleString('pt-BR')}` : ''}. Clique em <strong>Baixar</strong> para conferir o novo arquivo.
+                                </span>
+                              </div>
+                            </div>
+                          )}
 
                           {isAccepted && isFullEditor && !isOwnArticle && (
                             <div className="flex items-center gap-2 p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-lg text-xs">
@@ -2565,7 +2847,7 @@ export default function Home() {
                                       {isAcceptedAndWorking && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> CONVITE ACEITO</span>}
                                       {isDeclined && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"><ThumbsDown className="w-3 h-3" /> CONVITE RECUSADO</span>}
                                       {isNeedsAdj && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">AJUSTES SOLICITADOS</span>}
-                                      
+
                                       {isAdjustmentResolved && (
                                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-300 flex items-center gap-1">
                                           <CheckCheck className="w-3.5 h-3.5 text-teal-600" /> PARECER AJUSTADO (REENVIADO)
@@ -2581,28 +2863,35 @@ export default function Home() {
                                     </div>
 
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      {/* BOTÕES DE LEMBRETE E PRORROGAÇÃO (+7d / +14d) */}
                                       {!isCompleted && !isDeclined && isFullEditor && (
                                         <div className="flex items-center gap-1">
-                                          <button 
-                                            type="button" 
-                                            onClick={() => handleSendReviewerReminder(r, art)} 
+                                          <button
+                                            type="button"
+                                            onClick={() => handleSendReviewerReminder(r, art)}
                                             className="px-2 py-0.5 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded font-semibold inline-flex items-center gap-1 shadow-sm"
                                             title="Enviar lembrete cordial de prazo"
                                           >
                                             <Bell className="w-3 h-3 text-amber-600" /> Lembrete
                                           </button>
-                                          <button 
-                                            type="button" 
-                                            onClick={() => handleExtendDeadline(r, art, 7)} 
+                                          <button
+                                            type="button"
+                                            onClick={() => handleExtendDeadline(r, art, 3)}
+                                            className="px-2 py-0.5 text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded font-semibold inline-flex items-center gap-0.5 shadow-sm"
+                                            title="Prorrogar prazo em 3 dias com e-mail de aviso"
+                                          >
+                                            +3d
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleExtendDeadline(r, art, 7)}
                                             className="px-2 py-0.5 text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded font-semibold inline-flex items-center gap-0.5 shadow-sm"
                                             title="Prorrogar prazo em 7 dias com e-mail de aviso"
                                           >
                                             +7d
                                           </button>
-                                          <button 
-                                            type="button" 
-                                            onClick={() => handleExtendDeadline(r, art, 14)} 
+                                          <button
+                                            type="button"
+                                            onClick={() => handleExtendDeadline(r, art, 14)}
                                             className="px-2 py-0.5 text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded font-semibold inline-flex items-center gap-0.5 shadow-sm"
                                             title="Prorrogar prazo em 14 dias com e-mail de aviso"
                                           >
@@ -2616,7 +2905,7 @@ export default function Home() {
                                           <button type="button" onClick={() => setActiveOfficialDoc({ type: 'lattes', review: r, article: art, reviewer: allProfiles.find(p => p.id === r.reviewer_id) })} className="text-emerald-700 hover:underline font-semibold text-[11px]">
                                             Declaração
                                           </button>
-                                          <button type="button" onClick={() => { setRequestReviewerChangesModal(r); setReviewerChangesText(''); }} className="text-amber-700 hover:underline font-semibold text-[11px]">
+                                          <button type="button" onClick={() => { setRequestReviewerChangesModal(r); setReviewerChangesText('') }} className="text-amber-700 hover:underline font-semibold text-[11px]">
                                             Solicitar Ajustes
                                           </button>
                                         </>
@@ -2947,7 +3236,7 @@ export default function Home() {
       <footer className="bg-white border-t border-slate-200 py-6 mt-12 no-print">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-3">
-            <img src="/logo-asp.png" alt="ASP" className="h-10 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <img src="/logo-asp.png" alt="ASP" className="h-10 object-contain" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             <div>
               <p className="font-bold text-slate-800">Associação Saber Psicanalítico (ASP)</p>
               <p className="text-[11px] whitespace-nowrap">Entidade Mantenedora • CNPJ: 44.966.907/0001-85</p>
@@ -2963,6 +3252,16 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* MODAL PARECERISTAS PARA AUTOR LOGADO */}
+      <PareceristasModal
+        show={showPareceristasModal}
+        onClose={() => setShowPareceristasModal(false)}
+        loggedUser={{ session, profile }}
+        onLoggedSuccess={() => {
+          if (session) initUser(session, false)
+        }}
+      />
 
       {/* MODAL: MEU PERFIL COMPLETO COM EIXOS (ATÉ 5) E ESCOLAS */}
       {showProfileModal && (
@@ -3038,11 +3337,11 @@ export default function Home() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   {schoolOptionsGlobal.map((s) => (
                     <label key={s} className="flex items-center gap-1.5 p-1.5 border rounded bg-slate-50 cursor-pointer text-[10.5px]">
-                      <input 
-                        type="checkbox" 
-                        checked={profileSchools.includes(s)} 
-                        onChange={() => setProfileSchools(profileSchools.includes(s) ? profileSchools.filter(x => x !== s) : [...profileSchools, s])} 
-                        className="rounded text-indigo-600" 
+                      <input
+                        type="checkbox"
+                        checked={profileSchools.includes(s)}
+                        onChange={() => setProfileSchools(profileSchools.includes(s) ? profileSchools.filter(x => x !== s) : [...profileSchools, s])}
+                        className="rounded text-indigo-600"
                       />
                       <span>{s}</span>
                     </label>
@@ -3058,9 +3357,9 @@ export default function Home() {
                 <div className="grid sm:grid-cols-2 gap-1">
                   {axeOptionsGlobal.map((ax) => (
                     <label key={ax} className={`flex items-start gap-1.5 p-1.5 border rounded cursor-pointer text-[10.5px] ${profileAxes.includes(ax) ? 'bg-indigo-50 border-indigo-300 font-semibold text-indigo-950' : 'bg-white'}`}>
-                      <input 
-                        type="checkbox" 
-                        checked={profileAxes.includes(ax)} 
+                      <input
+                        type="checkbox"
+                        checked={profileAxes.includes(ax)}
                         onChange={() => {
                           if (profileAxes.includes(ax)) {
                             setProfileAxes(profileAxes.filter(x => x !== ax))
@@ -3068,8 +3367,8 @@ export default function Home() {
                             if (profileAxes.length >= 5) return alert('Você pode selecionar no máximo 5 eixos temáticos.')
                             setProfileAxes([...profileAxes, ax])
                           }
-                        }} 
-                        className="mt-0.5 rounded text-indigo-600" 
+                        }}
+                        className="mt-0.5 rounded text-indigo-600"
                       />
                       <span className="leading-tight">{ax}</span>
                     </label>
@@ -3106,21 +3405,21 @@ export default function Home() {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Descreva o que o parecerista deve corrigir ou anonimizar *:</label>
-              <textarea 
-                required 
-                rows={5} 
-                value={reviewerChangesText} 
-                onChange={(e) => setReviewerChangesText(e.target.value)} 
-                placeholder="Ex: O arquivo anexado contém seu nome nos comentários do Word. Favor remover a identificação..." 
-                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-amber-500" 
+              <textarea
+                required
+                rows={5}
+                value={reviewerChangesText}
+                onChange={(e) => setReviewerChangesText(e.target.value)}
+                placeholder="Ex: O arquivo anexado contém seu nome nos comentários do Word. Favor remover a identificação..."
+                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setRequestReviewerChangesModal(null)} className="px-3 py-1.5 text-xs text-slate-600">Cancelar</button>
-              <button 
-                type="button" 
-                disabled={savingReviewerChanges || !reviewerChangesText.trim()} 
-                onClick={handleConfirmReviewerChanges} 
+              <button
+                type="button"
+                disabled={savingReviewerChanges || !reviewerChangesText.trim()}
+                onClick={handleConfirmReviewerChanges}
                 className="px-4 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50"
               >
                 {savingReviewerChanges ? 'Enviando...' : 'Enviar Solicitação de Ajuste'}
@@ -3130,7 +3429,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL: SOLICITAR CORREÇÕES AO AUTOR COM PRAZO (PONTO B) */}
+      {/* MODAL: SOLICITAR CORREÇÕES AO AUTOR COM PRAZO */}
       {requestChangesModalArticle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[75]">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border space-y-4">
@@ -3455,6 +3754,7 @@ export default function Home() {
         onClose={() => setShowSubmitModal(false)}
         onSubmit={handleSubmitArticle}
         newSection={newSection}
+        setNewSection={setNewSection}
         newThematicAxis={newThematicAxis}
         setNewThematicAxis={setNewThematicAxis}
         newTitle={newTitle}
