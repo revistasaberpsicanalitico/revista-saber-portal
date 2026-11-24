@@ -5,17 +5,13 @@ export async function POST(req: Request) {
   try {
     const { to, subject, title, message, actionText, actionUrl } = await req.json()
 
-    const user = process.env.GMAIL_USER || 'revistasaberpsicanalitico@gmail.com'
-    const pass = process.env.GMAIL_APP_PASSWORD || ''
-
-    if (!pass) {
-      return NextResponse.json({ status: 'warning', message: 'Senha do Gmail não configurada na Vercel' })
+    if (!to) {
+      return NextResponse.json({ error: 'Destinatário não informado' }, { status: 400 })
     }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
-    })
+    const resendApiKey = process.env.RESEND_API_KEY || ''
+    const gmailUser = process.env.GMAIL_USER || 'revistasaberpsicanalitico@gmail.com'
+    const gmailPass = process.env.GMAIL_APP_PASSWORD || ''
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -25,7 +21,6 @@ export async function POST(req: Request) {
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px; color: #1e293b; }
             .card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #cbd5e1; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-            /* Cabeçalho com fundo branco puro para destacar a logo oficial */
             .header { background: #ffffff; padding: 28px 24px; text-align: center; border-bottom: 2px solid #e2e8f0; }
             .logo-revista { max-height: 85px; width: auto; display: block; margin: 0 auto 10px; }
             .body { padding: 32px 28px; font-size: 14px; line-height: 1.6; color: #334155; }
@@ -50,7 +45,7 @@ export async function POST(req: Request) {
               ${actionUrl ? `<div style="text-align: center;"><a href="${actionUrl}" class="btn">${actionText || 'Acessar o Portal'}</a></div>` : ''}
               
               <div class="tip">
-                <strong>Importante:</strong> Para garantir o recebimento dos avisos editoriais e comunicados da Revista Saber Psicanalítico, certifique-se de marcar esta mensagem como <em>"Não é spam"</em> ou adicionar nosso e-mail aos seus contatos.
+                <strong>Importante:</strong> Para garantir o recebimento dos avisos editoriais e comunicados da Revista Saber Psicanalítico, certifique-se de adicionar <em>revista@asppsicanalise.com.br</em> e <em>revistasaberpsicanalitico@gmail.com</em> aos seus contatos.
               </div>
             </div>
             <div class="footer">
@@ -64,14 +59,53 @@ export async function POST(req: Request) {
       </html>
     `
 
+    // 1. Tenta enviar pelo Resend usando o domínio oficial @asppsicanalise.com.br
+    if (resendApiKey) {
+      const resendRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'Revista Saber Psicanalítico <revista@asppsicanalise.com.br>',
+          to: Array.isArray(to) ? to : [to],
+          reply_to: gmailUser,
+          subject,
+          html: htmlContent,
+        }),
+      })
+
+      if (resendRes.ok) {
+        const resendData = await resendRes.json()
+        return NextResponse.json({ success: true, provider: 'resend', id: resendData.id })
+      }
+
+      const errDetail = await resendRes.text()
+      console.warn('Falha ao enviar pelo Resend, tentando fallback Gmail:', errDetail)
+    }
+
+    // 2. Plano B automático: envia pelo Gmail caso o Resend não esteja configurado ou falhe
+    if (!gmailPass) {
+      return NextResponse.json({
+        status: 'warning',
+        message: 'Nem RESEND_API_KEY nem GMAIL_APP_PASSWORD estão configuradas na Vercel',
+      })
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: gmailUser, pass: gmailPass },
+    })
+
     await transporter.sendMail({
-      from: `"Revista Saber Psicanalítico" <${user}>`,
+      from: `"Revista Saber Psicanalítico" <${gmailUser}>`,
       to,
       subject,
       html: htmlContent,
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, provider: 'gmail' })
   } catch (error: any) {
     console.error('Erro no envio de e-mail:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
