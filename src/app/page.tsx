@@ -808,7 +808,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
               <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-tight">Revista Saber Psicanalítico</h2>
               <p className="text-xs font-semibold text-indigo-900 tracking-wide uppercase">ISSN 3086-8416</p>
               <p className="text-xs text-slate-500">Publicação Científica Semestral</p>
-              <p className="text-[11px] text-slate-400">revistasaberpsicanalitico@gmail.com</p>
+              <p className="text-[11px] text-slate-400">revista@asppsicanalise.com.br</p>
             </div>
           </div>
 
@@ -892,7 +892,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
           </div>
           <div className="text-center sm:text-right space-y-0.5 text-slate-500">
             <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-            <p><span>www.asppsicanalise.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span></p>
+            <p><span>www.asppsicanalise.com.br</span> • <span>revista@asppsicanalise.com.br</span></p>
           </div>
         </div>
       </div>
@@ -1705,7 +1705,11 @@ export default function Home() {
     setSubmittingRevision(true)
     try {
       const previousStatus = reSubmitArticle.status
-      const tipoCorrecao = previousStatus === 'ajustes_iniciais'
+      const hasCompletedReviews = getArticleReviews(reSubmitArticle.id).some((r) => r.status === 'concluido')
+      const isInitialAdjustment =
+        previousStatus === 'ajustes_iniciais' ||
+        (previousStatus === 'revisao_submetida' && !reSubmitArticle.revision_deadline && !hasCompletedReviews)
+      const tipoCorrecao = isInitialAdjustment
         ? 'Ajustes de Anonimização / Triagem Inicial'
         : 'Correções Solicitadas pós-Parecer'
 
@@ -2445,7 +2449,7 @@ export default function Home() {
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs text-slate-700">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                <span><strong>Aviso Editorial:</strong> Para garantir o recebimento dos avisos editoriais, marque nossas mensagens como <em>"Não é spam"</em> ou adicione <strong>revista@asppsicanalise.com.br</strong> e <strong>revistasaberpsicanalitico@gmail.com</strong> aos seus contatos.</span>
+                <span><strong>Aviso Editorial:</strong> Para garantir o recebimento dos avisos editoriais, marque nossas mensagens como <em>"Não é spam"</em> ou adicione <strong>revista@asppsicanalise.com.br</strong> aos seus contatos.</span>
               </div>
               <button type="button" onClick={() => setShowSpamNotice(false)} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4" /></button>
             </div>
@@ -3410,7 +3414,7 @@ export default function Home() {
                 Rua Visconde Inhaúma, 1361
               </a>, sala 408 — Caruaru/PE
             </p>
-            <p><span>www.asppsicanalise.com.br</span> • <span>revistasaberpsicanalitico@gmail.com</span></p>
+            <p><span>www.asppsicanalise.com.br</span> • <span>revista@asppsicanalise.com.br</span></p>
           </div>
         </div>
       </footer>
