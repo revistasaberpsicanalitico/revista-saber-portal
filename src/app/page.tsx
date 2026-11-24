@@ -949,8 +949,9 @@ export default function Home() {
   const [editUserRole, setEditUserRole] = useState('')
   const [savingUserEdit, setSavingUserEdit] = useState(false)
 
-  // Central de Mailing
-  const [mailingTarget, setMailingTarget] = useState<'all' | 'author' | 'reviewer' | 'council'>('all')
+  // Central de Mailing / E-mail Avulso
+  const [mailingTarget, setMailingTarget] = useState<'all' | 'author' | 'reviewer' | 'council' | 'single'>('all')
+  const [singleMailingEmail, setSingleMailingEmail] = useState('')
   const [mailingSubject, setMailingSubject] = useState('')
   const [mailingTitle, setMailingTitle] = useState('')
   const [mailingBody, setMailingBody] = useState('')
@@ -1328,19 +1329,37 @@ export default function Home() {
 
   const getDeadlineBadge = (deadlineStr: string | null) => {
     if (!deadlineStr) return null
-    const diffDays = Math.ceil((new Date(deadlineStr + 'T23:59:59').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    const formatted = new Date(deadlineStr + 'T12:00:00').toLocaleDateString('pt-BR')
+    const parts = deadlineStr.split('T')[0].split('-')
+    if (parts.length !== 3) return null
 
-    if (diffDays > 0) {
+    const deadlineLocal = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+    const now = new Date()
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const diffDays = Math.round((deadlineLocal.getTime() - todayLocal.getTime()) / (1000 * 60 * 60 * 24))
+    const formatted = deadlineLocal.toLocaleDateString('pt-BR')
+
+    if (diffDays > 1) {
       return (
         <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-          <Clock className="w-3 h-3" /> Restam {diffDays} {diffDays === 1 ? 'dia' : 'dias'} ({formatted})
+          <Clock className="w-3 h-3" /> Restam {diffDays} dias ({formatted})
+        </span>
+      )
+    } else if (diffDays === 1) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Resta 1 dia ({formatted})
         </span>
       )
     } else if (diffDays === 0) {
       return (
         <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
           <AlertTriangle className="w-3 h-3" /> Vence hoje ({formatted})!
+        </span>
+      )
+    } else if (diffDays === -1) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" /> Venceu ontem ({formatted})
         </span>
       )
     } else {
@@ -1356,10 +1375,18 @@ export default function Home() {
     const revProfile = allProfiles.find(p => p.id === r.reviewer_id)
     if (!revProfile?.email) return alert('E-mail do parecerista não localizado.')
 
-    const diffDays = Math.ceil((new Date(r.deadline + 'T23:59:59').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    const deadlineFormatted = new Date(r.deadline + 'T12:00:00').toLocaleDateString('pt-BR')
+    const parts = (r.deadline || '').split('T')[0].split('-')
+    const deadlineLocal = parts.length === 3 ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])) : new Date()
+    const now = new Date()
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const diffDays = Math.round((deadlineLocal.getTime() - todayLocal.getTime()) / (1000 * 60 * 60 * 24))
+    const deadlineFormatted = deadlineLocal.toLocaleDateString('pt-BR')
 
-    const situacao = diffDays > 0 ? `com prazo previsto para ${deadlineFormatted} (restando ${diffDays} dias)` : `com prazo que venceu em ${deadlineFormatted}`
+    const situacao = diffDays > 0
+      ? `com prazo previsto para ${deadlineFormatted} (restando ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'})`
+      : diffDays === 0
+        ? `com prazo que vence hoje (${deadlineFormatted})`
+        : `com prazo que venceu em ${deadlineFormatted}`
 
     if (!window.confirm(`Enviar lembrete cordial de avaliação para ${revProfile.full_name}?`)) return
 
@@ -1690,6 +1717,7 @@ export default function Home() {
       const { error: updateError } = await supabase.from('articles').update({
         file_url: filePath,
         status: 'revisao_submetida',
+        updated_at: new Date().toISOString(),
       }).eq('id', reSubmitArticle.id)
       if (updateError) throw updateError
 
@@ -1761,7 +1789,10 @@ export default function Home() {
 
     try {
       const targetArt = allArticles.find((a) => a.id === articleId)
-      const { error } = await supabase.from('articles').update({ status }).eq('id', articleId)
+      const { error } = await supabase
+        .from('articles')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', articleId)
       if (error) throw error
 
       if (targetArt) {
@@ -1816,7 +1847,8 @@ export default function Home() {
       const { error } = await supabase.from('articles').update({
         status: 'correcoes_pendentes',
         rejection_reason: changesReasonText,
-        revision_deadline: authorDeadline
+        revision_deadline: authorDeadline,
+        updated_at: new Date().toISOString()
       }).eq('id', requestChangesModalArticle.id)
       if (error) throw error
 
@@ -1851,7 +1883,8 @@ export default function Home() {
     try {
       const { error } = await supabase.from('reviews').update({
         status: 'ajustes_solicitados',
-        comments_for_author: `${requestReviewerChangesModal.comments_for_author || ''}\n\n[SOLICITAÇÃO DE AJUSTE DA COMISSÃO EDITORIAL]:\n${reviewerChangesText}`
+        comments_for_author: `${requestReviewerChangesModal.comments_for_author || ''}\n\n[SOLICITAÇÃO DE AJUSTE DA COMISSÃO EDITORIAL]:\n${reviewerChangesText}`,
+        updated_at: new Date().toISOString()
       }).eq('id', requestReviewerChangesModal.id)
       if (error) throw error
 
@@ -1881,7 +1914,11 @@ export default function Home() {
     if (!rejectionModalArticle || !rejectionReasonText.trim()) return alert('Informe a justificativa.')
     setSavingRejection(true)
     try {
-      const { error } = await supabase.from('articles').update({ status: 'recusado', rejection_reason: rejectionReasonText }).eq('id', rejectionModalArticle.id)
+      const { error } = await supabase.from('articles').update({
+        status: 'recusado',
+        rejection_reason: rejectionReasonText,
+        updated_at: new Date().toISOString()
+      }).eq('id', rejectionModalArticle.id)
       if (error) throw error
 
       const autEmail = getAuthorEmail(rejectionModalArticle.author_id, rejectionModalArticle)
@@ -1918,7 +1955,7 @@ export default function Home() {
         status: 'convite_pendente',
       })
       if (error) throw error
-      await supabase.from('articles').update({ status: 'em_avaliacao' }).eq('id', assignModalArticle.id)
+      await supabase.from('articles').update({ status: 'em_avaliacao', updated_at: new Date().toISOString() }).eq('id', assignModalArticle.id)
 
       if (revProfile?.email) {
         await sendEmailNotification({
@@ -1952,7 +1989,7 @@ export default function Home() {
 
   const handleAcceptReviewInvitation = async (reviewId: string, articleTitle: string) => {
     try {
-      const { error } = await supabase.from('reviews').update({ status: 'em_andamento' }).eq('id', reviewId)
+      const { error } = await supabase.from('reviews').update({ status: 'em_andamento', updated_at: new Date().toISOString() }).eq('id', reviewId)
       if (error) throw error
 
       await sendEmailNotification({
@@ -1974,7 +2011,7 @@ export default function Home() {
   const handleDeclineReviewInvitation = async (reviewId: string, articleTitle: string) => {
     if (!window.confirm('Confirma a recusa deste convite? O trabalho deixará de aparecer em seu painel.')) return
     try {
-      const { error } = await supabase.from('reviews').update({ status: 'recusado' }).eq('id', reviewId)
+      const { error } = await supabase.from('reviews').update({ status: 'recusado', updated_at: new Date().toISOString() }).eq('id', reviewId)
       if (error) throw error
 
       await sendEmailNotification({
@@ -2015,6 +2052,7 @@ export default function Home() {
         confidential_comments_editor: commentsEditor,
         review_file_url: rPath,
         status: 'concluido',
+        updated_at: new Date().toISOString(),
       }).eq('id', reviewModalData.id)
 
       await sendEmailNotification({
@@ -2038,12 +2076,43 @@ export default function Home() {
 
   const filteredMailingUsers = allProfiles.filter((p) => {
     if (mailingTarget === 'all') return true
+    if (mailingTarget === 'single') return false
     return p.role === mailingTarget
   })
 
   const handleSendMailing = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!mailingSubject || !mailingBody) return alert('Preencha os campos.')
+
+    if (mailingTarget === 'single') {
+      const targetEmail = singleMailingEmail.trim()
+      if (!targetEmail || !targetEmail.includes('@')) {
+        return alert('Informe um e-mail de destinatário válido.')
+      }
+      if (!window.confirm(`Enviar este e-mail como revista@asppsicanalise.com.br para "${targetEmail}"?`)) return
+      setSendingMailing(true)
+      try {
+        await sendEmailNotification({
+          to: targetEmail,
+          subject: mailingSubject,
+          title: mailingTitle || mailingSubject,
+          message: mailingBody,
+          actionText: mailingActionText || undefined,
+          actionUrl: mailingActionUrl || undefined
+        })
+        alert(`E-mail enviado com sucesso para ${targetEmail}!`)
+        setSingleMailingEmail('')
+        setMailingSubject('')
+        setMailingTitle('')
+        setMailingBody('')
+      } catch (err: any) {
+        alert(`Erro: ${err.message}`)
+      } finally {
+        setSendingMailing(false)
+      }
+      return
+    }
+
     if (!window.confirm(`Disparar para ${filteredMailingUsers.length} usuários?`)) return
     setSendingMailing(true)
     try {
@@ -2376,7 +2445,7 @@ export default function Home() {
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs text-slate-700">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                <span><strong>Aviso Editorial:</strong> Para garantir o recebimento dos avisos editoriais, marque nossas mensagens como <em>"Não é spam"</em> ou adicione <strong>revistasaberpsicanalitico@gmail.com</strong> aos seus contatos.</span>
+                <span><strong>Aviso Editorial:</strong> Para garantir o recebimento dos avisos editoriais, marque nossas mensagens como <em>"Não é spam"</em> ou adicione <strong>revista@asppsicanalise.com.br</strong> e <strong>revistasaberpsicanalitico@gmail.com</strong> aos seus contatos.</span>
               </div>
               <button type="button" onClick={() => setShowSpamNotice(false)} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4" /></button>
             </div>
@@ -3206,12 +3275,12 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ABA 4: MAILING */}
+              {/* ABA 4: MAILING / E-MAIL AVULSO */}
               {isFullEditor && editorialTab === 'mailing' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                   <div className="border-b pb-4">
-                    <h3 className="text-base font-bold text-slate-800">Central de Disparos Editoriais (Mailing)</h3>
-                    <p className="text-xs text-slate-500">Envie chamadas de publicação, comunicados da ASP e avisos de lançamento com texto formatado, imagens e links personalizáveis.</p>
+                    <h3 className="text-base font-bold text-slate-800">Central de Comunicados e E-mail Oficial</h3>
+                    <p className="text-xs text-slate-500">Envie comunicados em grupo ou um e-mail avulso individual saindo oficialmente como <strong>revista@asppsicanalise.com.br</strong>.</p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -3222,20 +3291,35 @@ export default function Home() {
                         <option value="author">Apenas Autores ({allProfiles.filter(p => p.role === 'author').length})</option>
                         <option value="reviewer">Apenas Pareceristas ({allProfiles.filter(p => p.role === 'reviewer').length})</option>
                         <option value="council">Apenas Conselho Editorial ({allProfiles.filter(p => p.role === 'council').length})</option>
+                        <option value="single">E-mail Avulso (1 Destinatário Específico)</option>
                       </select>
                     </div>
 
-                    <div className="flex flex-col justify-end">
-                      <span className="text-[11px] text-slate-500 mb-1">Deseja enviar direto pelo Gmail institucional?</span>
-                      <button type="button" onClick={() => {
-                        const emails = filteredMailingUsers.map((u) => u.email).filter(Boolean).join(', ')
-                        navigator.clipboard.writeText(emails)
-                        setCopiedMailingEmails(true)
-                        setTimeout(() => setCopiedMailingEmails(false), 3000)
-                      }} className="px-3 py-2 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5 shadow-sm text-slate-700">
-                        {copiedMailingEmails ? <><Check className="w-3.5 h-3.5 text-emerald-600" /> Lista Copiada!</> : <><Copy className="w-3.5 h-3.5 text-indigo-600" /> Copiar E-mails Selecionados (Cco)</>}
-                      </button>
-                    </div>
+                    {mailingTarget === 'single' ? (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">E-mail do Destinatário *</label>
+                        <input
+                          type="email"
+                          required
+                          value={singleMailingEmail}
+                          onChange={(e) => setSingleMailingEmail(e.target.value)}
+                          placeholder="exemplo@dominio.com"
+                          className="w-full px-3 py-2 text-xs border rounded-lg bg-white"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col justify-end">
+                        <span className="text-[11px] text-slate-500 mb-1">Deseja enviar direto pelo Gmail institucional?</span>
+                        <button type="button" onClick={() => {
+                          const emails = filteredMailingUsers.map((u) => u.email).filter(Boolean).join(', ')
+                          navigator.clipboard.writeText(emails)
+                          setCopiedMailingEmails(true)
+                          setTimeout(() => setCopiedMailingEmails(false), 3000)
+                        }} className="px-3 py-2 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5 shadow-sm text-slate-700">
+                          {copiedMailingEmails ? <><Check className="w-3.5 h-3.5 text-emerald-600" /> Lista Copiada!</> : <><Copy className="w-3.5 h-3.5 text-indigo-600" /> Copiar E-mails Selecionados (Cco)</>}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <form onSubmit={handleSendMailing} className="space-y-4">
@@ -3267,8 +3351,16 @@ export default function Home() {
                     </div>
 
                     <div className="flex justify-end pt-2 border-t">
-                      <button type="submit" disabled={sendingMailing || filteredMailingUsers.length === 0} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-2 shadow-sm transition">
-                        {sendingMailing ? 'Disparando E-mails...' : <><Send className="w-3.5 h-3.5" /> Disparar para {filteredMailingUsers.length} Destinatários</>}
+                      <button
+                        type="submit"
+                        disabled={sendingMailing || (mailingTarget === 'single' ? !singleMailingEmail.trim() : filteredMailingUsers.length === 0)}
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-2 shadow-sm transition"
+                      >
+                        {sendingMailing
+                          ? 'Enviando...'
+                          : mailingTarget === 'single'
+                            ? <><Send className="w-3.5 h-3.5" /> Enviar E-mail Avulso</>
+                            : <><Send className="w-3.5 h-3.5" /> Disparar para {filteredMailingUsers.length} Destinatários</>}
                       </button>
                     </div>
                   </form>
