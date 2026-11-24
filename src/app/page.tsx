@@ -936,6 +936,7 @@ export default function Home() {
   // Filtros
   const [editorSearch, setEditorSearch] = useState('')
   const [editorStatusFilter, setEditorStatusFilter] = useState('todos')
+  const [editorTriagemFilter, setEditorTriagemFilter] = useState<'todos' | 'sem_copyspider' | 'sem_parecerista'>('todos')
   const [userSearch, setUserSearch] = useState('')
   const [userRoleFilter, setUserRoleFilter] = useState('todos')
 
@@ -1083,6 +1084,36 @@ export default function Home() {
       alert(`Erro ao salvar CopySpider: ${err.message}. Verifique se você já rodou o SQL no Supabase.`)
     } finally {
       setSavingCopySpider(false)
+    }
+  }
+
+  const handleDeleteArticle = async (art: any) => {
+    if (profile?.role !== 'editor') return
+    const firstConfirm = window.confirm(
+      `ATENÇÃO: Deseja excluir permanentemente o manuscrito "${art.title}"?\n\nEssa ação removerá o trabalho e todas as avaliações vinculadas.`
+    )
+    if (!firstConfirm) return
+
+    const typed = window.prompt('Para confirmar a exclusão definitiva, digite EXCLUIR em letras maiúsculas:')
+    if (typed !== 'EXCLUIR') {
+      return alert('Exclusão cancelada.')
+    }
+
+    try {
+      await supabase.from('reviews').delete().eq('article_id', art.id)
+
+      const filesToRemove = [art.file_url, art.original_file_url].filter(Boolean)
+      if (filesToRemove.length > 0) {
+        await supabase.storage.from('manuscritos').remove(filesToRemove)
+      }
+
+      const { error } = await supabase.from('articles').delete().eq('id', art.id)
+      if (error) throw error
+
+      alert('Manuscrito excluído com sucesso!')
+      fetchAllData()
+    } catch (err: any) {
+      alert(`Erro ao excluir manuscrito: ${err.message}`)
     }
   }
 
@@ -1605,12 +1636,13 @@ export default function Home() {
 
   const handleExportBackup = () => {
     if (allArticles.length === 0) return alert('Sem dados.')
-    const headers = ['ID', 'Titulo', 'Secao', 'Eixo', 'Status', 'Data', 'Autor', 'Email', 'Pareceres', 'CopySpider_%']
+    const headers = ['ID', 'Titulo', 'Secao', 'Eixo', 'Status', 'Data', 'Autor', 'Email', 'Pareceres', 'CopySpider_%', 'DOI']
     const rows = allArticles.map((art) => [
       art.id, `"${art.title.replace(/"/g, '""')}"`, `"${art.section}"`, `"${art.thematic_axis || '-'}"`, `"${art.status}"`,
       `"${new Date(art.created_at).toLocaleDateString('pt-BR')}"`, `"${getAuthorName(art.author_id, art)}"`,
       `"${getAuthorEmail(art.author_id, art)}"`, getArticleReviews(art.id).length,
-      art.plagiarism_score !== null && art.plagiarism_score !== undefined ? art.plagiarism_score : ''
+      art.plagiarism_score !== null && art.plagiarism_score !== undefined ? art.plagiarism_score : '',
+      `"${art.doi || ''}"`
     ])
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -2144,7 +2176,22 @@ export default function Home() {
 
   const filteredArticles = allArticles.filter((art) => {
     const q = editorSearch.toLowerCase()
-    return (art.title.toLowerCase().includes(q) || getAuthorName(art.author_id, art).toLowerCase().includes(q)) && (editorStatusFilter === 'todos' || art.status === editorStatusFilter)
+    const matchesText =
+      art.title.toLowerCase().includes(q) ||
+      getAuthorName(art.author_id, art).toLowerCase().includes(q) ||
+      (art.section || '').toLowerCase().includes(q) ||
+      (art.thematic_axis || '').toLowerCase().includes(q)
+    const matchesStatus = editorStatusFilter === 'todos' || art.status === editorStatusFilter
+    if (!matchesText || !matchesStatus) return false
+
+    if (editorTriagemFilter === 'sem_copyspider') {
+      return art.plagiarism_score === null || art.plagiarism_score === undefined
+    }
+    if (editorTriagemFilter === 'sem_parecerista') {
+      const activeRevs = getArticleReviews(art.id).filter((r) => r.status !== 'recusado')
+      return activeRevs.length === 0 && !['aceito', 'recusado'].includes(art.status)
+    }
+    return true
   })
 
   const filteredUsersList = allProfiles.filter((p) => {
@@ -2225,6 +2272,11 @@ export default function Home() {
   const selectedActiveCount = selectedReviewerId ? getReviewerActiveCount(selectedReviewerId) : 0
 
   const revisaoEnviadaCount = allArticles.filter((a) => a.status === 'revisao_submetida').length
+  const semCopySpiderCount = allArticles.filter((a) => a.plagiarism_score === null || a.plagiarism_score === undefined).length
+  const semPareceristaCount = allArticles.filter((a) => {
+    const activeRevs = getArticleReviews(a.id).filter((r) => r.status !== 'recusado')
+    return activeRevs.length === 0 && !['aceito', 'recusado'].includes(a.status)
+  }).length
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium">Carregando Revista Saber Psicanalítico...</div>
@@ -2434,7 +2486,7 @@ export default function Home() {
       </main>
     )
   }
-  const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
+                  const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
   const myReviewAssignments = allReviews
     .filter((r) => r.reviewer_id === session?.user?.id)
     .filter((r) => r.status !== 'recusado')
@@ -2829,6 +2881,31 @@ export default function Home() {
                         </button>
                       ))}
                     </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100 text-xs">
+                      <span className="text-[11px] font-bold text-slate-500 mr-1">Triagem Rápida:</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditorTriagemFilter('todos')}
+                        className={`px-2.5 py-1 rounded-lg font-medium text-[11px] ${editorTriagemFilter === 'todos' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditorTriagemFilter('sem_copyspider')}
+                        className={`px-2.5 py-1 rounded-lg font-medium text-[11px] inline-flex items-center gap-1 ${editorTriagemFilter === 'sem_copyspider' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'}`}
+                      >
+                        <FileSearch className="w-3 h-3" /> Sem CopySpider ({semCopySpiderCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditorTriagemFilter('sem_parecerista')}
+                        className={`px-2.5 py-1 rounded-lg font-medium text-[11px] inline-flex items-center gap-1 ${editorTriagemFilter === 'sem_parecerista' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100'}`}
+                      >
+                        <UserCheck className="w-3 h-3" /> Sem Parecerista ({semPareceristaCount})
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid gap-4">
@@ -2867,6 +2944,11 @@ export default function Home() {
                                   >
                                     <FileSearch className="w-3 h-3" />
                                     CopySpider: {Number(art.plagiarism_score).toFixed(1)}%
+                                  </span>
+                                )}
+                                {art.doi && (
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                    DOI: {art.doi}
                                   </span>
                                 )}
                                 {isRevisionResubmitted && (
@@ -2925,6 +3007,17 @@ export default function Home() {
                                   </select>
                                 </>
                               )}
+
+                              {isEditorChefe && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteArticle(art)}
+                                  className="p-1.5 text-rose-500 hover:bg-rose-50 border border-rose-200 rounded-lg"
+                                  title="Excluir artigo (Editor-Chefe)"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -2941,9 +3034,15 @@ export default function Home() {
                           )}
 
                           {isAccepted && isFullEditor && !isOwnArticle && (
-                            <div className="flex items-center gap-2 p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-lg text-xs">
-                              <span className="font-semibold text-emerald-950">Fascículo:</span>
-                              <input type="text" defaultValue={art.target_issue || getArticleIssue(art)} onBlur={(e) => supabase.from('articles').update({ target_issue: e.target.value }).eq('id', art.id).then(() => fetchAllData())} className="px-2.5 py-1 text-xs border border-emerald-200 rounded bg-white flex-1" />
+                            <div className="grid md:grid-cols-2 gap-2.5 p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-lg text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-emerald-950 whitespace-nowrap">Fascículo:</span>
+                                <input type="text" defaultValue={art.target_issue || getArticleIssue(art)} onBlur={(e) => supabase.from('articles').update({ target_issue: e.target.value }).eq('id', art.id).then(() => fetchAllData())} className="px-2.5 py-1 text-xs border border-emerald-200 rounded bg-white flex-1" />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-emerald-950 whitespace-nowrap">DOI (Opcional):</span>
+                                <input type="text" defaultValue={art.doi || ''} placeholder="Deixe vazio se não houver" onBlur={(e) => supabase.from('articles').update({ doi: e.target.value.trim() || null }).eq('id', art.id).then(() => fetchAllData())} className="px-2.5 py-1 text-xs border border-emerald-200 rounded bg-white flex-1" />
+                              </div>
                             </div>
                           )}
 
@@ -3418,7 +3517,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
       {/* MODAL PARECERISTAS PARA AUTOR LOGADO */}
       <PareceristasModal
         show={showPareceristasModal}
