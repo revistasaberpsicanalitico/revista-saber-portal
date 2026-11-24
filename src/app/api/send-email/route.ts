@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     }
 
     const resendApiKey = process.env.RESEND_API_KEY || ''
+    const officialEmail = 'revista@asppsicanalise.com.br'
     const gmailUser = process.env.GMAIL_USER || 'revistasaberpsicanalitico@gmail.com'
     const gmailPass = process.env.GMAIL_APP_PASSWORD || ''
 
@@ -45,14 +46,14 @@ export async function POST(req: Request) {
               ${actionUrl ? `<div style="text-align: center;"><a href="${actionUrl}" class="btn">${actionText || 'Acessar o Portal'}</a></div>` : ''}
               
               <div class="tip">
-                <strong>Importante:</strong> Para garantir o recebimento dos avisos editoriais e comunicados da Revista Saber Psicanalítico, certifique-se de adicionar <em>revista@asppsicanalise.com.br</em> e <em>revistasaberpsicanalitico@gmail.com</em> aos seus contatos.
+                <strong>Importante:</strong> Para garantir o recebimento dos avisos editoriais e comunicados da Revista Saber Psicanalítico, certifique-se de marcar esta mensagem como <em>"Não é spam"</em> ou adicionar <em>${officialEmail}</em> aos seus contatos.
               </div>
             </div>
             <div class="footer">
               <img src="https://revista-saber-portal.vercel.app/logo-asp.png" alt="ASP" class="logo-asp" />
               <p style="margin: 0; font-weight: 600; color: #334155;">Associação Saber Psicanalítico (ASP) — Entidade Mantenedora</p>
               <p style="margin: 4px 0 0;">CNPJ: 44.966.907/0001-85 • Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-              <p style="margin: 4px 0 0;">Contato: revistasaberpsicanalitico@gmail.com • <a href="https://www.asppsicanalise.com.br" style="color: #4f46e5; text-decoration: none;">www.asppsicanalise.com.br</a></p>
+              <p style="margin: 4px 0 0;">Contato: ${officialEmail} • <a href="https://www.asppsicanalise.com.br" style="color: #4f46e5; text-decoration: none;">www.asppsicanalise.com.br</a></p>
             </div>
           </div>
         </body>
@@ -68,9 +69,9 @@ export async function POST(req: Request) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'Revista Saber Psicanalítico <revista@asppsicanalise.com.br>',
+          from: `Revista Saber Psicanalítico <${officialEmail}>`,
           to: Array.isArray(to) ? to : [to],
-          reply_to: gmailUser,
+          reply_to: officialEmail,
           subject,
           html: htmlContent,
         }),
