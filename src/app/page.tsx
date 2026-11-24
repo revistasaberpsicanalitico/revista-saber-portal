@@ -2324,19 +2324,6 @@ export default function Home() {
       </main>
     )
   }
-Aqui está a **PARTE 2 de 2** (final do arquivo).
-
-### Como colar:
-1. No GitHub (onde você já colou a Parte 1), vá até a **última linha** (logo abaixo do `}`) e aperte **`Enter`** para abrir uma linha em branco.
-2. Copie **todo** o código da **PARTE 2** abaixo e cole lá (`Ctrl + V`).
-3. Confira se a última linha do arquivo termina exatamente com `}` e clique no botão verde **`Commit changes...`** para salvar.
-4. Aguarde a **Vercel** finalizar o build e ficar com o status verde (**Ready**).
-
----
-
-### PARTE 2 de 2 (cole logo abaixo da Parte 1)
-
-```tsx
   const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
   const myReviewAssignments = allReviews
     .filter((r) => r.reviewer_id === session?.user?.id)
