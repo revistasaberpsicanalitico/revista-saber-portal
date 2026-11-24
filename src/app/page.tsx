@@ -1,18 +1,3 @@
-Sim, você tem toda razão — o arquivo `src/app/page.tsx` é bem grande e acabou atingindo o limite de tamanho da resposta antes do final.
-
-Para garantir que **não falte nenhuma linha**, vou enviar o arquivo completo dividido em **2 partes**.
-
-### Como fazer (bem simples):
-1. No GitHub, abra `src/app/page.tsx`, clique no lápis para editar, selecione tudo (`Ctrl + A`) e apague (`Delete`).
-2. Copie a **PARTE 1** abaixo e cole lá dentro.
-3. **Ainda não salve (`Commit`)!** Deixe a aba aberta e responda aqui: **`enviar parte 2`**.
-4. Eu vou te mandar a **PARTE 2** para você colar logo abaixo da última linha da Parte 1, e só então salvar no GitHub.
-
----
-
-### PARTE 1 de 2 (copie tudo abaixo e cole em `src/app/page.tsx`)
-
-```tsx
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
