@@ -803,7 +803,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
       <div className="bg-white w-full max-w-[800px] min-h-[1080px] p-12 sm:p-16 shadow-2xl rounded-sm flex flex-col justify-between text-slate-800 print:shadow-none print:m-0 print:p-12 print:w-full print:min-h-screen border border-slate-200">
         <div>
           <div className="flex items-center justify-between pb-6 border-b border-slate-200 gap-6">
-            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-36 sm:h-44 max-h-48 w-auto object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-20 sm:h-24 max-h-28 w-auto object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             <div className="text-right space-y-1">
               <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-tight">Revista Saber Psicanalítico</h2>
               <p className="text-xs font-semibold text-indigo-900 tracking-wide uppercase">ISSN 3086-8416</p>
@@ -2331,7 +2331,7 @@ export default function Home() {
       <main className="min-h-screen flex flex-col justify-center items-center p-4 bg-slate-50">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
           <div className="flex flex-col items-center mb-6 space-y-3">
-            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-32 md:h-36 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-20 md:h-24 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             <div className="text-center">
               <h1 className="text-xl font-bold text-slate-800">Revista Saber Psicanalítico</h1>
               <p className="text-xs text-indigo-700 font-semibold tracking-wider uppercase mt-0.5">ISSN 3086-8416</p>
@@ -2555,7 +2555,7 @@ export default function Home() {
         <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-4">
-              <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-24 md:h-28 -my-3 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+              <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-14 md:h-16 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               <div>
                 <h1 className="text-lg md:text-xl font-bold text-slate-900 leading-tight">Revista Saber Psicanalítico</h1>
                 <p className="text-xs text-indigo-700 font-semibold tracking-wider">ISSN 3086-8416 • Portal Editorial</p>
