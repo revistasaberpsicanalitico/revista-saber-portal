@@ -612,7 +612,7 @@ export default function CompositorFasciculoTab({
                 <img
                   src="/logo-revista.png"
                   alt="Revista Saber Psicanalítico"
-                  className="h-32 sm:h-36 w-auto object-contain"
+                  className="h-20 sm:h-24 w-auto object-contain"
                   onError={(e) => { e.currentTarget.style.display = 'none' }}
                 />
                 <div className="text-right space-y-1">
