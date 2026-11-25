@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ShieldCheck, Scale, FileSearch, Lock, Globe, Users, UserCheck, Upload } from 'lucide-react'
+import { ShieldCheck, Scale, FileSearch, Lock, Globe, Users, UserCheck, Upload, HardDrive } from 'lucide-react'
 import PublicShell from '@/components/PublicShell'
 import { JOURNAL_INFO } from '@/lib/siteConfig'
 
 export const metadata: Metadata = {
   title: `Políticas Editoriais e Ética | ${JOURNAL_INFO.name}`,
   description:
-    'Política de acesso aberto (CC-BY 4.0), gratuidade total (APC R$ 0), avaliação duplo-cega, protocolo antiplágio CopySpider, endogenia e diretrizes COPE.',
+    'Política de acesso aberto (CC-BY 4.0), gratuidade total (APC R$ 0), avaliação duplo-cega, protocolo antiplágio CopySpider, preservação digital e diretrizes COPE.',
 }
 
 export default function PoliticasPage() {
@@ -20,7 +20,7 @@ export default function PoliticasPage() {
           </span>
           <h1 className="text-2xl sm:text-4xl font-serif font-bold">Políticas Editoriais e Ética</h1>
           <p className="text-sm text-slate-300 max-w-3xl leading-relaxed">
-            Diretrizes éticas, política de gratuidade, avaliação por pares, controle antiplágio, preservação e combate à endogenia da Revista Saber Psicanalítico.
+            Diretrizes éticas, política de gratuidade, avaliação por pares, controle antiplágio, preservação digital e combate à endogenia da Revista Saber Psicanalítico.
           </p>
         </div>
       </section>
@@ -56,14 +56,17 @@ export default function PoliticasPage() {
           <article className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
             <h2 className="font-bold text-slate-900 text-base flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-indigo-600" />
-              3. Acesso Aberto e Licença Creative Commons
+              3. Acesso Aberto, Direitos Autorais e Licença
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              A Revista Saber Psicanalítico adota a política de Acesso Aberto imediato (<em>Open Access</em>). Todo o conteúdo publicado está sob a licença{' '}
+              A Revista adota a política de Acesso Aberto imediato (<em>Open Access</em>) sob a licença{' '}
               <a href={JOURNAL_INFO.licenseUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-semibold underline">
                 Creative Commons Atribuição 4.0 Internacional (CC-BY 4.0)
               </a>
-              , permitindo o compartilhamento, cópia e redistribuição do material em qualquer meio ou formato, desde que citados os devidos créditos de autoria e publicação original.
+              , permitindo o compartilhamento e adaptação do material em qualquer meio, desde que atribuídos os créditos de autoria e publicação original.
+            </p>
+            <p className="text-xs font-semibold text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              Retenção de Copyright: Os autores retêm integralmente os direitos autorais e de publicação de seus trabalhos sem restrições, concedendo à revista o direito de primeira publicação.
             </p>
           </article>
 
@@ -101,17 +104,26 @@ export default function PoliticasPage() {
           </article>
         </div>
 
-        <article className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-          <h2 className="font-bold text-slate-900 text-base">
-            7. Política de Endogenia, Conflitos de Interesse e Preservação Digital
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-600">
-            Com o objetivo de zelar pela pluralidade e prevenir a endogenia editorial (conforme parâmetros da CAPES e do DOAJ), a revista limita a publicação de artigos de autores vinculados à entidade mantenedora (Associação Saber Psicanalítico — ASP) e aos membros do corpo editorial a um teto máximo de <strong>20% a 25%</strong> dos trabalhos publicados em cada volume/edição, mantendo proporção de autoria externa superior a 75%.
-          </p>
-          <p className="text-xs text-slate-500 pt-1">
-            Todos os artigos publicados possuem URL própria permanente, metadados bibliográficos estruturados (Dublin Core e Google Acadêmico) e protocolo de interoperabilidade OAI-PMH.
-          </p>
-        </article>
+        <div className="grid md:grid-cols-2 gap-6">
+          <article className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <h2 className="font-bold text-slate-900 text-base">
+              7. Política de Endogenia e Conflitos de Interesse
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Com o objetivo de zelar pela pluralidade e prevenir a endogenia editorial (conforme parâmetros da CAPES e do DOAJ), a revista limita a publicação de artigos de autores vinculados à entidade mantenedora (Associação Saber Psicanalítico — ASP) e aos membros do corpo editorial a um teto máximo de <strong>20% a 25%</strong> dos trabalhos publicados em cada volume/edição, mantendo proporção de autoria externa superior a 75%.
+            </p>
+          </article>
+
+          <article className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <h2 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <HardDrive className="w-5 h-5 text-indigo-600" />
+              8. Preservação Digital e Interoperabilidade
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              A revista mantém cópias de segurança redundantes em nuvem institucional de todo o acervo em PDF e metadados, URLs permanentes individuais por artigo, protocolo de coleta <strong>OAI-PMH (Dublin Core)</strong> e autoriza expressamente o autoarquivamento da versão publicada pelos autores em repositórios institucionais (como Lume, RI-USP, Zenodo e Internet Archive).
+            </p>
+          </article>
+        </div>
 
         {/* Chamada para Pareceristas & Acesso ao Portal */}
         <section className="bg-gradient-to-r from-amber-50 via-white to-indigo-50 p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
