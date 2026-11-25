@@ -187,7 +187,7 @@ function PareceristasModal({
             title: 'Candidatura Recebida',
             message: `Prezado(a) ${fullName},\n\nConfirmamos o recebimento de sua inscrição para o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua ficha foi encaminhada para apreciação colegiada do Conselho Editorial.\n\nIMPORTANTE: Enquanto aguarda a deliberação, seu login continua ativo como AUTOR no portal, permitindo que você submeta trabalhos normalmente.`,
             actionText: 'Acessar o Portal da Revista',
-            actionUrl: 'https://revista-saber-portal.vercel.app'
+            actionUrl: 'https://revista-saber-portal.vercel.app/portal'
           })
         })
 
@@ -200,7 +200,7 @@ function PareceristasModal({
             title: 'Nova Candidatura de Parecerista',
             message: `Novo cadastro recebido:\n\n• Nome: ${fullName}\n• Titulação: ${academicDegree}\n• Instituição: ${institution}\n• E-mail: ${userEmail}\n• Eixos: ${axes.join(', ')}\n\nAcesse a aba "Candidaturas Pareceristas" na Sala Editorial para deliberar.`,
             actionText: 'Sala Editorial',
-            actionUrl: 'https://revista-saber-portal.vercel.app'
+            actionUrl: 'https://revista-saber-portal.vercel.app/portal'
           })
         })
       } catch (errMail) {
@@ -249,7 +249,7 @@ function PareceristasModal({
             </p>
             <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-950 text-left space-y-1.5 max-w-md mx-auto">
               <p className="font-bold flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-indigo-600" /> Acesso Imediato:</p>
-              <p>• Seu acesso permanece liberado como <strong>Autor</strong> para submeter manuscritos normalmente.</p>
+              <p>• Seu acesso permanece liberado como <strong>Autor</strong> para submeter trabalhos normalmente.</p>
               <p>• Assim que homologado pelo Conselho Editorial, você poderá receber convites para emitir pareceres.</p>
             </div>
             <button type="button" onClick={onClose} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm">
@@ -877,7 +877,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
               <p className="text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Documento Assinado Digitalmente</p>
               <p className="text-[10px] text-slate-500 leading-tight">Assinado eletronicamente pelo Editor-Chefe conforme diretrizes de validação eletrônica da Revista Saber Psicanalítico.</p>
               <p className="text-[11px] font-mono text-slate-800 font-bold pt-0.5">Código de Verificação: {docCode}</p>
-              <p className="text-[9.5px] text-slate-400">Validação em: <span className="text-indigo-600 font-semibold">https://revista-saber-portal.vercel.app</span></p>
+              <p className="text-[9.5px] text-slate-400">Validação em: <span className="text-indigo-600 font-semibold">https://revista-saber-portal.vercel.app/portal</span></p>
             </div>
           </div>
         </div>
@@ -957,7 +957,7 @@ export default function Home() {
   const [mailingTitle, setMailingTitle] = useState('')
   const [mailingBody, setMailingBody] = useState('')
   const [mailingActionText, setMailingActionText] = useState('Acessar a Revista')
-  const [mailingActionUrl, setMailingActionUrl] = useState('https://www.asppsicanalise.com.br/revista')
+  const [mailingActionUrl, setMailingActionUrl] = useState('https://revista-saber-portal.vercel.app')
   const [sendingMailing, setSendingMailing] = useState(false)
   const [copiedMailingEmails, setCopiedMailingEmails] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -1088,7 +1088,7 @@ export default function Home() {
   }
 
   const handleDeleteArticle = async (art: any) => {
-    if (!isFullEditor) return
+    if (!isFullEditor || checkIsOwnArticle(art)) return
     const firstConfirm = window.confirm(
       `ATENÇÃO: Deseja excluir permanentemente o manuscrito "${art.title}"?\n\nEssa ação removerá o trabalho e todas as avaliações vinculadas.`
     )
@@ -1428,7 +1428,7 @@ export default function Home() {
         title: 'Lembrete Editorial',
         message: `Prezado(a) ${revProfile.full_name},\n\nEntramos em contato para lembrar sobre a emissão do parecer do manuscrito "${art?.title}", ${situacao}.\n\nSua avaliação circunstanciada é fundamental para o cumprimento do calendário deste fascículo da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nCaso necessite de uma prorrogação de prazo, solicitamos que nos comunique respondendo a esta mensagem.`,
         actionText: 'Acessar o Painel de Avaliações',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
+        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
       })
 
       alert(`Lembrete enviado com sucesso para ${revProfile.full_name}!`)
@@ -1458,7 +1458,7 @@ export default function Home() {
           title: 'Prazo Limite Prorrogado',
           message: `Prezado(a) ${revProfile.full_name},\n\nComunicamos que o prazo para a conclusão do seu parecer técnico sobre o manuscrito "${article?.title}" foi prorrogado em +${daysToAdd} dias a contar da data de referência.\n\n📅 NOVO PRAZO LIMITE: ${newDate.toLocaleDateString('pt-BR')}.\n\nAgradecemos imensamente sua dedicação e contribuição científica com a Revista Saber Psicanalítico.`,
           actionText: 'Acessar Painel de Avaliações',
-          actionUrl: 'https://revista-saber-portal.vercel.app'
+          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
         })
       }
 
@@ -1513,7 +1513,7 @@ export default function Home() {
         title: 'Bem-vindo(a) ao Corpo de Pareceristas Ad-hoc',
         message: `Prezado(a) ${candidate.full_name},\n\nTemos a satisfação de comunicar que sua inscrição para integrar o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416) foi HOMOLOGADA com parecer favorável do Conselho Editorial.\n\nSeu cadastro encontra-se plenamente ativo em nosso sistema.\n\n--- INFORMAÇÕES GERAIS DE FUNCIONAMENTO ---\n1. Convites de Avaliação: Conforme a afinidade temática dos manuscritos recebidos, você receberá um e-mail com o resumo da obra e o prazo sugerido (geralmente 21 dias).\n2. Aceite e Recusa: Ao acessar o portal, você poderá aceitar ou recusar formalmente o convite. O arquivo completo do texto só fica disponível para download após você clicar em Aceitar.\n3. Avaliação Duplo-Cega: Os textos são anonimizados. Seu parecer circunstanciado e eventuais arquivos com comentários deverão manter rigoroso anonimato.\n4. Certificação Oficial: A cada parecer finalizado, o sistema emite automaticamente a Declaração Oficial Timbrada com código digital de verificação para comprovação no Lattes e em bancas acadêmicas.\n\nAgradecemos sua valorosa contribuição para o fortalecimento da transmissão e do rigor científico na Psicanálise.`,
         actionText: 'Acessar Área do Parecerista',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
+        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
       })
 
       alert(`Parecerista "${candidate.full_name}" homologado com sucesso!`)
@@ -1623,8 +1623,12 @@ export default function Home() {
     if (!forgotEmail) return
     setForgotLoading(true)
     try {
+      const resetUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/redefinir-senha`
+          : 'https://revista-saber-portal.vercel.app/redefinir-senha'
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: 'https://revista-saber-portal.vercel.app/redefinir-senha',
+        redirectTo: resetUrl,
       })
       if (error) throw error
       alert('Link oficial enviado para o seu e-mail!')
@@ -1709,7 +1713,7 @@ export default function Home() {
           title: 'Manuscrito Recebido com Sucesso',
           message: `Prezado(a) ${profile?.full_name || 'Autor(a)'},\n\nConfirmamos o recebimento do trabalho "${newTitle}" na seção "${newSection}".\n\nVocê pode acompanhar todas as etapas da avaliação diretamente no portal.`,
           actionText: 'Acompanhar no Portal',
-          actionUrl: 'https://revista-saber-portal.vercel.app',
+          actionUrl: 'https://revista-saber-portal.vercel.app/portal',
         })
       }
 
@@ -1719,7 +1723,7 @@ export default function Home() {
         title: 'Novo Manuscrito Submetido',
         message: `Um novo manuscrito foi submetido ao portal:\n\n• Título: ${newTitle}\n• Seção: ${newSection}\n• Eixo Temático: ${newThematicAxis}\n• Autor: ${profile?.full_name || 'Autor'} (${authorEmail || '-'})\n\nAcesse a Sala Editorial para realizar a triagem inicial.`,
         actionText: 'Abrir Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app',
+        actionUrl: 'https://revista-saber-portal.vercel.app/portal',
       })
 
       alert('Artigo submetido com sucesso!')
@@ -1770,7 +1774,7 @@ export default function Home() {
           title: 'Reenvio de Manuscrito Confirmado',
           message: `Prezado(a) ${authorName},\n\nConfirmamos o recebimento da nova versão do manuscrito "${reSubmitArticle.title}" (${tipoCorrecao}).\n\nA Comissão Editorial já foi notificada e dará prosseguimento à análise.`,
           actionText: 'Acessar o Portal',
-          actionUrl: 'https://revista-saber-portal.vercel.app',
+          actionUrl: 'https://revista-saber-portal.vercel.app/portal',
         })
       }
 
@@ -1780,7 +1784,7 @@ export default function Home() {
         title: 'Versão Corrigida Enviada pelo Autor',
         message: `O(A) autor(a) ${authorName} (${authorEmail || '-'}) enviou uma versão revisada do manuscrito:\n\n• Título: "${reSubmitArticle.title}"\n• Origem da solicitação: ${tipoCorrecao}\n• Seção: ${reSubmitArticle.section || 'Artigos Científicos'}\n\nAcesse a Sala Editorial (aba "Revisão Enviada") para conferir e baixar o arquivo atualizado.`,
         actionText: 'Conferir na Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app',
+        actionUrl: 'https://revista-saber-portal.vercel.app/portal',
       })
 
       alert('Versão corrigida enviada com sucesso!')
@@ -1814,20 +1818,24 @@ export default function Home() {
   }
 
   const handleUpdateStatus = async (articleId: string, status: string) => {
+    const targetArt = allArticles.find((a) => a.id === articleId)
+    if (checkIsOwnArticle(targetArt)) {
+      return alert('Conflito de interesse (COPE): Você não pode alterar o status do seu próprio manuscrito.')
+    }
+
     if (status === 'recusado') {
-      setRejectionModalArticle(allArticles.find((a) => a.id === articleId))
+      setRejectionModalArticle(targetArt)
       setRejectionReasonText('')
       return
     }
     if (status === 'correcoes_pendentes') {
-      setRequestChangesModalArticle(allArticles.find((a) => a.id === articleId))
+      setRequestChangesModalArticle(targetArt)
       setChangesReasonText('')
       setAuthorDeadline(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
       return
     }
 
     try {
-      const targetArt = allArticles.find((a) => a.id === articleId)
       const { error } = await supabase
         .from('articles')
         .update({ status, updated_at: new Date().toISOString() })
@@ -1846,7 +1854,7 @@ export default function Home() {
               title: 'Ajuste Inicial Necessário Antes da Avaliação',
               message: `Prezado(a) ${autName},\n\nNa triagem inicial do manuscrito "${targetArt.title}", verificamos a necessidade de ajustes de anonimização ou formatação para prosseguir à avaliação duplo-cega por pares.\n\nPor favor, remova qualquer identificação dos autores no texto e nas propriedades do arquivo Word e envie novamente a versão anonimizada pelo portal clicando em "Enviar Arquivo Corrigido".`,
               actionText: 'Enviar Arquivo Anonimizado',
-              actionUrl: 'https://revista-saber-portal.vercel.app',
+              actionUrl: 'https://revista-saber-portal.vercel.app/portal',
             })
           } else if (status === 'em_avaliacao') {
             await sendEmailNotification({
@@ -1855,7 +1863,7 @@ export default function Home() {
               title: 'Manuscrito em Avaliação Duplo-Cega',
               message: `Prezado(a) ${autName},\n\nInformamos que seu manuscrito "${targetArt.title}" concluiu a triagem inicial e encontra-se agora em processo de avaliação duplo-cega por pares (Double-Blind Peer Review).\n\nAssim que os pareceres forem consolidados, você será notificado por e-mail.`,
               actionText: 'Acompanhar no Portal',
-              actionUrl: 'https://revista-saber-portal.vercel.app',
+              actionUrl: 'https://revista-saber-portal.vercel.app/portal',
             })
           } else if (status === 'aceito') {
             await sendEmailNotification({
@@ -1864,7 +1872,7 @@ export default function Home() {
               title: 'Parabéns! Artigo Aprovado para Publicação',
               message: `Prezado(a) ${autName},\n\nTemos a grande satisfação de comunicar que seu trabalho "${targetArt.title}" foi APROVADO PARA PUBLICAÇÃO na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua Carta/Declaração Oficial de Aceite em PDF (com código verificador digital) e os pareceres já estão disponíveis para download no portal.`,
               actionText: 'Emitir Carta de Aceite no Portal',
-              actionUrl: 'https://revista-saber-portal.vercel.app',
+              actionUrl: 'https://revista-saber-portal.vercel.app/portal',
             })
           }
         }
@@ -1902,7 +1910,7 @@ export default function Home() {
           title: 'Parecer Editorial Disponível com Solicitação de Ajustes',
           message: `Prezado(a) ${autName},\n\nA Comissão Editorial apreciou seu manuscrito "${requestChangesModalArticle.title}" e solicita a realização de ajustes regimentais com base nas orientações abaixo:\n\n${changesReasonText}\n\n⚠️ PRAZO IMPRORROGÁVEL: ${deadlineFmt}\nO não cumprimento deste prazo acarretará no adiamento ou na não publicação do texto no próximo fascículo.\n\nOs pareceres completos também já podem ser consultados no portal.`,
           actionText: 'Ver Detalhes e Enviar Versão Corrigida',
-          actionUrl: 'https://revista-saber-portal.vercel.app'
+          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
         })
       }
 
@@ -1935,7 +1943,7 @@ export default function Home() {
           title: 'Solicitação de Ajuste no Parecer Emitido',
           message: `Prezado(a) ${revProfile.full_name},\n\nA Comissão Editorial apreciou seu parecer e solicita o seguinte ajuste:\n\n${reviewerChangesText}\n\nPor favor, acesse seu painel para atualizar o parecer e reenviar.`,
           actionText: 'Acessar Painel do Parecerista',
-          actionUrl: 'https://revista-saber-portal.vercel.app'
+          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
         })
       }
 
@@ -1969,7 +1977,7 @@ export default function Home() {
           title: 'Comunicação Editorial / Parecer Final',
           message: `Prezado(a) ${autName},\n\nComunicamos que o manuscrito "${rejectionModalArticle.title}" concluiu as etapas de avaliação e não foi aceito para publicação no presente ciclo editorial.\n\nConsiderações da Editoria:\n${rejectionReasonText}\n\nA comunicação oficial em PDF e os pareceres emitidos encontram-se disponíveis para consulta no portal.`,
           actionText: 'Acessar o Portal',
-          actionUrl: 'https://revista-saber-portal.vercel.app'
+          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
         })
       }
 
@@ -1985,6 +1993,9 @@ export default function Home() {
 
   const handleAssignReviewer = async () => {
     if (!selectedReviewerId || !assignModalArticle || !assignDeadline) return alert('Selecione o parecerista e o prazo.')
+    if (checkIsOwnArticle(assignModalArticle)) {
+      return alert('Conflito de interesse (COPE): Você não pode atribuir pareceristas ao seu próprio manuscrito. Solicite ao outro editor.')
+    }
     try {
       const revProfile = allProfiles.find((p) => p.id === selectedReviewerId)
       const { error } = await supabase.from('reviews').insert({
@@ -2003,7 +2014,7 @@ export default function Home() {
           title: 'Novo Convite de Avaliação',
           message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a avaliar o manuscrito "${assignModalArticle.title}". Acesse o portal para consultar o resumo e aceitar ou recusar o convite.`,
           actionText: 'Responder Convite no Portal',
-          actionUrl: 'https://revista-saber-portal.vercel.app'
+          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
         })
       }
       alert('Convite enviado com sucesso!')
@@ -2037,7 +2048,7 @@ export default function Home() {
         title: 'Parecerista Aceitou a Avaliação',
         message: `O(A) parecerista ${profile?.full_name || 'Avaliador(a)'} ACEITOU o convite para avaliar o manuscrito "${articleTitle}".`,
         actionText: 'Abrir Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
+        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
       })
 
       alert('Convite aceito! O manuscrito foi liberado para download e avaliação.')
@@ -2059,7 +2070,7 @@ export default function Home() {
         title: 'Parecerista Recusou o Convite',
         message: `O(A) parecerista ${profile?.full_name || 'Avaliador(a)'} RECUSOU o convite para avaliar o manuscrito "${articleTitle}". Acesse a Sala Editorial para designar outro avaliador.`,
         actionText: 'Abrir Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
+        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
       })
 
       alert('Recusa registrada.')
@@ -2100,7 +2111,7 @@ export default function Home() {
         title: isWasAdjustment ? 'Parecer Ajustado Concluído' : 'Parecer Técnico Registrado',
         message: `O(A) parecerista ${profile?.full_name} ${isWasAdjustment ? 'concluiu e reenviou os ajustes solicitados no parecer' : 'emitiu um parecer conclusivo'} para o trabalho "${targetArt?.title}".\n\n• Recomendação: ${recommendation.toUpperCase()}\n• Seção: ${sec}`,
         actionText: 'Acessar Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app'
+        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
       })
 
       alert('Parecer enviado à Comissão Editorial com sucesso!')
@@ -2177,11 +2188,46 @@ export default function Home() {
 
   const completedReviewers = allProfiles.filter((p) => Array.from(new Set(allReviews.filter((r) => r.status === 'concluido').map((r) => r.reviewer_id))).includes(p.id))
 
+  const isEditorChefe = profile?.role === 'editor'
+  const isEditorAdjunto = profile?.role === 'editor_adjunto'
+  const isFullEditor = isEditorChefe || isEditorAdjunto
+  const isCouncil = profile?.role === 'council'
+  const canAccessEditorialRoom = isFullEditor || isCouncil
+
+  // ==========================================================================
+  // REGRAS DE SIGILO DUPLO-CEGO & CONFLITO DE INTERESSES (COPE)
+  // ==========================================================================
+  const currentUserEmail = (profile?.email || session?.user?.email || '').trim().toLowerCase()
+
+  const checkIsOwnArticle = (art: any) => {
+    if (!art || !session?.user?.id) return false
+    if (art.author_id === session.user.id) return true
+    if (currentUserEmail && Array.isArray(art.coauthors)) {
+      return art.coauthors.some(
+        (co: any) => (co?.email || '').trim().toLowerCase() === currentUserEmail
+      )
+    }
+    return false
+  }
+
+  const isCouncilReviewerOnArticle = (art: any) => {
+    if (!isCouncil || !art || !session?.user?.id) return false
+    return getArticleReviews(art.id).some((r) => r.reviewer_id === session.user.id)
+  }
+
+  const isCoauthorProfile = (p: any, art: any) => {
+    if (!p || !art || !Array.isArray(art.coauthors)) return false
+    const pEmail = (p.email || '').trim().toLowerCase()
+    if (!pEmail) return false
+    return art.coauthors.some((co: any) => (co?.email || '').trim().toLowerCase() === pEmail)
+  }
+
   const filteredArticles = allArticles.filter((art) => {
     const q = editorSearch.toLowerCase()
+    const hideAuthorForCouncil = isCouncilReviewerOnArticle(art)
     const matchesText =
       art.title.toLowerCase().includes(q) ||
-      getAuthorName(art.author_id, art).toLowerCase().includes(q) ||
+      (!hideAuthorForCouncil && getAuthorName(art.author_id, art).toLowerCase().includes(q)) ||
       (art.section || '').toLowerCase().includes(q) ||
       (art.thematic_axis || '').toLowerCase().includes(q)
     const matchesStatus = editorStatusFilter === 'todos' || art.status === editorStatusFilter
@@ -2202,17 +2248,12 @@ export default function Home() {
     return ((p.full_name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q)) && (userRoleFilter === 'todos' || p.role === userRoleFilter)
   })
 
-  const isEditorChefe = profile?.role === 'editor'
-  const isEditorAdjunto = profile?.role === 'editor_adjunto'
-  const isFullEditor = isEditorChefe || isEditorAdjunto
-  const isCouncil = profile?.role === 'council'
-  const canAccessEditorialRoom = isFullEditor || isCouncil
-
   const eligibleReviewers = allProfiles.filter((p) =>
     (p.role === 'reviewer' || p.role === 'editor' || p.role === 'editor_adjunto' || p.role === 'council') &&
     p.reviewer_status !== 'pending' &&
     p.reviewer_status !== 'rejected' &&
-    p.id !== assignModalArticle?.author_id
+    p.id !== assignModalArticle?.author_id &&
+    !isCoauthorProfile(p, assignModalArticle)
   )
 
   const getReviewerAffinity = (rev: any, art: any) => {
@@ -2489,7 +2530,7 @@ export default function Home() {
       </main>
     )
   }
-const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.user?.id)
+  const myAuthorArticles = allArticles.filter((art) => checkIsOwnArticle(art))
   const myReviewAssignments = allReviews
     .filter((r) => r.reviewer_id === session?.user?.id)
     .filter((r) => r.status !== 'recusado')
@@ -2595,7 +2636,8 @@ const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.
                   {myAuthorArticles.map((art) => {
                     const isReleasedToAuthor = ['correcoes_pendentes', 'aceito', 'recusado'].includes(art.status)
                     const revs = isReleasedToAuthor ? getArticleReviews(art.id).filter((r) => r.status === 'concluido') : []
-                    const canResubmit = ['correcoes_pendentes', 'ajustes_iniciais', 'revisao_submetida'].includes(art.status)
+                    const isPrimaryAuthor = art.author_id === session?.user?.id
+                    const canResubmit = isPrimaryAuthor && ['correcoes_pendentes', 'ajustes_iniciais', 'revisao_submetida'].includes(art.status)
 
                     return (
                       <div key={art.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
@@ -2606,6 +2648,11 @@ const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.
                               {art.thematic_axis && (
                                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                   {art.thematic_axis}
+                                </span>
+                              )}
+                              {!isPrimaryAuthor && (
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                  Coautoria
                                 </span>
                               )}
                               <span className="text-xs font-semibold text-indigo-700">{art.status.toUpperCase()}</span>
@@ -2918,7 +2965,8 @@ const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.
                       const isRejected = art.status === 'recusado'
                       const isRevisionResubmitted = art.status === 'revisao_submetida'
                       const isPostReviewRevision = Boolean(art.revision_deadline || revs.some((r) => r.status === 'concluido'))
-                      const isOwnArticle = art.author_id === session?.user?.id
+                      const isOwnArticle = checkIsOwnArticle(art)
+                      const hideAuthorForCouncil = isCouncilReviewerOnArticle(art)
                       const hasRevision = art.original_file_url && art.original_file_url !== art.file_url
                       const hasPlagiarismScore = art.plagiarism_score !== null && art.plagiarism_score !== undefined
 
@@ -2962,23 +3010,41 @@ const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.
                                       : 'AJUSTES REENVIADOS PELO AUTOR (ANONIMIZAÇÃO)'}
                                   </span>
                                 )}
-                                {isOwnArticle && <span className="ml-2 text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">[Seu Manuscrito - COPE]</span>}
+                                {isOwnArticle && <span className="ml-2 text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">[Seu Manuscrito (Autor/Coautor) - COPE]</span>}
                               </div>
                               <h4 className="text-lg font-bold text-slate-900 mt-1">{art.title}</h4>
-                              <p className="text-xs text-slate-500">
-                                Autor: <strong>{getAuthorName(art.author_id, art)}</strong>
-                                {getAuthorEmail(art.author_id, art) ? ` (${getAuthorEmail(art.author_id, art)})` : ''} • Filiação: {art.author_institution || getAuthorInst(art.author_id, art)}
-                              </p>
+                              {hideAuthorForCouncil ? (
+                                <p className="text-xs text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded border border-amber-200 inline-block mt-1">
+                                  🔒 Autoria Ocultada (Duplo-Cego / COPE — Você foi designado como parecerista deste manuscrito)
+                                </p>
+                              ) : (
+                                <p className="text-xs text-slate-500">
+                                  Autor: <strong>{getAuthorName(art.author_id, art)}</strong>
+                                  {getAuthorEmail(art.author_id, art) ? ` (${getAuthorEmail(art.author_id, art)})` : ''} • Filiação: {art.author_institution || getAuthorInst(art.author_id, art)}
+                                </p>
+                              )}
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
-                              <button type="button" onClick={() => setSelectedArticleDetails(art)} className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg flex items-center gap-1 shadow-sm">
-                                <Eye className="w-3.5 h-3.5 text-indigo-600" /> Ver Detalhes
-                              </button>
-                              {isAccepted && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'aceite', article: art })} className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg">Carta de Aceite</button>}
-                              {isRejected && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'recusa', article: art })} className="px-3 py-1.5 text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 rounded-lg">Carta Não Aceite</button>}
-                              <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-700">Baixar</button>
-                              {hasRevision && <button type="button" onClick={() => handleDownloadFile(art.original_file_url, art.title, 'Versao_Original')} className="px-2.5 py-1.5 text-xs border border-slate-200 bg-slate-50 rounded-lg text-slate-600">Original</button>}
+                              {!hideAuthorForCouncil ? (
+                                <>
+                                  <button type="button" onClick={() => setSelectedArticleDetails(art)} className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg flex items-center gap-1 shadow-sm">
+                                    <Eye className="w-3.5 h-3.5 text-indigo-600" /> Ver Detalhes
+                                  </button>
+                                  {isAccepted && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'aceite', article: art })} className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg">Carta de Aceite</button>}
+                                  {isRejected && <button type="button" onClick={() => setActiveOfficialDoc({ type: 'recusa', article: art })} className="px-3 py-1.5 text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 rounded-lg">Carta Não Aceite</button>}
+                                  <button type="button" onClick={() => handleDownloadFile(art.file_url, art.title, hasRevision ? 'Manuscrito_Revisado' : 'Manuscrito')} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-700">Baixar</button>
+                                  {hasRevision && <button type="button" onClick={() => handleDownloadFile(art.original_file_url, art.title, 'Versao_Original')} className="px-2.5 py-1.5 text-xs border border-slate-200 bg-slate-50 rounded-lg text-slate-600">Original</button>}
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setViewMode('reviewer')}
+                                  className="px-3 py-1.5 text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg flex items-center gap-1"
+                                >
+                                  Avaliar na Visão Parecerista
+                                </button>
+                              )}
 
                               {isFullEditor && !isOwnArticle && (
                                 <>
@@ -3008,23 +3074,21 @@ const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.
                                     <option value="aceito">Aceito</option>
                                     <option value="recusado">Recusado</option>
                                   </select>
-                                </>
-                              )}
 
-                              {isFullEditor && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteArticle(art)}
-                                  className="p-1.5 text-rose-500 hover:bg-rose-50 border border-rose-200 rounded-lg"
-                                  title="Excluir manuscrito (Editoria)"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteArticle(art)}
+                                    className="p-1.5 text-rose-500 hover:bg-rose-50 border border-rose-200 rounded-lg"
+                                    title="Excluir manuscrito (Editoria)"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
                               )}
                             </div>
                           </div>
 
-                          {isRevisionResubmitted && (
+                          {isRevisionResubmitted && !hideAuthorForCouncil && (
                             <div className="p-3 bg-teal-50/80 border border-teal-200 rounded-lg text-xs text-teal-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
                                 <RefreshCw className="w-4 h-4 text-teal-700 flex-shrink-0" />
@@ -3049,7 +3113,7 @@ const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.
                             </div>
                           )}
 
-                          {!isOwnArticle && revs.length > 0 && (
+                          {!isOwnArticle && !hideAuthorForCouncil && revs.length > 0 && (
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-xs">
                               <p className="font-bold text-slate-700">Pareceristas Designados:</p>
                               {revs.map((r) => {
@@ -3523,6 +3587,7 @@ const myAuthorArticles = allArticles.filter((art) => art.author_id === session?.
           </div>
         </div>
       </footer>
+
       {/* MODAL PARECERISTAS PARA AUTOR LOGADO */}
       <PareceristasModal
         show={showPareceristasModal}
