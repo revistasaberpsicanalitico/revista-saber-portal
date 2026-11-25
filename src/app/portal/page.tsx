@@ -2555,7 +2555,7 @@ export default function Home() {
         <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-4">
-              <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-16 md:h-20 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+              <img src="/logo-revista.png" alt="Revista Saber Psicanalítico" className="h-24 md:h-28 -my-3 object-contain drop-shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               <div>
                 <h1 className="text-lg md:text-xl font-bold text-slate-900 leading-tight">Revista Saber Psicanalítico</h1>
                 <p className="text-xs text-indigo-700 font-semibold tracking-wider">ISSN 3086-8416 • Portal Editorial</p>
