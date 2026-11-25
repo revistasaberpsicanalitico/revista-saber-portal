@@ -107,7 +107,8 @@ export default function PoliticasPage() {
           </article>
 
           <article className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-            <h2 className="font-bold text-slate-900 text-base">
+            <h2 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-amber-600" />
               7. Política de Endogenia e Conflitos de Interesse
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
