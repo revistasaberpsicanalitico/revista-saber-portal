@@ -1,10 +1,14 @@
 import type { MetadataRoute } from 'next'
+import { unstable_noStore as noStore } from 'next/cache'
 import { supabase } from '@/lib/supabase'
 import { SITE_URL } from '@/lib/siteConfig'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  noStore()
+
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
     { url: `${SITE_URL}/edicao-atual`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
