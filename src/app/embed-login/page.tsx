@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { 
-  Lock, Mail, User, Building, ArrowRight, CheckCircle2, 
-  AlertCircle, KeyRound, ExternalLink
+import { SITE_URL } from '@/lib/siteConfig'
+import {
+  Lock, Mail, User, Building, ArrowRight, CheckCircle2,
+  AlertCircle, ExternalLink
 } from 'lucide-react'
 
 export default function EmbedLogin() {
@@ -14,20 +15,20 @@ export default function EmbedLogin() {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [institution, setInstitution] = useState('')
-  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
-  // Redireciona a janela inteira do navegador para o portal oficial
+  const portalUrl = `${SITE_URL}/portal`
+
   const redirectToPortal = () => {
     try {
       if (window.top && window.top !== window.self) {
-        window.top.location.href = 'https://revista-saber-portal.vercel.app'
+        window.top.location.href = portalUrl
       } else {
-        window.location.href = 'https://revista-saber-portal.vercel.app'
+        window.location.href = portalUrl
       }
-    } catch (e) {
-      window.open('https://revista-saber-portal.vercel.app', '_blank')
+    } catch {
+      window.open(portalUrl, '_blank')
     }
   }
 
@@ -52,7 +53,7 @@ export default function EmbedLogin() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: fullName, role: 'author', institution, phone } },
+          options: { data: { full_name: fullName, role: 'author', institution } },
         })
         if (error) throw error
         setMessage({ type: 'success', text: 'Conta criada com sucesso! Redirecionando...' })
@@ -64,7 +65,6 @@ export default function EmbedLogin() {
     }
   }
 
-  // Se a pessoa já estiver conectada
   if (session) {
     return (
       <main className="min-h-screen flex items-center justify-center p-4 bg-transparent font-sans">
@@ -92,12 +92,10 @@ export default function EmbedLogin() {
   return (
     <main className="min-h-screen flex items-center justify-center p-2 bg-transparent font-sans">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 border border-slate-200 space-y-4">
-        
-        {/* Alternador Login / Cadastro */}
         <div className="flex rounded-lg bg-slate-100 p-1">
           <button
             type="button"
-            onClick={() => { setIsLogin(true); setMessage(null); }}
+            onClick={() => { setIsLogin(true); setMessage(null) }}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
               isLogin ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'
             }`}
@@ -106,7 +104,7 @@ export default function EmbedLogin() {
           </button>
           <button
             type="button"
-            onClick={() => { setIsLogin(false); setMessage(null); }}
+            onClick={() => { setIsLogin(false); setMessage(null) }}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
               !isLogin ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'
             }`}
@@ -131,29 +129,14 @@ export default function EmbedLogin() {
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Nome Completo *</label>
                 <div className="relative">
                   <User className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Seu nome completo"
-                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome completo" className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Instituição / Afiliação *</label>
                 <div className="relative">
                   <Building className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                  <input
-                    type="text"
-                    required
-                    value={institution}
-                    onChange={(e) => setInstitution(e.target.value)}
-                    placeholder="Associação / Universidade"
-                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  <input type="text" required value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="Associação / Universidade" className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg" />
                 </div>
               </div>
             </>
@@ -163,14 +146,7 @@ export default function EmbedLogin() {
             <label className="block text-[11px] font-semibold text-slate-700 mb-1">E-mail *</label>
             <div className="relative">
               <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu.email@exemplo.com"
-                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu.email@exemplo.com" className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg" />
             </div>
           </div>
 
@@ -178,34 +154,18 @@ export default function EmbedLogin() {
             <div className="flex justify-between items-center mb-1">
               <label className="text-[11px] font-semibold text-slate-700">Senha *</label>
               {isLogin && (
-                <a
-                  href="https://revista-saber-portal.vercel.app"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] text-indigo-600 hover:underline"
-                >
+                <a href={portalUrl} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 hover:underline">
                   Esqueci minha senha
                 </a>
               )}
             </div>
             <div className="relative">
               <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg" />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 mt-2"
-          >
+          <button type="submit" disabled={loading} className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 mt-2">
             {loading ? 'Acessando...' : isLogin ? 'Acessar o Portal Editorial' : 'Criar Conta e Acessar'}
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
