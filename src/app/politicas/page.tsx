@@ -1,13 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ShieldCheck, Scale, FileSearch, Lock, Globe, Users, UserCheck, Upload, HardDrive } from 'lucide-react'
+import {
+  ShieldCheck, Scale, FileSearch, Lock, Globe, Users,
+  UserCheck, Upload, HardDrive, BookOpen, Database
+} from 'lucide-react'
 import PublicShell from '@/components/PublicShell'
 import { JOURNAL_INFO } from '@/lib/siteConfig'
 
 export const metadata: Metadata = {
   title: `Políticas Editoriais e Ética | ${JOURNAL_INFO.name}`,
   description:
-    'Política de acesso aberto (CC-BY 4.0), gratuidade total (APC R$ 0), avaliação duplo-cega, protocolo antiplágio CopySpider, preservação digital e diretrizes COPE.',
+    'Política de acesso aberto (CC-BY 4.0), gratuidade total (APC R$ 0), avaliação duplo-cega, protocolo antiplágio CopySpider, preservação digital, preprints e diretrizes COPE.',
 }
 
 export default function PoliticasPage() {
@@ -20,7 +23,7 @@ export default function PoliticasPage() {
           </span>
           <h1 className="text-2xl sm:text-4xl font-serif font-bold">Políticas Editoriais e Ética</h1>
           <p className="text-sm text-slate-300 max-w-3xl leading-relaxed">
-            Diretrizes éticas, política de gratuidade, avaliação por pares, controle antiplágio, preservação digital e combate à endogenia da Revista Saber Psicanalítico.
+            Diretrizes éticas, política de gratuidade, avaliação por pares, controle antiplágio, preservação digital, ciência aberta e combate à endogenia da Revista Saber Psicanalítico.
           </p>
         </div>
       </section>
@@ -102,9 +105,7 @@ export default function PoliticasPage() {
               Antes do encaminhamento aos pareceristas, todos os manuscritos são submetidos à verificação de similaridade textual e originalidade por meio do software especializado <strong>CopySpider</strong>. Textos com índices de similaridade injustificados ou com reprodução de passagens sem a devida citação e referenciação conforme a ABNT são devolvidos para adequação ou rejeitados na triagem preliminar.
             </p>
           </article>
-        </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
           <article className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
             <h2 className="font-bold text-slate-900 text-base">
               7. Política de Endogenia e Conflitos de Interesse
@@ -120,7 +121,33 @@ export default function PoliticasPage() {
               8. Preservação Digital e Interoperabilidade
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              A revista mantém cópias de segurança redundantes em nuvem institucional de todo o acervo em PDF e metadados, URLs permanentes individuais por artigo, protocolo de coleta <strong>OAI-PMH (Dublin Core)</strong> e autoriza expressamente o autoarquivamento da versão publicada pelos autores em repositórios institucionais (como Lume, RI-USP, Zenodo e Internet Archive).
+              A revista mantém cópias de segurança redundantes em nuvem institucional de todo o acervo em PDF e metadados, URLs permanentes individuais por artigo, protocolo de coleta <strong>OAI-PMH (Dublin Core)</strong> e autoriza expressamente o autoarquivamento da versão publicada pelos autores em repositórios institucionais.
+            </p>
+          </article>
+
+          <article className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
+            <h2 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-indigo-600" />
+              9. Política sobre Preprints
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Para assegurar o rigor do <strong>ineditismo</strong> e preservar o anonimato estrito da <strong>avaliação duplo-cega por pares</strong>, a Revista Saber Psicanalítico <strong>não aceita</strong> a submissão de manuscritos previamente depositados em servidores de preprints.
+            </p>
+            <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <strong>Pós-print liberado:</strong> Após a aprovação e publicação oficial no fascículo, os autores têm plena liberdade para depositar a versão final publicada (PDF editorial) em repositórios institucionais de acesso aberto (como Lume, RI-USP, etc.), citando a publicação original.
+            </p>
+          </article>
+
+          <article className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
+            <h2 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <Database className="w-5 h-5 text-emerald-600" />
+              10. Disponibilidade de Dados de Pesquisa
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Em estudos teóricos e bibliográficos no campo da Psicanálise, os dados analisados correspondem integralmente às fontes documentais e obras referenciadas ao longo do artigo. Em eventuais pesquisas empíricas sem restrições éticas, os autores devem informar se o conjunto de dados pode ser consultado mediante solicitação fundamentada.
+            </p>
+            <p className="text-xs font-semibold text-rose-900 bg-rose-50/70 p-3 rounded-xl border border-rose-200">
+              Proteção ao Sigilo Clínico: Em relatos de experiência clínica e pesquisas envolvendo analisandos ou participantes humanos, a abertura pública de dados primários é expressamente vedada em respeito ao sigilo analítico, à LGPD e à Resolução CNS nº 510/2016.
             </p>
           </article>
         </div>
