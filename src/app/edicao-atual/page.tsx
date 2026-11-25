@@ -19,7 +19,7 @@ export default async function EdicaoAtualPage() {
     .from('issues')
     .select('*')
     .eq('is_published', true)
-    .order('is_current', { ascending: false })
+    .eq('is_current', true)
     .order('year', { ascending: false })
     .order('volume', { ascending: false })
     .order('issue_number', { ascending: false })
@@ -59,7 +59,7 @@ export default async function EdicaoAtualPage() {
             </span>
             <h1 className="text-2xl sm:text-4xl font-serif font-bold">Edição Atual</h1>
             <p className="text-sm text-slate-300">
-              {issue ? issue.title : 'Fascículo atual da Revista Saber Psicanalítico.'}
+              {issue ? issue.title : 'Fascículo vigente da Revista Saber Psicanalítico.'}
             </p>
           </div>
           <Link
@@ -73,22 +73,28 @@ export default async function EdicaoAtualPage() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
         {!issue ? (
-          <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3 shadow-sm">
+          <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-4 shadow-sm">
             <BookOpen className="w-10 h-10 text-indigo-500 mx-auto" />
-            <h2 className="text-lg font-bold text-slate-800">Edição em preparação</h2>
+            <h2 className="text-lg font-bold text-slate-800">Nenhuma edição definida como atual ainda</h2>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              A edição vigente aparecerá aqui assim que for publicada pela equipe editorial no portal.
+              Enquanto a edição vigente é finalizada, você pode consultar todas as publicações disponíveis no arquivo de edições anteriores.
             </p>
+            <Link
+              href="/edicoes"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-xl"
+            >
+              Ver Edições Anteriores <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         ) : (
           <>
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 grid md:grid-cols-[240px_1fr] gap-6">
-              <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden min-h-[260px] flex items-center justify-center">
+              <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden aspect-[3/4] flex items-center justify-center p-1.5">
                 {issue.cover_image_url ? (
                   <img
                     src={getPublicFileUrl(issue.cover_image_url)}
                     alt={issue.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain rounded-lg"
                   />
                 ) : (
                   <div className="text-center p-4 space-y-1">
