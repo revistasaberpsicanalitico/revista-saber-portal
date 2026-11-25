@@ -8,47 +8,16 @@ export default function RedefinirSenha() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [ready, setReady] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
   useEffect(() => {
-    // 1. Processa código de segurança da URL (?code=...)
     const params = new URLSearchParams(window.location.search)
     const code = params.get('code')
 
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (!error && data?.session) {
-          setReady(true)
-        } else {
-          checkSession()
-        }
-      })
-    } else {
-      checkSession()
+      supabase.auth.exchangeCodeForSession(code).catch(() => {})
     }
-
-    // 2. Escuta se a sessão foi recuperada pelo link
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || session) {
-        setReady(true)
-      }
-    })
-
-    return () => subscription.unsubscribe()
   }, [])
-
-  const checkSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      setReady(true)
-    } else {
-      setTimeout(async () => {
-        const { data: { session: retry } } = await supabase.auth.getSession()
-        if (retry) setReady(true)
-      }, 1200)
-    }
-  }
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,8 +48,8 @@ export default function RedefinirSenha() {
         text: 'Senha redefinida com sucesso! Entrando no portal...',
       })
       setTimeout(() => {
-        window.location.href = '/'
-      }, 2000)
+        window.location.href = '/portal'
+      }, 1800)
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Erro ao redefinir senha.' })
     } finally {
@@ -96,18 +65,12 @@ export default function RedefinirSenha() {
             src="/logo-revista.png"
             alt="Revista Saber Psicanalítico"
             className="h-28 object-contain drop-shadow-sm"
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
           />
           <div className="text-center">
-            <h1 className="text-xl font-bold text-slate-800">
-              Revista Saber Psicanalítico
-            </h1>
-            <p className="text-xs text-indigo-700 font-semibold tracking-wider uppercase mt-0.5">
-              ISSN 3086-8416
-            </p>
-            <p className="text-xs text-slate-500 mt-2 font-medium">
-              Redefinição de Senha de Acesso
-            </p>
+            <h1 className="text-xl font-bold text-slate-800">Revista Saber Psicanalítico</h1>
+            <p className="text-xs text-indigo-700 font-semibold tracking-wider uppercase mt-0.5">ISSN 3086-8416</p>
+            <p className="text-xs text-slate-500 mt-2 font-medium">Redefinição de Senha de Acesso</p>
           </div>
         </div>
 
@@ -125,14 +88,7 @@ export default function RedefinirSenha() {
             <label className="block text-xs font-semibold text-slate-700 mb-1">Nova Senha *</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
             </div>
           </div>
 
@@ -140,30 +96,22 @@ export default function RedefinirSenha() {
             <label className="block text-xs font-semibold text-slate-700 mb-1">Confirmar Nova Senha *</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repita a nova senha"
-                className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
+              <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a nova senha" className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-xs flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
-          >
+          <button type="submit" disabled={loading} className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-xs flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm">
             {loading ? 'Salvando nova senha...' : 'Redefinir e Entrar no Portal'}
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-          <a href="/" className="text-xs text-indigo-600 hover:underline">
-            Voltar para a página de Login
+        <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-2">
+          <a href="/portal" className="block text-xs text-indigo-600 hover:underline">
+            Voltar para a página de Login do Portal
+          </a>
+          <a href="/" className="block text-xs text-slate-500 hover:underline">
+            Ir para o Site da Revista
           </a>
         </div>
       </div>
