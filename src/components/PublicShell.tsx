@@ -72,8 +72,11 @@ export default function PublicShell({ children }: { children: React.ReactNode })
               <span className="block font-serif text-base sm:text-xl font-bold text-slate-900 leading-tight">
                 {JOURNAL_INFO.name}
               </span>
-              <span className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-indigo-700">
-                {JOURNAL_INFO.maintainer}
+              <span className="block text-[11px] font-bold tracking-wide text-indigo-800 mt-0.5">
+                ISSN {JOURNAL_INFO.issn}
+                <span className="hidden sm:inline font-semibold text-slate-500">
+                  {' '}• {JOURNAL_INFO.maintainer}
+                </span>
               </span>
             </div>
           </Link>
