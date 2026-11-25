@@ -69,7 +69,7 @@ export default function PublicShell({ children }: { children: React.ReactNode })
             <img
               src="/logo-revista.png"
               alt={JOURNAL_INFO.name}
-              className="h-20 sm:h-24 md:h-28 w-auto object-contain -my-3 transition-transform group-hover:scale-[1.02]"
+              className="h-14 sm:h-16 md:h-20 w-auto object-contain transition-transform group-hover:scale-[1.02]"
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
               }}
