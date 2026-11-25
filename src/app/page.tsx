@@ -109,11 +109,11 @@ export default async function HomePage() {
           {/* Card lateral institucional */}
           <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 space-y-4">
             <div className="flex items-center gap-4 border-b border-white/10 pb-4">
-              <div className="bg-white p-2.5 rounded-xl shadow">
+              <div className="bg-white px-3 py-1 rounded-xl shadow overflow-hidden">
                 <img
                   src="/logo-revista.png"
                   alt={JOURNAL_INFO.name}
-                  className="h-16 w-auto object-contain"
+                  className="h-24 sm:h-28 w-auto object-contain -my-2"
                 />
               </div>
               <div>
@@ -251,7 +251,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Lista enxuta de até 4 destaques (para não poluir a Home) */}
+            {/* Lista enxuta de até 4 destaques */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
