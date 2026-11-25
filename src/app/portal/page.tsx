@@ -2789,7 +2789,7 @@ export default function Home() {
                               {isPendingInvitation && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">CONVITE RECEBIDO</span>}
                               {isNeedsAdjustment && <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">AJUSTE SOLICITADO PELA COMISSÃO</span>}
                               {!isCompleted && !isPendingInvitation && !isNeedsAdjustment && <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">EM ELABORAÇÃO</span>}
-                              {getDeadlineBadge(rev.deadline)}
+                              {!isCompleted && getDeadlineBadge(rev.deadline)}
                             </div>
                             <h3 className="text-lg font-bold text-slate-900 mt-1">{art?.title}</h3>
                           </div>
