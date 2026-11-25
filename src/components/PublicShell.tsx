@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Upload, UserCheck, ShieldCheck } from 'lucide-react'
+import { Menu, X, Upload, UserCheck, ShieldCheck, Search } from 'lucide-react'
 import { JOURNAL_INFO } from '@/lib/siteConfig'
 
 export default function PublicShell({ children }: { children: React.ReactNode }) {
@@ -12,10 +12,11 @@ export default function PublicShell({ children }: { children: React.ReactNode })
 
   const navItems = [
     { href: '/', label: 'Início' },
-    { href: '/edicoes', label: 'Edições' },
-    { href: '/sobre', label: 'Sobre e Expediente' },
+    { href: '/edicao-atual', label: 'Edição Atual' },
+    { href: '/edicoes', label: 'Edições Anteriores' },
+    { href: '/sobre', label: 'Sobre' },
     { href: '/normas', label: 'Normas' },
-    { href: '/politicas', label: 'Políticas e Ética' },
+    { href: '/politicas', label: 'Políticas' },
   ]
 
   const isActive = (href: string) =>
@@ -37,7 +38,13 @@ export default function PublicShell({ children }: { children: React.ReactNode })
               Acesso Aberto (CC-BY 4.0) • APC R$ 0,00
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/busca"
+              className="hover:text-white transition inline-flex items-center gap-1 text-slate-300"
+            >
+              <Search className="w-3 h-3" /> Buscar Artigos
+            </Link>
             <Link
               href="/portal?pareceristas=true"
               className="hover:text-amber-300 transition inline-flex items-center gap-1 font-medium"
@@ -52,7 +59,7 @@ export default function PublicShell({ children }: { children: React.ReactNode })
       {/* Cabeçalho principal */}
       <header className="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-3.5 group">
+          <Link href="/" className="flex items-center gap-3 group">
             <img
               src="/logo-revista.png"
               alt={JOURNAL_INFO.name}
@@ -62,10 +69,10 @@ export default function PublicShell({ children }: { children: React.ReactNode })
               }}
             />
             <div>
-              <span className="block font-serif text-lg sm:text-xl font-bold text-slate-900 leading-tight">
+              <span className="block font-serif text-base sm:text-xl font-bold text-slate-900 leading-tight">
                 {JOURNAL_INFO.name}
               </span>
-              <span className="block text-[11px] font-semibold uppercase tracking-wider text-indigo-700">
+              <span className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-indigo-700">
                 {JOURNAL_INFO.maintainer}
               </span>
             </div>
@@ -77,7 +84,7 @@ export default function PublicShell({ children }: { children: React.ReactNode })
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${
+                className={`px-2.5 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap ${
                   isActive(item.href)
                     ? 'bg-indigo-50 text-indigo-800 border border-indigo-100'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -89,7 +96,7 @@ export default function PublicShell({ children }: { children: React.ReactNode })
 
             <Link
               href="/portal"
-              className="ml-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-lg shadow-sm inline-flex items-center gap-1.5 transition"
+              className="ml-2 px-3.5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-lg shadow-sm inline-flex items-center gap-1.5 transition whitespace-nowrap"
             >
               <Upload className="w-3.5 h-3.5" />
               Submeter / Portal
@@ -124,6 +131,13 @@ export default function PublicShell({ children }: { children: React.ReactNode })
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/busca"
+              onClick={() => setMobileOpen(false)}
+              className="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Buscar Artigos
+            </Link>
             <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
               <Link
                 href="/portal"
@@ -173,12 +187,13 @@ export default function PublicShell({ children }: { children: React.ReactNode })
               Navegação Rápida
             </h4>
             <ul className="space-y-1.5 text-slate-300">
-              <li><Link href="/edicoes" className="hover:text-amber-300 transition">Edições Publicadas</Link></li>
+              <li><Link href="/edicao-atual" className="hover:text-amber-300 transition">Edição Atual</Link></li>
+              <li><Link href="/edicoes" className="hover:text-amber-300 transition">Edições Anteriores</Link></li>
+              <li><Link href="/busca" className="hover:text-amber-300 transition">Buscar Artigos</Link></li>
               <li><Link href="/sobre" className="hover:text-amber-300 transition">Apresentação, Expediente e Conselho</Link></li>
               <li><Link href="/normas" className="hover:text-amber-300 transition">Normas para Publicação (ABNT)</Link></li>
               <li><Link href="/politicas" className="hover:text-amber-300 transition">Políticas Editoriais e Ética (COPE)</Link></li>
               <li><Link href="/portal" className="hover:text-amber-300 transition">Portal de Submissão e Pareceres</Link></li>
-              <li><Link href="/portal?pareceristas=true" className="hover:text-amber-300 transition">Inscrever-se como Parecerista</Link></li>
             </ul>
           </div>
 
