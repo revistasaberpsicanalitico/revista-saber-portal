@@ -18,7 +18,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     email: 'edsonfilo@gmail.com',
     lattesUrl: '',
     orcid: '',
-    photoUrl: '',
+    photoUrl: '/edson.jpeg',
   },
   {
     name: 'José Aniervson Souza dos Santos',
@@ -26,9 +26,9 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     bio: 'Mestre em Educação, Culturas e Identidades pela Universidade Federal Rural de Pernambuco e Fundação Joaquim Nabuco (UFRPE/FUNDAJ), especialista em Juventude e em Sexualidade Humana, pedagogo, licenciado em Ciências Biológicas e psicanalista.',
     institution: 'Associação Saber Psicanalítico (ASP)',
     email: 'aniervson@gmail.com',
-    lattesUrl: '',
-    orcid: '',
-    photoUrl: '',
+    lattesUrl: 'https://busca-cv-lattes.cnpq.br/curriculo/2641796479975646',
+    orcid: '0000-0003-4664-6651',
+    photoUrl: '/aniervson.jpeg',
   },
   {
     name: 'Andrea de Lima Ribeiro',
@@ -36,9 +36,9 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     bio: 'Especialista em Psicanálise Clínica Freudiana e em Ciências Sociais Aplicadas, psicóloga e psicanalista com formação pela Associação Saber Psicanalítico (ASP).',
     institution: 'Faculdade de Ciências Aplicadas de Limoeiro - PE (FACAL) e Associação Saber Psicanalítico (ASP)',
     email: 'ribeiroandreaalr@gmail.com',
-    lattesUrl: '',
-    orcid: '',
-    photoUrl: '',
+    lattesUrl: 'https://busca-cv-lattes.cnpq.br/curriculo/2449417807230094',
+    orcid: '0009-0005-5439-4863',
+    photoUrl: '/andrea.jpeg',
   },
   {
     name: 'Gilvânia Lima Magalhães',
@@ -48,7 +48,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     email: 'gillima039@gmail.com',
     lattesUrl: '',
     orcid: '',
-    photoUrl: '',
+    photoUrl: '/gilvania.jpeg',
   },
   {
     name: 'Samuel Barbosa da Silva',
@@ -58,7 +58,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     email: 'samuelbarbosapsi@gmail.com',
     lattesUrl: '',
     orcid: '',
-    photoUrl: '',
+    photoUrl: '/samuel.jpeg',
   },
 ]
 
