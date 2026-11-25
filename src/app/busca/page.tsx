@@ -7,6 +7,7 @@ import { JOURNAL_INFO } from '@/lib/siteConfig'
 import { getPublicFileUrl, PublicAuthor } from '@/lib/journalPublic'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export const metadata: Metadata = {
   title: `Buscar Artigos | ${JOURNAL_INFO.name}`,
@@ -18,6 +19,9 @@ function normalize(text: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export default async function BuscaPage({
@@ -27,6 +31,7 @@ export default async function BuscaPage({
 }) {
   const query = (searchParams?.q || '').trim()
   const normQuery = normalize(query)
+  const queryTerms = normQuery ? normQuery.split(' ').filter(Boolean) : []
 
   const { data } = await supabase
     .from('published_articles')
@@ -36,16 +41,18 @@ export default async function BuscaPage({
 
   const allPublished = data || []
 
-  const results = normQuery
-    ? allPublished.filter((art) => {
-        const authors: PublicAuthor[] = Array.isArray(art.authors_json) ? art.authors_json : []
-        const authorText = authors.map((a) => `${a.name} ${a.institution || ''}`).join(' ')
-        const haystack = normalize(
-          `${art.title} ${art.title_en || ''} ${art.abstract || ''} ${art.keywords || ''} ${art.section || ''} ${art.thematic_axis || ''} ${authorText}`
-        )
-        return haystack.includes(normQuery)
-      })
-    : allPublished
+  const results =
+    queryTerms.length > 0
+      ? allPublished.filter((art) => {
+          const authors: PublicAuthor[] = Array.isArray(art.authors_json) ? art.authors_json : []
+          const authorText = authors.map((a) => `${a.name} ${a.institution || ''}`).join(' ')
+          const issue = art.issue as any
+          const haystack = normalize(
+            `${art.title || ''} ${art.title_en || ''} ${art.abstract || ''} ${art.abstract_en || ''} ${art.keywords || ''} ${art.keywords_en || ''} ${art.section || ''} ${art.thematic_axis || ''} ${authorText} ${issue?.title || ''}`
+          )
+          return queryTerms.every((term) => haystack.includes(term))
+        })
+      : allPublished
 
   return (
     <PublicShell>
@@ -59,7 +66,7 @@ export default async function BuscaPage({
                 type="text"
                 name="q"
                 defaultValue={query}
-                placeholder="Pesquisar por título, autor, palavra-chave ou tema..."
+                placeholder="Pesquisar por título, resumo, abstract (inglês), autor ou palavra-chave..."
                 className="w-full pl-10 pr-4 py-3 text-sm text-slate-900 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
             </div>
