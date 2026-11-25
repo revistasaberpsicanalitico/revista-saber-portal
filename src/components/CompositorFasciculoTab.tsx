@@ -5,6 +5,7 @@ import {
   BookOpen, ArrowUp, ArrowDown, Printer, Copy, Check, CheckCircle2,
   AlertTriangle, AlertCircle, FileText, Users, Sparkles, X
 } from 'lucide-react'
+import VitrinePublicacaoManager from './VitrinePublicacaoManager'
 
 interface CompositorFasciculoTabProps {
   articles: any[]
@@ -288,6 +289,14 @@ export default function CompositorFasciculoTab({
 
   return (
     <div className="space-y-6">
+      <VitrinePublicacaoManager
+        articles={articles}
+        profiles={profiles}
+        getAuthorName={getAuthorName}
+        getAuthorEmail={getAuthorEmail}
+        getAuthorInst={getAuthorInst}
+      />
+
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200 uppercase">
