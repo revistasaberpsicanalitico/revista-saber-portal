@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { ArrowLeft, BookOpen, FileText, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, BookOpen, FileText, ShieldCheck, Scale } from 'lucide-react'
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +15,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             Voltar para o Site da Revista
           </Link>
 
-          <div className="flex items-center gap-4 text-[11px] text-slate-300">
+          <div className="flex items-center gap-4 flex-wrap text-[11px] text-slate-300">
             <Link href="/edicao-atual" className="hover:text-white inline-flex items-center gap-1">
               <BookOpen className="w-3 h-3" /> Edição Atual
             </Link>
@@ -23,7 +23,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <FileText className="w-3 h-3" /> Normas
             </Link>
             <Link href="/politicas" className="hover:text-white inline-flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" /> Políticas
+              <Scale className="w-3 h-3" /> Políticas
+            </Link>
+            <Link href="/verificar" className="hover:text-emerald-300 inline-flex items-center gap-1 font-medium">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" /> Verificar Documento
             </Link>
           </div>
         </div>
