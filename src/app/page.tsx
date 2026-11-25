@@ -113,7 +113,7 @@ export default async function HomePage() {
                 <img
                   src="/logo-revista.png"
                   alt={JOURNAL_INFO.name}
-                  className="h-24 sm:h-28 w-auto object-contain -my-2"
+                  className="h-16 sm:h-20 w-auto object-contain"
                 />
               </div>
               <div>
