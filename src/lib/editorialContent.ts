@@ -72,7 +72,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     bio: 'Especialista em Psicopedagogia e Neuropsicopedagogia, pedagogo, psicanalista e graduando em psicologia.',
     institution: 'Centro Universitário Uninovo e Associação Saber Psicanalítico (ASP)',
     location: 'Caruaru/PE, Brasil',
-    email: '',
+    email: 'paulloarjr29@gmail.com',
     lattesUrl: 'https://lattes.cnpq.br/4945645617965445',
     orcid: '',
     photoUrl: '',
