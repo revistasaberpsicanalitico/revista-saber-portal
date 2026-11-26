@@ -3,7 +3,8 @@ export interface BoardMember {
   role: string
   bio: string
   institution: string
-  email: string
+  location?: string
+  email?: string
   lattesUrl?: string
   orcid?: string
   photoUrl?: string
@@ -15,6 +16,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     role: 'Editor-chefe',
     bio: 'Doutor em Educação pela Universidade Federal da Paraíba (UFPB), mestre em Educação, Culturas e Identidades pela Universidade Federal Rural de Pernambuco e Fundação Joaquim Nabuco (UFRPE/FUNDAJ), historiador e psicanalista com formação pela Associação Saber Psicanalítico (ASP).',
     institution: 'Faculdade Anhanguera e Associação Saber Psicanalítico (ASP)',
+    location: 'Caruaru/PE, Brasil',
     email: 'edsonfilo@gmail.com',
     lattesUrl: '',
     orcid: '',
@@ -25,6 +27,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     role: 'Editor-adjunto',
     bio: 'Mestre em Educação, Culturas e Identidades pela Universidade Federal Rural de Pernambuco e Fundação Joaquim Nabuco (UFRPE/FUNDAJ), especialista em Juventude e em Sexualidade Humana, pedagogo, licenciado em Ciências Biológicas e psicanalista.',
     institution: 'Associação Saber Psicanalítico (ASP)',
+    location: 'Camaragibe/PE, Brasil',
     email: 'aniervson@gmail.com',
     lattesUrl: 'https://busca-cv-lattes.cnpq.br/curriculo/2641796479975646',
     orcid: '0000-0003-4664-6651',
@@ -35,6 +38,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     role: 'Conselho Editorial',
     bio: 'Especialista em Psicanálise Clínica Freudiana e em Ciências Sociais Aplicadas, psicóloga e psicanalista com formação pela Associação Saber Psicanalítico (ASP).',
     institution: 'Faculdade de Ciências Aplicadas de Limoeiro - PE (FACAL) e Associação Saber Psicanalítico (ASP)',
+    location: 'Limoeiro/PE, Brasil',
     email: 'ribeiroandreaalr@gmail.com',
     lattesUrl: 'https://busca-cv-lattes.cnpq.br/curriculo/2449417807230094',
     orcid: '0009-0005-5439-4863',
@@ -45,6 +49,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     role: 'Conselho Editorial',
     bio: 'Especialista em Psicanálise Clínica, com MBA em Gestão de Pessoas e Recursos Humanos, pedagoga e psicanalista com formação pela Associação Saber Psicanalítico (ASP).',
     institution: 'Associação Saber Psicanalítico (ASP)',
+    location: 'Caruaru/PE, Brasil',
     email: 'gillima039@gmail.com',
     lattesUrl: '',
     orcid: '',
@@ -55,10 +60,22 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     role: 'Conselho Editorial',
     bio: 'Especialista em Psicanálise pela FAVEN e psicanalista com formação pela Associação Saber Psicanalítico (ASP), com atuação em Administração e Logística.',
     institution: 'Associação Saber Psicanalítico (ASP)',
+    location: 'Caruaru/PE, Brasil',
     email: 'samuelbarbosapsi@gmail.com',
     lattesUrl: '',
     orcid: '',
     photoUrl: '/samuel.jpeg',
+  },
+  {
+    name: 'Paulo Argemiro da Silva Júnior',
+    role: 'Conselho Editorial',
+    bio: 'Especialista em Psicopedagogia e Neuropsicopedagogia, pedagogo, psicanalista e graduando em psicologia.',
+    institution: 'Centro Universitário Uninovo e Associação Saber Psicanalítico (ASP)',
+    location: 'Caruaru/PE, Brasil',
+    email: '',
+    lattesUrl: 'https://lattes.cnpq.br/4945645617965445',
+    orcid: '',
+    photoUrl: '',
   },
 ]
 
