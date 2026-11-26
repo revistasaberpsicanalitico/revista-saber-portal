@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BookOpen, Building2, Users, Mail, ExternalLink, Target, Compass, Sparkles } from 'lucide-react'
+import { BookOpen, Building2, Users, Mail, ExternalLink, Target, Compass, Sparkles, MapPin } from 'lucide-react'
 import PublicShell from '@/components/PublicShell'
 import { JOURNAL_INFO } from '@/lib/siteConfig'
 import { EDITORIAL_BOARD, PRESENTATION_CONTENT, EXPEDIENTE_CONTENT } from '@/lib/editorialContent'
@@ -205,7 +205,7 @@ export default function SobrePage() {
           <div className="grid md:grid-cols-2 gap-5">
             {EDITORIAL_BOARD.map((member) => (
               <article
-                key={member.email}
+                key={member.name}
                 className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4 hover:border-indigo-200 transition"
               >
                 <div className="flex items-start gap-4">
@@ -216,7 +216,7 @@ export default function SobrePage() {
                       className="w-16 h-16 rounded-full object-cover border-2 border-indigo-100 flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-900 to-slate-800 text-amber-300 font-serif font-bold text-lg flex items-center justify-center flex-shrink-0 border-2 border-amber-400/40 shadow-sm">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-900 to-slate-800 text-amber-300 font-serif font-bold text-lg flex items-center justify-center flex-shrink-0 border-2 border-amber-400/40 shadow-sm">
                       {getInitials(member.name)}
                     </div>
                   )}
@@ -227,6 +227,12 @@ export default function SobrePage() {
                     </span>
                     <h3 className="text-base font-bold text-slate-900">{member.name}</h3>
                     <p className="text-xs font-medium text-indigo-700">{member.institution}</p>
+                    {member.location && (
+                      <p className="text-[11px] text-slate-500 inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                        {member.location}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -235,13 +241,15 @@ export default function SobrePage() {
                 </p>
 
                 <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-3 text-[11px]">
-                  <a
-                    href={`mailto:${member.email}`}
-                    className="inline-flex items-center gap-1 text-slate-600 hover:text-indigo-700 font-medium"
-                  >
-                    <Mail className="w-3.5 h-3.5 text-indigo-600" />
-                    {member.email}
-                  </a>
+                  {member.email && (
+                    <a
+                      href={`mailto:${member.email}`}
+                      className="inline-flex items-center gap-1 text-slate-600 hover:text-indigo-700 font-medium"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                      {member.email}
+                    </a>
+                  )}
                   {member.lattesUrl && (
                     <a
                       href={member.lattesUrl}
