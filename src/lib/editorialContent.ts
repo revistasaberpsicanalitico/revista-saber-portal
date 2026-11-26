@@ -75,7 +75,7 @@ export const EDITORIAL_BOARD: BoardMember[] = [
     email: 'paulloarjr29@gmail.com',
     lattesUrl: 'https://lattes.cnpq.br/4945645617965445',
     orcid: '',
-    photoUrl: '',
+    photoUrl: 'paulo.jpeg',
   },
 ]
 
