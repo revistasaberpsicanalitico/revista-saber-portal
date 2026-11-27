@@ -134,7 +134,16 @@ export default function SobrePage() {
 
               <div className="pt-2 border-t border-slate-100 space-y-1.5">
                 <p>
-                  <strong>Site institucional:</strong>{' '}
+                  <strong>Site oficial da revista:</strong>{' '}
+                  <a
+                    href="https://revistasaberpsicanalitico.com.br"
+                    className="text-indigo-700 hover:underline font-semibold"
+                  >
+                    revistasaberpsicanalitico.com.br
+                  </a>
+                </p>
+                <p>
+                  <strong>Site institucional (mantenedora):</strong>{' '}
                   <a
                     href={JOURNAL_INFO.maintainerSite}
                     target="_blank"
