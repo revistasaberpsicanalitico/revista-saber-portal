@@ -194,14 +194,18 @@ async function handleOai(searchParams: URLSearchParams) {
       rows = rows.filter((r) => slugify(r.section || 'artigos-cientificos') === setParam)
     }
     if (fromParam) {
-      const fromTime = new Date(fromParam).getTime()
+      const trimmedFrom = fromParam.trim()
+      const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(trimmedFrom)
+      const fromTime = new Date(isDateOnly ? `${trimmedFrom}T00:00:00.000Z` : trimmedFrom).getTime()
       if (isNaN(fromTime)) {
         return xmlResponse(oaiError('badArgument', 'Formato de data inválido em from.', baseUrl))
       }
       rows = rows.filter((r) => new Date(r.published_at || r.created_at).getTime() >= fromTime)
     }
     if (untilParam) {
-      const untilTime = new Date(untilParam).getTime()
+      const trimmedUntil = untilParam.trim()
+      const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(trimmedUntil)
+      const untilTime = new Date(isDateOnly ? `${trimmedUntil}T23:59:59.999Z` : trimmedUntil).getTime()
       if (isNaN(untilTime)) {
         return xmlResponse(oaiError('badArgument', 'Formato de data inválido em until.', baseUrl))
       }
