@@ -216,8 +216,9 @@ export default function CompositorFasciculoTab({
       lines.push('')
     })
 
-    lines.push('Entidade Mantenedora: Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85')
-    lines.push('Contato: revista@asppsicanalise.com.br • www.asppsicanalise.com.br')
+    lines.push('Site oficial da revista: https://revistasaberpsicanalitico.com.br')
+    lines.push('Entidade Mantenedora: Associação Saber Psicanalítico (ASP) • CNPJ: 44.966.907/0001-85 • www.asppsicanalise.com.br')
+    lines.push('Contato: revista@asppsicanalise.com.br')
     return lines.join('\n')
   }
 
@@ -620,6 +621,7 @@ export default function CompositorFasciculoTab({
                   <p className="text-xs font-semibold text-indigo-900 uppercase tracking-wide">ISSN 3086-8416</p>
                   <p className="text-xs font-semibold text-slate-700">{issueTitle}</p>
                   <p className="text-[11px] text-slate-500">{issueSubtitle}</p>
+                  <p className="text-[11px] text-slate-500">revistasaberpsicanalitico.com.br</p>
                   <p className="text-[11px] text-slate-400">revista@asppsicanalise.com.br</p>
                 </div>
               </div>
@@ -685,7 +687,8 @@ export default function CompositorFasciculoTab({
               </div>
               <div className="text-center sm:text-right space-y-0.5">
                 <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-                <p>www.asppsicanalise.com.br • revista@asppsicanalise.com.br</p>
+                <p>revistasaberpsicanalitico.com.br • www.asppsicanalise.com.br</p>
+                <p>revista@asppsicanalise.com.br</p>
               </div>
             </div>
           </div>
