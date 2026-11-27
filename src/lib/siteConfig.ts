@@ -1,5 +1,5 @@
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://revista-saber-portal.vercel.app'
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://revistasaberpsicanalitico.com.br'
 
 export const JOURNAL_INFO = {
   name: 'Revista Saber Psicanalítico',
