@@ -892,7 +892,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
           </div>
           <div className="text-center sm:text-right space-y-0.5 text-slate-500">
             <p>Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-            <p><span>www.asppsicanalise.com.br</span> • <span>revista@asppsicanalise.com.br</span></p>
+            <p><span>revistasaberpsicanalitico.com.br • www.asppsicanalise.com.br</span> • <span>revista@asppsicanalise.com.br</span></p>
           </div>
         </div>
       </div>
@@ -3583,7 +3583,7 @@ export default function Home() {
                 Rua Visconde Inhaúma, 1361
               </a>, sala 408 — Caruaru/PE
             </p>
-            <p><span>www.asppsicanalise.com.br</span> • <span>revista@asppsicanalise.com.br</span></p>
+            <p><span>revistasaberpsicanalitico.com.br • www.asppsicanalise.com.br</span> • <span>revista@asppsicanalise.com.br</span></p>
           </div>
         </div>
       </footer>
