@@ -219,6 +219,11 @@ export default function PublicShell({ children }: { children: React.ReactNode })
               Acesso Aberto & Contato
             </h4>
             <p className="text-slate-300 leading-relaxed">
+              Site da revista:{' '}
+              <a href="https://revistasaberpsicanalitico.com.br" className="text-amber-300 hover:underline font-semibold">
+                revistasaberpsicanalitico.com.br
+              </a>
+              <br />
               E-mail editorial:{' '}
               <a href={`mailto:${JOURNAL_INFO.email}`} className="text-amber-300 hover:underline font-semibold">
                 {JOURNAL_INFO.email}
