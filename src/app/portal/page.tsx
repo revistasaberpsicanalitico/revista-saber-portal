@@ -187,7 +187,7 @@ function PareceristasModal({
             title: 'Candidatura Recebida',
             message: `Prezado(a) ${fullName},\n\nConfirmamos o recebimento de sua inscrição para o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua ficha foi encaminhada para apreciação colegiada do Conselho Editorial.\n\nIMPORTANTE: Enquanto aguarda a deliberação, seu login continua ativo como AUTOR no portal, permitindo que você submeta trabalhos normalmente.`,
             actionText: 'Acessar o Portal da Revista',
-            actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+            actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
           })
         })
 
@@ -200,7 +200,7 @@ function PareceristasModal({
             title: 'Nova Candidatura de Parecerista',
             message: `Novo cadastro recebido:\n\n• Nome: ${fullName}\n• Titulação: ${academicDegree}\n• Instituição: ${institution}\n• E-mail: ${userEmail}\n• Eixos: ${axes.join(', ')}\n\nAcesse a aba "Candidaturas Pareceristas" na Sala Editorial para deliberar.`,
             actionText: 'Sala Editorial',
-            actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+            actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
           })
         })
       } catch (errMail) {
@@ -877,7 +877,7 @@ function OfficialDocModal({ data, onClose, getAuthorName, getArticleIssue }: any
               <p className="text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Documento Assinado Digitalmente</p>
               <p className="text-[10px] text-slate-500 leading-tight">Assinado eletronicamente pelo Editor-Chefe conforme diretrizes de validação eletrônica da Revista Saber Psicanalítico.</p>
               <p className="text-[11px] font-mono text-slate-800 font-bold pt-0.5">Código de Verificação: {docCode}</p>
-              <p className="text-[9.5px] text-slate-400">Validação em: <span className="text-indigo-600 font-semibold">https://revista-saber-portal.vercel.app/portal</span></p>
+              <p className="text-[9.5px] text-slate-400">Validação em: <span className="text-indigo-600 font-semibold">https://revistasaberpsicanalitico.com.br/verificar</span></p>
             </div>
           </div>
         </div>
@@ -957,7 +957,7 @@ export default function Home() {
   const [mailingTitle, setMailingTitle] = useState('')
   const [mailingBody, setMailingBody] = useState('')
   const [mailingActionText, setMailingActionText] = useState('Acessar a Revista')
-  const [mailingActionUrl, setMailingActionUrl] = useState('https://revista-saber-portal.vercel.app')
+  const [mailingActionUrl, setMailingActionUrl] = useState('https://revistasaberpsicanalitico.com.br')
   const [sendingMailing, setSendingMailing] = useState(false)
   const [copiedMailingEmails, setCopiedMailingEmails] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -1428,7 +1428,7 @@ export default function Home() {
         title: 'Lembrete Editorial',
         message: `Prezado(a) ${revProfile.full_name},\n\nEntramos em contato para lembrar sobre a emissão do parecer do manuscrito "${art?.title}", ${situacao}.\n\nSua avaliação circunstanciada é fundamental para o cumprimento do calendário deste fascículo da Revista Saber Psicanalítico (ISSN 3086-8416).\n\nCaso necessite de uma prorrogação de prazo, solicitamos que nos comunique respondendo a esta mensagem.`,
         actionText: 'Acessar o Painel de Avaliações',
-        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+        actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
       })
 
       alert(`Lembrete enviado com sucesso para ${revProfile.full_name}!`)
@@ -1458,7 +1458,7 @@ export default function Home() {
           title: 'Prazo Limite Prorrogado',
           message: `Prezado(a) ${revProfile.full_name},\n\nComunicamos que o prazo para a conclusão do seu parecer técnico sobre o manuscrito "${article?.title}" foi prorrogado em +${daysToAdd} dias a contar da data de referência.\n\n📅 NOVO PRAZO LIMITE: ${newDate.toLocaleDateString('pt-BR')}.\n\nAgradecemos imensamente sua dedicação e contribuição científica com a Revista Saber Psicanalítico.`,
           actionText: 'Acessar Painel de Avaliações',
-          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+          actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
         })
       }
 
@@ -1513,7 +1513,7 @@ export default function Home() {
         title: 'Bem-vindo(a) ao Corpo de Pareceristas Ad-hoc',
         message: `Prezado(a) ${candidate.full_name},\n\nTemos a satisfação de comunicar que sua inscrição para integrar o Banco de Pareceristas Ad-hoc da Revista Saber Psicanalítico (ISSN 3086-8416) foi HOMOLOGADA com parecer favorável do Conselho Editorial.\n\nSeu cadastro encontra-se plenamente ativo em nosso sistema.\n\n--- INFORMAÇÕES GERAIS DE FUNCIONAMENTO ---\n1. Convites de Avaliação: Conforme a afinidade temática dos manuscritos recebidos, você receberá um e-mail com o resumo da obra e o prazo sugerido (geralmente 21 dias).\n2. Aceite e Recusa: Ao acessar o portal, você poderá aceitar ou recusar formalmente o convite. O arquivo completo do texto só fica disponível para download após você clicar em Aceitar.\n3. Avaliação Duplo-Cega: Os textos são anonimizados. Seu parecer circunstanciado e eventuais arquivos com comentários deverão manter rigoroso anonimato.\n4. Certificação Oficial: A cada parecer finalizado, o sistema emite automaticamente a Declaração Oficial Timbrada com código digital de verificação para comprovação no Lattes e em bancas acadêmicas.\n\nAgradecemos sua valorosa contribuição para o fortalecimento da transmissão e do rigor científico na Psicanálise.`,
         actionText: 'Acessar Área do Parecerista',
-        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+        actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
       })
 
       alert(`Parecerista "${candidate.full_name}" homologado com sucesso!`)
@@ -1626,7 +1626,7 @@ export default function Home() {
       const resetUrl =
         typeof window !== 'undefined'
           ? `${window.location.origin}/redefinir-senha`
-          : 'https://revista-saber-portal.vercel.app/redefinir-senha'
+          : 'https://revistasaberpsicanalitico.com.br/redefinir-senha'
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
         redirectTo: resetUrl,
       })
@@ -1713,7 +1713,7 @@ export default function Home() {
           title: 'Manuscrito Recebido com Sucesso',
           message: `Prezado(a) ${profile?.full_name || 'Autor(a)'},\n\nConfirmamos o recebimento do trabalho "${newTitle}" na seção "${newSection}".\n\nVocê pode acompanhar todas as etapas da avaliação diretamente no portal.`,
           actionText: 'Acompanhar no Portal',
-          actionUrl: 'https://revista-saber-portal.vercel.app/portal',
+          actionUrl: 'https://revistasaberpsicanalitico.com.br/portal',
         })
       }
 
@@ -1723,7 +1723,7 @@ export default function Home() {
         title: 'Novo Manuscrito Submetido',
         message: `Um novo manuscrito foi submetido ao portal:\n\n• Título: ${newTitle}\n• Seção: ${newSection}\n• Eixo Temático: ${newThematicAxis}\n• Autor: ${profile?.full_name || 'Autor'} (${authorEmail || '-'})\n\nAcesse a Sala Editorial para realizar a triagem inicial.`,
         actionText: 'Abrir Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app/portal',
+        actionUrl: 'https://revistasaberpsicanalitico.com.br/portal',
       })
 
       alert('Artigo submetido com sucesso!')
@@ -1774,7 +1774,7 @@ export default function Home() {
           title: 'Reenvio de Manuscrito Confirmado',
           message: `Prezado(a) ${authorName},\n\nConfirmamos o recebimento da nova versão do manuscrito "${reSubmitArticle.title}" (${tipoCorrecao}).\n\nA Comissão Editorial já foi notificada e dará prosseguimento à análise.`,
           actionText: 'Acessar o Portal',
-          actionUrl: 'https://revista-saber-portal.vercel.app/portal',
+          actionUrl: 'https://revistasaberpsicanalitico.com.br/portal',
         })
       }
 
@@ -1784,7 +1784,7 @@ export default function Home() {
         title: 'Versão Corrigida Enviada pelo Autor',
         message: `O(A) autor(a) ${authorName} (${authorEmail || '-'}) enviou uma versão revisada do manuscrito:\n\n• Título: "${reSubmitArticle.title}"\n• Origem da solicitação: ${tipoCorrecao}\n• Seção: ${reSubmitArticle.section || 'Artigos Científicos'}\n\nAcesse a Sala Editorial (aba "Revisão Enviada") para conferir e baixar o arquivo atualizado.`,
         actionText: 'Conferir na Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app/portal',
+        actionUrl: 'https://revistasaberpsicanalitico.com.br/portal',
       })
 
       alert('Versão corrigida enviada com sucesso!')
@@ -1854,7 +1854,7 @@ export default function Home() {
               title: 'Ajuste Inicial Necessário Antes da Avaliação',
               message: `Prezado(a) ${autName},\n\nNa triagem inicial do manuscrito "${targetArt.title}", verificamos a necessidade de ajustes de anonimização ou formatação para prosseguir à avaliação duplo-cega por pares.\n\nPor favor, remova qualquer identificação dos autores no texto e nas propriedades do arquivo Word e envie novamente a versão anonimizada pelo portal clicando em "Enviar Arquivo Corrigido".`,
               actionText: 'Enviar Arquivo Anonimizado',
-              actionUrl: 'https://revista-saber-portal.vercel.app/portal',
+              actionUrl: 'https://revistasaberpsicanalitico.com.br/portal',
             })
           } else if (status === 'em_avaliacao') {
             await sendEmailNotification({
@@ -1863,7 +1863,7 @@ export default function Home() {
               title: 'Manuscrito em Avaliação Duplo-Cega',
               message: `Prezado(a) ${autName},\n\nInformamos que seu manuscrito "${targetArt.title}" concluiu a triagem inicial e encontra-se agora em processo de avaliação duplo-cega por pares (Double-Blind Peer Review).\n\nAssim que os pareceres forem consolidados, você será notificado por e-mail.`,
               actionText: 'Acompanhar no Portal',
-              actionUrl: 'https://revista-saber-portal.vercel.app/portal',
+              actionUrl: 'https://revistasaberpsicanalitico.com.br/portal',
             })
           } else if (status === 'aceito') {
             await sendEmailNotification({
@@ -1872,7 +1872,7 @@ export default function Home() {
               title: 'Parabéns! Artigo Aprovado para Publicação',
               message: `Prezado(a) ${autName},\n\nTemos a grande satisfação de comunicar que seu trabalho "${targetArt.title}" foi APROVADO PARA PUBLICAÇÃO na Revista Saber Psicanalítico (ISSN 3086-8416).\n\nSua Carta/Declaração Oficial de Aceite em PDF (com código verificador digital) e os pareceres já estão disponíveis para download no portal.`,
               actionText: 'Emitir Carta de Aceite no Portal',
-              actionUrl: 'https://revista-saber-portal.vercel.app/portal',
+              actionUrl: 'https://revistasaberpsicanalitico.com.br/portal',
             })
           }
         }
@@ -1910,7 +1910,7 @@ export default function Home() {
           title: 'Parecer Editorial Disponível com Solicitação de Ajustes',
           message: `Prezado(a) ${autName},\n\nA Comissão Editorial apreciou seu manuscrito "${requestChangesModalArticle.title}" e solicita a realização de ajustes regimentais com base nas orientações abaixo:\n\n${changesReasonText}\n\n⚠️ PRAZO IMPRORROGÁVEL: ${deadlineFmt}\nO não cumprimento deste prazo acarretará no adiamento ou na não publicação do texto no próximo fascículo.\n\nOs pareceres completos também já podem ser consultados no portal.`,
           actionText: 'Ver Detalhes e Enviar Versão Corrigida',
-          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+          actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
         })
       }
 
@@ -1943,7 +1943,7 @@ export default function Home() {
           title: 'Solicitação de Ajuste no Parecer Emitido',
           message: `Prezado(a) ${revProfile.full_name},\n\nA Comissão Editorial apreciou seu parecer e solicita o seguinte ajuste:\n\n${reviewerChangesText}\n\nPor favor, acesse seu painel para atualizar o parecer e reenviar.`,
           actionText: 'Acessar Painel do Parecerista',
-          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+          actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
         })
       }
 
@@ -1977,7 +1977,7 @@ export default function Home() {
           title: 'Comunicação Editorial / Parecer Final',
           message: `Prezado(a) ${autName},\n\nComunicamos que o manuscrito "${rejectionModalArticle.title}" concluiu as etapas de avaliação e não foi aceito para publicação no presente ciclo editorial.\n\nConsiderações da Editoria:\n${rejectionReasonText}\n\nA comunicação oficial em PDF e os pareceres emitidos encontram-se disponíveis para consulta no portal.`,
           actionText: 'Acessar o Portal',
-          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+          actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
         })
       }
 
@@ -2014,7 +2014,7 @@ export default function Home() {
           title: 'Novo Convite de Avaliação',
           message: `Prezado(a) ${revProfile.full_name},\n\nConvidamos você a avaliar o manuscrito "${assignModalArticle.title}". Acesse o portal para consultar o resumo e aceitar ou recusar o convite.`,
           actionText: 'Responder Convite no Portal',
-          actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+          actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
         })
       }
       alert('Convite enviado com sucesso!')
@@ -2048,7 +2048,7 @@ export default function Home() {
         title: 'Parecerista Aceitou a Avaliação',
         message: `O(A) parecerista ${profile?.full_name || 'Avaliador(a)'} ACEITOU o convite para avaliar o manuscrito "${articleTitle}".`,
         actionText: 'Abrir Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+        actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
       })
 
       alert('Convite aceito! O manuscrito foi liberado para download e avaliação.')
@@ -2070,7 +2070,7 @@ export default function Home() {
         title: 'Parecerista Recusou o Convite',
         message: `O(A) parecerista ${profile?.full_name || 'Avaliador(a)'} RECUSOU o convite para avaliar o manuscrito "${articleTitle}". Acesse a Sala Editorial para designar outro avaliador.`,
         actionText: 'Abrir Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+        actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
       })
 
       alert('Recusa registrada.')
@@ -2111,7 +2111,7 @@ export default function Home() {
         title: isWasAdjustment ? 'Parecer Ajustado Concluído' : 'Parecer Técnico Registrado',
         message: `O(A) parecerista ${profile?.full_name} ${isWasAdjustment ? 'concluiu e reenviou os ajustes solicitados no parecer' : 'emitiu um parecer conclusivo'} para o trabalho "${targetArt?.title}".\n\n• Recomendação: ${recommendation.toUpperCase()}\n• Seção: ${sec}`,
         actionText: 'Acessar Sala Editorial',
-        actionUrl: 'https://revista-saber-portal.vercel.app/portal'
+        actionUrl: 'https://revistasaberpsicanalitico.com.br/portal'
       })
 
       alert('Parecer enviado à Comissão Editorial com sucesso!')
