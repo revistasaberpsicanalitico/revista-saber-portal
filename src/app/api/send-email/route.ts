@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         <body>
           <div class="card">
             <div class="header">
-              <img src="https://revista-saber-portal.vercel.app/logo-revista.png" alt="Revista Saber Psicanalítico" class="logo-revista" />
+              <img src="https://revistasaberpsicanalitico.com.br/logo-revista.png" alt="Revista Saber Psicanalítico" class="logo-revista" />
               <div style="font-size: 11px; color: #4338ca; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
                 ISSN 3086-8416 • Sistema Editorial
               </div>
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
               </div>
             </div>
             <div class="footer">
-              <img src="https://revista-saber-portal.vercel.app/logo-asp.png" alt="ASP" class="logo-asp" />
+              <img src="https://revistasaberpsicanalitico.com.br/logo-asp.png" alt="ASP" class="logo-asp" />
               <p style="margin: 0; font-weight: 600; color: #334155;">Associação Saber Psicanalítico (ASP) — Entidade Mantenedora</p>
               <p style="margin: 4px 0 0;">CNPJ: 44.966.907/0001-85 • Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
               <p style="margin: 4px 0 0;">Contato: ${officialEmail} • <a href="https://www.asppsicanalise.com.br" style="color: #4f46e5; text-decoration: none;">www.asppsicanalise.com.br</a></p>
@@ -60,7 +60,6 @@ export async function POST(req: Request) {
       </html>
     `
 
-    // 1. Tenta enviar pelo Resend usando o domínio oficial @asppsicanalise.com.br
     if (resendApiKey) {
       const resendRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -86,7 +85,6 @@ export async function POST(req: Request) {
       console.warn('Falha ao enviar pelo Resend, tentando fallback Gmail:', errDetail)
     }
 
-    // 2. Plano B automático: envia pelo Gmail caso o Resend não esteja configurado ou falhe
     if (!gmailPass) {
       return NextResponse.json({
         status: 'warning',
