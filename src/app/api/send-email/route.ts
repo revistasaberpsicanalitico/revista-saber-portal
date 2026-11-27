@@ -53,7 +53,8 @@ export async function POST(req: Request) {
               <img src="https://revistasaberpsicanalitico.com.br/logo-asp.png" alt="ASP" class="logo-asp" />
               <p style="margin: 0; font-weight: 600; color: #334155;">Associação Saber Psicanalítico (ASP) — Entidade Mantenedora</p>
               <p style="margin: 4px 0 0;">CNPJ: 44.966.907/0001-85 • Rua Visconde de Inhaúma, 1361, sala 408 — Caruaru/PE</p>
-              <p style="margin: 4px 0 0;">Contato: ${officialEmail} • <a href="https://www.asppsicanalise.com.br" style="color: #4f46e5; text-decoration: none;">www.asppsicanalise.com.br</a></p>
+              <p style="margin: 4px 0 0;">Revista: <a href="https://revistasaberpsicanalitico.com.br" style="color: #4f46e5; text-decoration: none;">revistasaberpsicanalitico.com.br</a> • Mantenedora: <a href="https://www.asppsicanalise.com.br" style="color: #4f46e5; text-decoration: none;">www.asppsicanalise.com.br</a></p>
+<p style="margin: 4px 0 0;">Contato: ${officialEmail}</p>
             </div>
           </div>
         </body>
